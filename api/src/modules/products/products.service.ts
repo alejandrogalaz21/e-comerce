@@ -1,12 +1,12 @@
 import {
-  BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { DeepPartial, Repository } from 'typeorm'
 
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
@@ -15,11 +15,10 @@ import { PaginationHelper } from '@/common/pagination/pagination.helper'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 
 import { Product } from './entities/product.entity'
-import { validate as isUUID } from 'uuid'
 
 @Injectable()
 export class ProductsService {
-  private readonly logger = new Logger('ProductsService')
+  private readonly logger = new Logger(ProductsService.name)
 
   constructor(
     @InjectRepository(Product)
@@ -27,13 +26,14 @@ export class ProductsService {
     private readonly paginationBuilder: PaginationResponseBuilder<Product>
   ) {}
 
-  async create(createProductDto: CreateProductDto) {
+  async create(createProductDto: CreateProductDto): Promise<Product> {
     try {
-      const product = this.productRepository.create(createProductDto)
+      const product = this.productRepository.create(
+        this.toEntityData(createProductDto)
+      )
       return await this.productRepository.save(product)
     } catch (error) {
-      console.log(error)
-      this.handleDBExceptions(error)
+      this.handleDBExceptions(error, createProductDto.sku)
     }
   }
 
@@ -42,52 +42,58 @@ export class ProductsService {
 
     const [products, total] = await this.productRepository.findAndCount({
       take: limit,
-      skip: offset
-      // TODO: relaciones
+      skip: offset,
+      order: { createdAt: 'DESC' }
     })
 
     return this.paginationBuilder.build(products, total, page, limit)
   }
 
-  async findOne(term: string) {
-    let product: Product
+  async findOne(id: string): Promise<Product> {
+    const product = await this.productRepository.findOneBy({ id })
 
-    if (isUUID(term)) {
-      product = await this.productRepository.findOneBy({ id: term })
-    } else {
-      const queryBuilder = this.productRepository.createQueryBuilder()
-      product = await queryBuilder
-        .where('UPPER(title) =:title or slug =:slug', {
-          title: term.toUpperCase(),
-          slug: term.toLowerCase()
-        })
-        .getOne()
-    }
-
-    if (!product) throw new NotFoundException(`Product with ${term} not found`)
+    if (!product)
+      throw new NotFoundException(`Product with id '${id}' not found`)
 
     return product
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`
+  async update(
+    id: string,
+    updateProductDto: UpdateProductDto
+  ): Promise<Product> {
+    const product = await this.findOne(id)
+    this.productRepository.merge(product, this.toEntityData(updateProductDto))
+
+    try {
+      return await this.productRepository.save(product)
+    } catch (error) {
+      this.handleDBExceptions(error, updateProductDto.sku)
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`
+  async remove(id: string): Promise<void> {
+    const product = await this.findOne(id)
+    await this.productRepository.remove(product)
   }
 
-  /**
-   * Handles database exceptions by checking the error code and throwing appropriate HTTP exceptions.
-   * If the error code is '23505' (unique constraint violation), throws a BadRequestException with the error detail.
-   * For all other errors, logs the error and throws an InternalServerErrorException with a generic message.
-   *
-   * @param error - The error object thrown by the database operation.
-   * @throws {BadRequestException} If the error code is '23505'.
-   * @throws {InternalServerErrorException} For all other errors.
-   */
-  private handleDBExceptions(error: any) {
-    if (error.code === '23505') throw new BadRequestException(error.detail)
+  private toEntityData(
+    dto: CreateProductDto | UpdateProductDto
+  ): DeepPartial<Product> {
+    const { price, weightKg, category, ...rest } = dto
+    const data: DeepPartial<Product> = { ...rest }
+
+    if (price !== undefined) data.price = price.toFixed(2)
+    if (weightKg !== undefined) data.weightKg = weightKg.toString()
+    if (category !== undefined)
+      data.category = category.trim() || 'Uncategorized'
+
+    return data
+  }
+
+  private handleDBExceptions(error: unknown, sku?: string): never {
+    if ((error as { code?: string })?.code === '23505')
+      throw new ConflictException(`Product with sku '${sku}' already exists`)
 
     this.logger.error(error)
     throw new InternalServerErrorException(

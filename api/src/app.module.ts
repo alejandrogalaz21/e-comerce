@@ -18,7 +18,10 @@ import { StatusModule } from '@/modules/status/status.module'
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [AppConfig, PgConfig, RedisConfig] }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [AppConfig, PgConfig, RedisConfig]
+    }),
     PgModule,
     RedisModule,
     CommonModule,
