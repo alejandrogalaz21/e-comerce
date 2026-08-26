@@ -1,34 +1,28 @@
-FROM node:lts As development
+# ---- Build stage ----
+FROM node:20-alpine AS build
 
-# Create app directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Install app dependencies
-COPY package.json yarn.lock ./
-
-RUN yarn install --frozen-lockfile
+COPY package*.json ./
+RUN npm ci
 
 COPY . .
+RUN npm run build
 
-RUN yarn build
+# ---- Production stage ----
+FROM node:20-alpine AS production
 
-FROM node:lts-slim as production
+ENV NODE_ENV=production
 
-ARG NODE_ENV=production
-ENV NODE_ENV=${NODE_ENV}
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY --from=build /app/dist ./dist
 
 USER node
 
-# Create app directory
-WORKDIR /usr/src/app
+EXPOSE 8080
 
-# Install app dependencies
-COPY package.json yarn.lock ./
-
-RUN yarn install --production --frozen-lockfile
-
-COPY . .
-
-COPY --from=development /usr/src/app/dist ./dist
-
-CMD [ "node", "dist/main.js" ]
+CMD ["node", "dist/main.js"]

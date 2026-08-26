@@ -2,7 +2,6 @@
 import { Controller, Get } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger'
-import { DynamoDBHealthService } from '@/database/dynamodb/dynamodb-health.service'
 import { PgHealthService } from '@/database/postgres/pg-health.service'
 import { performance } from 'perf_hooks'
 import * as os from 'os'
@@ -12,7 +11,6 @@ import * as os from 'os'
 export class HealthController {
   constructor(
     private configService: ConfigService,
-    private dynamoHealth: DynamoDBHealthService,
     private pgHealth: PgHealthService
   ) {}
 
@@ -20,7 +18,7 @@ export class HealthController {
   @Get('/')
   root() {
     return {
-      message: 'Timi API is running!',
+      message: 'E-commerce API is running!',
       hint: 'Visit /api/v1 for the REST API.',
       status: 'ok',
       timestamp: new Date().toISOString()
@@ -39,7 +37,7 @@ export class HealthController {
       ok: true,
       name: this.configService.get('app.name'),
       version: this.configService.get('app.version'),
-      env: this.configService.get('app.environment'),
+      env: this.configService.get('app.env'),
       status: 'healthy',
       startTime: new Date(startedAt).toISOString(),
       uptimeMs,
@@ -81,21 +79,15 @@ export class HealthController {
       }
     }
 
-    // Check DynamoDB connection
-    const t1 = Date.now()
-    const ddbHealth = await this.dynamoHealth.checkConnection()
-    const ddbLatencyMs = Date.now() - t1
-
     // Check Postgres connection
-    const t2 = Date.now()
+    const t = Date.now()
     const pgHealth = await this.pgHealth.check()
-    const pgLatencyMs = Date.now() - t2
+    const pgLatencyMs = Date.now() - t
     const pgStats = await this.pgHealth.stats()
 
     return {
       app,
       resources,
-      dynamodb: { ddbHealth, latencyMs: ddbLatencyMs },
       postgres: { pgHealth, latencyMs: pgLatencyMs, stats: pgStats }
     }
   }
