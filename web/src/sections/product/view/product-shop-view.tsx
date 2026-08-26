@@ -12,7 +12,6 @@ import { useSetState } from 'src/hooks/use-set-state';
 
 import { orderBy } from 'src/utils/helper';
 
-import { useSearchProducts } from 'src/actions/product';
 import {
   PRODUCT_SORT_OPTIONS,
   PRODUCT_COLOR_OPTIONS,
@@ -28,6 +27,7 @@ import { ProductSort } from '../product-sort';
 import { ProductSearch } from '../product-search';
 import { CartIcon } from '../components/cart-icon';
 import { ProductFilters } from '../product-filters';
+import { useSearchProducts } from '../hooks/use-product';
 import { useCheckoutContext } from '../../checkout/context';
 import { ProductFiltersResult } from '../product-filters-result';
 

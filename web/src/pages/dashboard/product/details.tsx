@@ -3,9 +3,9 @@ import { Helmet } from 'react-helmet-async';
 import { useParams } from 'src/routes/hooks';
 
 import { CONFIG } from 'src/config-global';
-import { useGetProduct } from 'src/actions/product';
 
 import { ProductDetailsView } from 'src/sections/product/view';
+import { useGetProduct } from 'src/sections/product/hooks/use-product';
 
 // ----------------------------------------------------------------------
 

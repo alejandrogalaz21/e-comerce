@@ -31,7 +31,6 @@ import { useBoolean } from 'src/hooks/use-boolean';
 import { useSetState } from 'src/hooks/use-set-state';
 
 import { PRODUCT_STOCK_OPTIONS } from 'src/_mock';
-import { useGetProducts } from 'src/actions/product';
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { toast } from 'src/components/snackbar';
@@ -40,6 +39,7 @@ import { EmptyContent } from 'src/components/empty-content';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
+import { useGetProducts } from '../hooks/use-product';
 import { ProductTableToolbar } from '../product-table-toolbar';
 import { ProductTableFiltersResult } from '../product-table-filters-result';
 import {

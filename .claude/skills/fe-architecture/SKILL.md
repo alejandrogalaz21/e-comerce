@@ -93,4 +93,4 @@ API endpoints: always registered in the `endpoints` map in `src/lib/axios.ts` (r
 - Client state (cart, UI toggles) stays in React context/local state — do NOT put server data in context.
 - Do not import from `src/_mock` in new code (legacy template leftovers, being removed).
 - Build gate: `npm run build` runs tsc strict + eslint (vite-plugin-checker). The `perfectionist/sort-imports` rule enforces import order — run `npx eslint --fix` if ordering errors appear.
-- Legacy exception: `src/actions/product.ts` still uses SWR hooks (pre-refactor). It gets migrated to this pattern in ticket TK-011 — do not replicate its style.
+- SWR is fully removed from the project — React Query is the only data-fetching layer. Both `status` and `product` hooks follow this pattern (`sections/<domain>/hooks/`).

@@ -74,3 +74,17 @@ export type IProductItem = {
     content: string;
   };
 };
+
+// ----------------------------------------------------------------------
+
+export type IProductsResponse = {
+  products: IProductItem[];
+};
+
+export type IProductResponse = {
+  product: IProductItem;
+};
+
+export type IProductSearchResponse = {
+  results: IProductItem[];
+};
