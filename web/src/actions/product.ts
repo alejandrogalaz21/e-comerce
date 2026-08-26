@@ -1,28 +1,44 @@
+import type { IPaginatedResponse } from 'src/types/common';
 import type {
-  IProductResponse,
-  IProductsResponse,
-  IProductSearchResponse,
+  ApiProduct,
+  IProductItem,
+  IProductPayload,
+  IProductListParams,
 } from 'src/types/product';
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
+import { toProductItem } from './product.mapper';
+
 // ----------------------------------------------------------------------
 
-export async function getProducts(): Promise<IProductsResponse> {
-  const res = await axiosInstance.get<IProductsResponse>(endpoints.product.list);
-  return res.data;
+export async function getProducts(
+  params: IProductListParams
+): Promise<IPaginatedResponse<IProductItem>> {
+  const res = await axiosInstance.get<IPaginatedResponse<ApiProduct>>(endpoints.product.list, {
+    params,
+  });
+  return { data: res.data.data.map(toProductItem), pagination: res.data.pagination };
 }
 
-export async function getProduct(productId: string): Promise<IProductResponse> {
-  const res = await axiosInstance.get<IProductResponse>(endpoints.product.details, {
-    params: { productId },
-  });
-  return res.data;
+export async function getProduct(productId: string): Promise<IProductItem> {
+  const res = await axiosInstance.get<ApiProduct>(endpoints.product.details(productId));
+  return toProductItem(res.data);
 }
 
-export async function searchProducts(query: string): Promise<IProductSearchResponse> {
-  const res = await axiosInstance.get<IProductSearchResponse>(endpoints.product.search, {
-    params: { query },
-  });
-  return res.data;
+export async function createProduct(payload: IProductPayload): Promise<IProductItem> {
+  const res = await axiosInstance.post<ApiProduct>(endpoints.product.create, payload);
+  return toProductItem(res.data);
+}
+
+export async function updateProduct(
+  productId: string,
+  payload: IProductPayload
+): Promise<IProductItem> {
+  const res = await axiosInstance.patch<ApiProduct>(endpoints.product.update(productId), payload);
+  return toProductItem(res.data);
+}
+
+export async function deleteProduct(productId: string): Promise<void> {
+  await axiosInstance.delete(endpoints.product.delete(productId));
 }

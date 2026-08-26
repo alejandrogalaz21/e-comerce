@@ -8,9 +8,9 @@ import { useRouter, useSearchParams } from 'src/routes/hooks';
 
 import { getStorage, useLocalStorage } from 'src/hooks/use-local-storage';
 
-import { PRODUCT_CHECKOUT_STEPS } from 'src/_mock/_product';
-
 import { SplashScreen } from 'src/components/loading-screen';
+
+import { CHECKOUT_STEPS } from '../checkout-steps';
 
 // ----------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ function Container({ children }: Props) {
     initialState
   );
 
-  const completed = activeStep === PRODUCT_CHECKOUT_STEPS.length;
+  const completed = activeStep === CHECKOUT_STEPS.length;
 
   const updateTotalField = useCallback(() => {
     const totalItems: number = state.items.reduce(
@@ -112,11 +112,7 @@ function Container({ children }: Props) {
     (newItem: ICheckoutItem) => {
       const updatedItems: ICheckoutItem[] = state.items.map((item: ICheckoutItem) => {
         if (item.id === newItem.id) {
-          const colorsAdded = [...item.colors, ...newItem.colors];
-
-          const colors = colorsAdded.filter((color, index) => colorsAdded.indexOf(color) === index);
-
-          return { ...item, colors, quantity: item.quantity + 1 };
+          return { ...item, quantity: item.quantity + newItem.quantity };
         }
         return item;
       });

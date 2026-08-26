@@ -3,7 +3,6 @@ import type { ICheckoutItem } from 'src/types/checkout';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Avatar from '@mui/material/Avatar';
-import Divider from '@mui/material/Divider';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
@@ -11,9 +10,7 @@ import Typography from '@mui/material/Typography';
 
 import { fCurrency } from 'src/utils/format-number';
 
-import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
-import { ColorPreview } from 'src/components/color-utils';
 
 import { IncrementerButton } from '../product/components/incrementer-button';
 
@@ -38,21 +35,9 @@ export function CheckoutCartProduct({ row, onDelete, onDecrease, onIncrease }: P
             sx={{ width: 64, height: 64 }}
           />
 
-          <Stack spacing={0.5}>
-            <Typography noWrap variant="subtitle2" sx={{ maxWidth: 240 }}>
-              {row.name}
-            </Typography>
-
-            <Stack
-              direction="row"
-              alignItems="center"
-              sx={{ typography: 'body2', color: 'text.secondary' }}
-            >
-              size: <Label sx={{ ml: 0.5 }}> {row.size} </Label>
-              <Divider orientation="vertical" sx={{ mx: 1, height: 16 }} />
-              <ColorPreview colors={row.colors} />
-            </Stack>
-          </Stack>
+          <Typography noWrap variant="subtitle2" sx={{ maxWidth: 240 }}>
+            {row.name}
+          </Typography>
         </Stack>
       </TableCell>
 
@@ -65,11 +50,11 @@ export function CheckoutCartProduct({ row, onDelete, onDecrease, onIncrease }: P
             onDecrease={onDecrease}
             onIncrease={onIncrease}
             disabledDecrease={row.quantity <= 1}
-            disabledIncrease={row.quantity >= row.available}
+            disabledIncrease={row.quantity >= row.stock}
           />
 
           <Typography variant="caption" component="div" sx={{ color: 'text.secondary', mt: 1 }}>
-            available: {row.available}
+            available: {row.stock}
           </Typography>
         </Box>
       </TableCell>

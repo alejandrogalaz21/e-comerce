@@ -1,28 +1,51 @@
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import type { IProductPayload, IProductListParams } from 'src/types/product';
 
-import { getProduct, getProducts, searchProducts } from 'src/actions/product';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+
+import {
+  getProduct,
+  getProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+} from 'src/actions/product';
+
+import { toast } from 'src/components/snackbar';
 
 // ----------------------------------------------------------------------
 
 export const productKeys = {
   all: ['products'] as const,
   lists: () => [...productKeys.all, 'list'] as const,
+  list: (params: IProductListParams) => [...productKeys.lists(), params] as const,
   detail: (id: string) => [...productKeys.all, 'detail', id] as const,
-  search: (query: string) => [...productKeys.all, 'search', query] as const,
 };
 
 // ----------------------------------------------------------------------
 
-export function useGetProducts() {
+function getErrorMessage(error: unknown): string {
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object' && 'message' in error) {
+    const { message } = error as { message: string | string[] };
+    return Array.isArray(message) ? message.join(', ') : message;
+  }
+  return 'Something went wrong!';
+}
+
+// ----------------------------------------------------------------------
+
+export function useGetProducts(params: IProductListParams) {
   const query = useQuery({
-    queryKey: productKeys.lists(),
-    queryFn: getProducts,
+    queryKey: productKeys.list(params),
+    queryFn: () => getProducts(params),
+    placeholderData: keepPreviousData,
   });
 
-  const products = query.data?.products ?? [];
+  const products = query.data?.data ?? [];
 
   return {
     products,
+    pagination: query.data?.pagination,
     productsLoading: query.isLoading,
     productsError: query.error,
     productsValidating: query.isFetching,
@@ -38,28 +61,52 @@ export function useGetProduct(productId: string) {
   });
 
   return {
-    product: query.data?.product,
+    product: query.data,
     productLoading: query.isLoading,
     productError: query.error,
     productValidating: query.isFetching,
   };
 }
 
-export function useSearchProducts(searchQuery: string) {
-  const query = useQuery({
-    queryKey: productKeys.search(searchQuery),
-    queryFn: () => searchProducts(searchQuery),
-    enabled: !!searchQuery,
-    placeholderData: keepPreviousData,
+// ----------------------------------------------------------------------
+
+export function useCreateProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: IProductPayload) => createProduct(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      toast.success('Product created');
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
   });
+}
 
-  const searchResults = query.data?.results ?? [];
+export function useUpdateProduct() {
+  const queryClient = useQueryClient();
 
-  return {
-    searchResults,
-    searchLoading: query.isLoading,
-    searchError: query.error,
-    searchValidating: query.isFetching,
-    searchEmpty: !query.isLoading && !searchResults.length,
-  };
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: IProductPayload }) =>
+      updateProduct(id, payload),
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: productKeys.detail(id) });
+      toast.success('Product updated');
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export function useDeleteProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      toast.success('Product deleted');
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
 }
