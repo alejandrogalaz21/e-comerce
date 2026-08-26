@@ -1,0 +1,108 @@
+# ------------------------------
+# instructions to run:
+# docker compose -p local-stack up -d
+# to stop:
+# docker compose -p local-stack down
+# to stop and remove volumes:
+# docker compose -p local-stack down -v
+# ------------------------------
+
+version: '3.8'
+
+services:
+  # -----------------------------
+  # PostgreSQL
+  # -----------------------------
+  postgres:
+    image: postgres:13
+    restart: always
+    container_name: postgres
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - local-net
+
+  # pgAdmin (visualizador de PostgreSQL)
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - '8013:80'
+    depends_on:
+      - postgres
+    networks:
+      - local-net
+
+  # -----------------------------
+  # DynamoDB Local
+  # -----------------------------
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb_local
+    restart: always
+    ports:
+      - '8000:8000'
+    command: ['-jar', 'DynamoDBLocal.jar', '-sharedDb']
+    networks:
+      - local-net
+
+  # DynamoDB Admin (UI)
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin
+    restart: always
+    container_name: dynamodb_admin
+    environment:
+      - DYNAMO_ENDPOINT=http://dynamodb:8000
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=key
+      - AWS_SECRET_ACCESS_KEY=key
+    ports:
+      - '8011:8001'
+    depends_on:
+      - dynamodb
+    networks:
+      - local-net
+
+  # -----------------------------
+  # Redis
+  # -----------------------------
+  redis:
+    image: redis:7
+    container_name: redis_local
+    restart: always
+    ports:
+      - '6379:6379'
+    networks:
+      - local-net
+
+  # RedisInsight (visualizador)
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: redis_insight
+    restart: always
+    ports:
+      - '8012:5540'
+    depends_on:
+      - redis
+    networks:
+      - local-net
+
+# -----------------------------
+# Volumes solo para PostgreSQL
+# -----------------------------
+volumes:
+  postgres_data:
+
+networks:
+  local-net:
+    driver: bridge

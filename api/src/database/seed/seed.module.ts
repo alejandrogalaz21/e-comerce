@@ -1,0 +1,9 @@
+// src/database/seed/seed.module.ts
+import { Module } from '@nestjs/common'
+
+@Module({
+  controllers: [],
+  providers: [],
+  imports: []
+})
+export class SeedModule {}
