@@ -1,4 +1,3 @@
-import { RHFCode } from './rhf-code';
 import { RHFRating } from './rhf-rating';
 import { RHFEditor } from './rhf-editor';
 import { RHFSlider } from './rhf-slider';
@@ -16,7 +15,6 @@ import { RHFDatePicker, RHFMobileDateTimePicker } from './rhf-date-picker';
 // ----------------------------------------------------------------------
 
 export const Field = {
-  Code: RHFCode,
   Editor: RHFEditor,
   Select: RHFSelect,
   Upload: RHFUpload,

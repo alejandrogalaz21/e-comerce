@@ -18,7 +18,7 @@ import { useBoolean } from 'src/hooks/use-boolean';
 
 import { Iconify } from 'src/components/iconify';
 
-import { PaymentNewCardDialog } from '../payment/payment-new-card-dialog';
+import { PaymentNewCardDialog } from './payment-new-card-dialog';
 
 // ----------------------------------------------------------------------
 

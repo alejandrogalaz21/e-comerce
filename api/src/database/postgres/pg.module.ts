@@ -15,8 +15,7 @@ import { PgHealthService } from './pg-health.service'
         password: configService.get('pg.password'),
         database: configService.get('pg.database'),
         autoLoadEntities: true,
-        //synchronize: configService.get('pg.synchronize'),
-        synchronize: true, // Set to true for development, false for production
+        synchronize: configService.get('pg.synchronize'),
         ssl: configService.get('pg.ssl')
       }),
       inject: [ConfigService]

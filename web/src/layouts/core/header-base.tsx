@@ -160,7 +160,7 @@ export function HeaderBase({
               {helpLink && (
                 <Link
                   data-slot="help-link"
-                  href={paths.faqs}
+                  href={paths.product.root}
                   component={RouterLink}
                   color="inherit"
                   sx={{ typography: 'subtitle2' }}
@@ -199,7 +199,7 @@ export function HeaderBase({
                   variant="contained"
                   rel="noopener"
                   target="_blank"
-                  href={paths.minimalStore}
+                  href="#"
                   sx={{
                     display: 'none',
                     [theme.breakpoints.up(layoutQuery)]: { display: 'inline-flex' },

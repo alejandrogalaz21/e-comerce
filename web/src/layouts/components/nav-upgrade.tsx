@@ -9,8 +9,6 @@ import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import { alpha as hexAlpha } from '@mui/material/styles';
 
-import { paths } from 'src/routes/paths';
-
 import { CONFIG } from 'src/config-global';
 import { varAlpha, bgGradient } from 'src/theme/styles';
 
@@ -65,7 +63,7 @@ export function NavUpgrade({ sx, ...other }: StackProps) {
           </Typography>
         </Stack>
 
-        <Button variant="contained" href={paths.minimalStore} target="_blank" rel="noopener">
+        <Button variant="contained" href="#" target="_blank" rel="noopener">
           Upgrade to Pro
         </Button>
       </Stack>
