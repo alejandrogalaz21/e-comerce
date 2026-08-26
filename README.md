@@ -35,6 +35,38 @@ cd api && cp .env.example .env && npm install && npm run dev
 cd web && cp .env.example .env && npm install && npm run dev
 ```
 
+## Arquitectura del frontend (`web/`)
+
+React 18 + Vite + TypeScript strict + MUI v5 + **TanStack Query (React Query)**, organizado en
+capas con una sola dirección de dependencia. El módulo `status` (`/status`) es la implementación
+de referencia del patrón.
+
+```
+web/src/
+├── types/<dominio>.ts            # 1. CONTRATOS — solo tipos, cero lógica
+├── actions/<dominio>.ts          # 2. ACTIONS — funciones de petición puras (axios) + mappers
+├── sections/<dominio>/
+│   ├── hooks/use-<dominio>.ts    # 3. FACADE — React Query envuelve las actions (query keys + mutaciones)
+│   ├── components/               # 4. COMPONENTES del dominio — presentación, reciben props
+│   └── view/<dominio>-view.tsx   # 5. VIEW — composición pura: llama hooks, pasa props
+├── pages/                        # wrappers delgados por ruta (Helmet + view)
+├── components/                   # componentes GENÉRICOS reutilizables (no saben de dominio)
+├── hooks/                        # hooks genéricos de UI (use-boolean, use-debounce...)
+├── lib/                          # clientes configurados: axios (instancia + endpoints), query-client
+├── utils/                        # funciones puras sin estado (format-time, format-number...)
+├── routes/                       # paths.ts (todas las URLs) + árbol de rutas lazy
+├── layouts/  theme/  auth/       # layouts (tienda/admin), tema MUI, contexto JWT
+```
+
+```
+Flujo de datos:   view → hooks (facade) → actions → axios → API
+```
+
+Reglas clave: los componentes nunca llaman axios ni React Query directo (solo hooks facade);
+todo contrato vive en `types/`; las mutaciones viven junto a las queries e invalidan por query
+keys centralizadas; `lib/` = instancias configuradas de librerías, `utils/` = funciones puras.
+La guía completa para nuevos desarrollos está en `.claude/skills/fe-architecture/SKILL.md`.
+
 ## Documentación de decisiones
 
 | Documento | Contenido |

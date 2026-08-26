@@ -1,6 +1,6 @@
 import type { IApiHealth, IServiceStatus } from 'src/types/status';
 
-import axiosInstance, { endpoints } from 'src/utils/axios';
+import axiosInstance, { endpoints } from 'src/lib/axios';
 
 // ----------------------------------------------------------------------
 
