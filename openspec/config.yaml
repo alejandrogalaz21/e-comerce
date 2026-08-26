@@ -5,6 +5,18 @@ context: |
   All artifacts must be written in es.
   Keep OpenSpec structural headings and SHALL/MUST keywords in English.
 
+  Backlog: el trabajo del proyecto se rastrea en docs/backlog.md (tickets TK-###).
+  - Al proponer un change: leer docs/backlog.md, localizar el ticket referenciado (o el que
+    corresponda a la petición), usar su descripcion/contexto como insumo, nombrar el change con
+    el slug del ticket y anotar el numero de ticket en proposal.md.
+  - Al archivar un change: actualizar la fila del ticket en docs/backlog.md a estatus `closed`
+    y enlazar el change archivado en la columna "OpenSpec change".
+  - Trabajo nuevo que surja sin ticket: agregar primero una fila al backlog (numero consecutivo,
+    categoria `requerimiento` o `tecnico`) y luego proponer el change.
+
+  Spec maestro de diseno: docs/initial.md — no re-decidir lo ya decidido ahi sin pedirlo el usuario.
+  Analisis de la base: docs/02-analisis-base.md.
+
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
 # Example:
