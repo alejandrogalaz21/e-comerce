@@ -33,6 +33,11 @@ export const fetcher = async (args: string | [string, AxiosRequestConfig]) => {
 // ----------------------------------------------------------------------
 
 export const endpoints = {
+  status: {
+    health: '/api/v1/health',
+    db: '/api/v1/status/db',
+    redis: '/api/v1/status/redis',
+  },
   chat: '/api/chat',
   kanban: '/api/kanban',
   calendar: '/api/calendar',
