@@ -18,13 +18,15 @@
 - **BE**: NestJS 10, TypeORM 0.3 + `pg` (PostgreSQL 13), `class-validator`/`class-transformer`, `@nestjs/config`, Swagger en `/api/v1/docs`, JWT+Passport funcional, paginación propia (`PaginationHelper` + `PaginationResponseBuilder`, documentada en `api/PAGINATION_GUIDE.md`).
 - **FE**: React 18, Vite 5, TypeScript strict, MUI v5 + `@mui/x-data-grid`, **SWR + axios** (no TanStack Query), react-hook-form + zod, sonner (toasts), react-router-dom v6.
 
-### Decisión: SWR en lugar de TanStack Query (desviación consciente del spec §10.4)
+### Decisión: TanStack Query (React Query) como capa de server state — actualizada 2026-08-26
 
-El spec proponía TanStack Query *"o lo que el template ya traiga maduro — pendiente de confirmar"*.
-Confirmado: el template trae **SWR ya integrado** en toda la capa de datos (`src/actions/*`), con
-`fetcher` de axios y revalidación. Migrar a TanStack Query sería reescribir esa capa sin ganancia
-funcional para este alcance (SWR tiene `mutate` para invalidación tras POST/PUT/DELETE).
-**Se mantiene SWR** y se documenta como trade-off: mismo rol (server state), menor costo de adopción.
+Primera decisión (superada): mantener SWR porque el template lo traía integrado. **El usuario
+decidió estandarizar en React Query** (alineado con el spec §10.4 original). Regla vigente:
+- Todo código nuevo usa `@tanstack/react-query` con el patrón por capas del proyecto:
+  `view → hooks facade (sections/<dominio>/hooks) → actions (funciones axios puras) → API`,
+  query keys centralizadas por dominio, mutaciones junto a las queries con `invalidateQueries`.
+- El módulo `status` es la **implementación de referencia** de este patrón.
+- Las actions legacy con SWR (`actions/product.ts`) se migran en TK-011 y SWR se desinstala al final.
 
 ## 3. Qué se reutiliza tal cual
 
