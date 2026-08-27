@@ -29,11 +29,23 @@ describe('NewProductSchema', () => {
       expect(result.success).toBe(false);
     });
 
-    it("passes a script-tag name client-side - sanitization is server-side (CSV line 20)", () => {
+    it('fails a script-tag name with the HTML markup message (CSV line 20)', () => {
       const result = NewProductSchema.safeParse({
         ...validProduct,
         name: "<script>alert('xss')</script>",
       });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(
+          result.error.issues.some(
+            (issue) => issue.path[0] === 'name' && issue.message === 'HTML markup is not allowed!'
+          )
+        ).toBe(true);
+      }
+    });
+
+    it('passes a name with a bare < that forms no tag', () => {
+      const result = NewProductSchema.safeParse({ ...validProduct, name: 'size < 10' });
       expect(result.success).toBe(true);
     });
 
@@ -43,6 +55,24 @@ describe('NewProductSchema', () => {
         name: 'Water Bottle — cold™',
       });
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('description', () => {
+    it('fails a description containing HTML tags', () => {
+      const result = NewProductSchema.safeParse({
+        ...validProduct,
+        description: '<b>bold</b>',
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(
+          result.error.issues.some(
+            (issue) =>
+              issue.path[0] === 'description' && issue.message === 'HTML markup is not allowed!'
+          )
+        ).toBe(true);
+      }
     });
   });
 

@@ -10,10 +10,8 @@ import {
 } from 'class-validator'
 import { Transform } from 'class-transformer'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import {
-  sanitizeText,
-  trimText
-} from '@/common/transformers/sanitize.transformer'
+import { trimText } from '@/common/transformers/sanitize.transformer'
+import { NoHtml } from '@/common/validators/no-html.validator'
 
 export class CreateProductDto {
   @ApiProperty({
@@ -32,23 +30,26 @@ export class CreateProductDto {
 
   @ApiProperty({
     example: 'Running Shoes',
-    description: 'Product display name',
+    description: 'Product display name. HTML markup is rejected',
     maxLength: 255
   })
-  @Transform(({ value }) => sanitizeText(value))
+  @Transform(({ value }) => trimText(value))
   @IsString()
   @IsNotEmpty()
   @MaxLength(255)
+  @NoHtml()
   name: string
 
   @ApiPropertyOptional({
     example: 'Lightweight running shoes for daily training',
+    description: 'Free-text description. HTML markup is rejected',
     maxLength: 2000
   })
   @IsOptional()
-  @Transform(({ value }) => sanitizeText(value))
+  @Transform(({ value }) => trimText(value))
   @IsString()
   @MaxLength(2000)
+  @NoHtml()
   description?: string
 
   @ApiPropertyOptional({

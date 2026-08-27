@@ -52,11 +52,20 @@ test.afterAll(async () => {
 });
 
 test.describe('product CSV edge cases', () => {
-  test('XSS name is sanitized server-side and never executes (CSV line 20)', async ({ page }) => {
+  test('HTML markup in name is rejected inline and never executes (CSV line 20)', async ({
+    page,
+  }) => {
     const dialogs: Dialog[] = [];
     page.on('dialog', async (dialog) => {
       dialogs.push(dialog);
       await dialog.dismiss();
+    });
+
+    const createRequests: string[] = [];
+    page.on('request', (req) => {
+      if (req.method() === 'POST' && req.url().includes('/api/v1/products')) {
+        createRequests.push(req.url());
+      }
     });
 
     await fillProductForm(page, {
@@ -67,12 +76,13 @@ test.describe('product CSV edge cases', () => {
     });
     await submitForm(page);
 
-    await expect(page).toHaveURL(/\/dashboard\/product$/);
-    const row = rowBySku(page, xssSku);
-    await expect(row).toHaveCount(1);
-    await expect(row).toContainText('Safe Name');
-    await expect(row).not.toContainText('<script>');
+    await expect(page.getByText('HTML markup is not allowed!')).toBeVisible();
+    await expect(page).toHaveURL(/\/dashboard\/product\/new$/);
+    expect(createRequests).toHaveLength(0);
     expect(dialogs).toHaveLength(0);
+
+    await page.goto('/dashboard/product');
+    await expect(rowBySku(page, xssSku)).toHaveCount(0);
   });
 
   test('SQL injection sku is rejected inline and the table survives (CSV line 29)', async ({
@@ -92,7 +102,7 @@ test.describe('product CSV edge cases', () => {
     await expect(page).toHaveURL(/\/dashboard\/product\/new$/);
 
     await page.goto('/dashboard/product');
-    await expect(rowBySku(page, xssSku)).toHaveCount(1);
+    await expect(page.getByRole('grid')).toBeVisible();
   });
 
   test('whitespace-only name shows required error and sends no request (CSV line 41)', async ({

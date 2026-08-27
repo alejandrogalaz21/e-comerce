@@ -4,12 +4,17 @@ import { z as zod } from 'zod';
 
 export type NewProductSchemaType = zod.infer<typeof NewProductSchema>;
 
+const HTML_TAG_PATTERN = /<[^>]*>/;
+
 export const NewProductSchema = zod.object({
   name: zod
     .string()
     .trim()
     .min(1, { message: 'Name is required!' })
-    .max(255, { message: 'Name must be at most 255 characters!' }),
+    .max(255, { message: 'Name must be at most 255 characters!' })
+    .refine((value) => !HTML_TAG_PATTERN.test(value), {
+      message: 'HTML markup is not allowed!',
+    }),
   sku: zod
     .string()
     .trim()
@@ -19,7 +24,10 @@ export const NewProductSchema = zod.object({
   description: zod
     .string()
     .trim()
-    .max(2000, { message: 'Description must be at most 2000 characters!' }),
+    .max(2000, { message: 'Description must be at most 2000 characters!' })
+    .refine((value) => !HTML_TAG_PATTERN.test(value), {
+      message: 'HTML markup is not allowed!',
+    }),
   category: zod.string().trim(),
   price: zod
     .number({ invalid_type_error: 'Price must be a number!' })

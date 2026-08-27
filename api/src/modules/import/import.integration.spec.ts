@@ -15,15 +15,16 @@ import { PaginationResponseBuilder } from '@/common/pagination/pagination-respon
  * (test/fixtures/loanpro-sample.csv: header line 1 + 97 data rows, lines 2-98).
  *
  * Expected numbers derived from the fixture content:
- * - rejected (4): line 7 (price 'free'), 16 (stock -5), 25 (empty name),
- *   41 (whitespace-only name). Line 29 is ACCEPTED: its sku 'SQL-001' is valid
- *   and the SQLi payload lives in the name, which is harmless data.
+ * - rejected (5): line 7 (price 'free'), 16 (stock -5), 20 (HTML markup in
+ *   name), 25 (empty name), 41 (whitespace-only name). Line 29 is ACCEPTED:
+ *   its sku 'SQL-001' is valid and the SQLi payload lives in the name, which
+ *   is harmless data.
  * - skippedEmpty (2): lines 62 and 63.
  * - updated with warning (3): line 36 (RS-001 differs from line 2), line 56
  *   (BS-021 differs from line 11) and line 89 (BS-021 equals line 11 but the
  *   sequential rule compares it against the state written by line 56, so it
  *   differs and is an update again).
- * - unchanged: 0. inserted: 97 - 4 - 2 - 3 = 88 (88 distinct accepted skus).
+ * - unchanged: 0. inserted: 97 - 5 - 2 - 3 = 87 (87 distinct accepted skus).
  */
 describe('ImportService (integration with the real fixture)', () => {
   const fixturePath = join(
@@ -95,18 +96,18 @@ describe('ImportService (integration with the real fixture)', () => {
 
     expect(result.summary).toEqual({
       totalRows: 97,
-      inserted: 88,
+      inserted: 87,
       updated: 3,
       unchanged: 0,
-      rejected: 4,
+      rejected: 5,
       skippedEmpty: 2
     })
   })
 
-  it('rejects exactly lines 7, 16, 25 and 41 with clear messages', async () => {
+  it('rejects exactly lines 7, 16, 20, 25 and 41 with clear messages', async () => {
     const result = await importFixture()
 
-    expect(result.rejected.map(row => row.line)).toEqual([7, 16, 25, 41])
+    expect(result.rejected.map(row => row.line)).toEqual([7, 16, 20, 25, 41])
     expect(result.rejected).toEqual([
       {
         line: 7,
@@ -117,6 +118,11 @@ describe('ImportService (integration with the real fixture)', () => {
         line: 16,
         sku: 'DL-007',
         errors: ['stock must not be less than 0']
+      },
+      {
+        line: 20,
+        sku: 'XS-001',
+        errors: ['name contains invalid content: HTML markup is not allowed']
       },
       {
         line: 25,
@@ -184,9 +190,7 @@ describe('ImportService (integration with the real fixture)', () => {
       expect.objectContaining({ price: '29.99' })
     )
 
-    expect(productsBySku.get('XS-001')).toEqual(
-      expect.objectContaining({ name: "alert('xss')" })
-    )
+    expect(productsBySku.has('XS-001')).toBe(false)
 
     expect(productsBySku.get('SQL-001')).toEqual(
       expect.objectContaining({
@@ -223,10 +227,10 @@ describe('ImportService (integration with the real fixture)', () => {
       expect.objectContaining({
         status: 'completed',
         totalRows: 97,
-        inserted: 88,
+        inserted: 87,
         updated: 3,
         unchanged: 0,
-        rejected: 4,
+        rejected: 5,
         skippedEmpty: 2
       })
     )

@@ -36,7 +36,7 @@ export class ImportBatch {
   @Column('int', { name: 'total_rows', default: 0 })
   totalRows: number
 
-  @ApiProperty({ example: 88, description: 'Rows inserted as new products' })
+  @ApiProperty({ example: 87, description: 'Rows inserted as new products' })
   @Column('int', { default: 0 })
   inserted: number
 
@@ -51,7 +51,7 @@ export class ImportBatch {
   @Column('int', { default: 0 })
   unchanged: number
 
-  @ApiProperty({ example: 4, description: 'Rows rejected by validation' })
+  @ApiProperty({ example: 5, description: 'Rows rejected by validation' })
   @Column('int', { default: 0 })
   rejected: number
 
