@@ -12,14 +12,16 @@ import { RouterLink } from 'src/routes/components';
 
 import { fCurrency } from 'src/utils/format-number';
 
-import { Label } from 'src/components/label';
+import { CONFIG } from 'src/config-global';
+
 import { Image } from 'src/components/image';
 import { Iconify } from 'src/components/iconify';
-import { ColorPreview } from 'src/components/color-utils';
 
 import { useCheckoutContext } from '../checkout/context';
 
 // ----------------------------------------------------------------------
+
+const PLACEHOLDER_IMAGE = `${CONFIG.site.basePath}/assets/placeholder.svg`;
 
 type Props = {
   product: IProductItem;
@@ -28,57 +30,30 @@ type Props = {
 export function ProductItem({ product }: Props) {
   const checkout = useCheckoutContext();
 
-  const { id, name, coverUrl, price, colors, available, sizes, priceSale, newLabel, saleLabel } =
-    product;
+  const { id, name, price, stock, category } = product;
 
   const linkTo = paths.product.details(id);
 
+  const available = stock > 0;
+
   const handleAddCart = async () => {
-    const newProduct = {
-      id,
-      name,
-      coverUrl,
-      available,
-      price,
-      colors: [colors[0]],
-      size: sizes[0],
-      quantity: 1,
-    };
     try {
-      checkout.onAddToCart(newProduct);
+      checkout.onAddToCart({
+        id,
+        name,
+        price,
+        stock,
+        quantity: 1,
+        coverUrl: PLACEHOLDER_IMAGE,
+      });
     } catch (error) {
       console.error(error);
     }
   };
 
-  const renderLabels = (newLabel.enabled || saleLabel.enabled) && (
-    <Stack
-      direction="row"
-      alignItems="center"
-      spacing={1}
-      sx={{
-        position: 'absolute',
-        zIndex: 9,
-        top: 16,
-        right: 16,
-      }}
-    >
-      {newLabel.enabled && (
-        <Label variant="filled" color="info">
-          {newLabel.content}
-        </Label>
-      )}
-      {saleLabel.enabled && (
-        <Label variant="filled" color="error">
-          {saleLabel.content}
-        </Label>
-      )}
-    </Stack>
-  );
-
   const renderImg = (
     <Box sx={{ position: 'relative', p: 1 }}>
-      {!!available && (
+      {available && (
         <Fab
           color="warning"
           size="medium"
@@ -104,7 +79,7 @@ export function ProductItem({ product }: Props) {
       <Tooltip title={!available && 'Out of stock'} placement="bottom-end">
         <Image
           alt={name}
-          src={coverUrl}
+          src={PLACEHOLDER_IMAGE}
           ratio="1/1"
           sx={{ borderRadius: 1.5, ...(!available && { opacity: 0.48, filter: 'grayscale(1)' }) }}
         />
@@ -119,25 +94,19 @@ export function ProductItem({ product }: Props) {
       </Link>
 
       <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <ColorPreview colors={colors} />
+        <Box component="span" sx={{ typography: 'body2', color: 'text.secondary' }}>
+          {category}
+        </Box>
 
-        <Stack direction="row" spacing={0.5} sx={{ typography: 'subtitle1' }}>
-          {priceSale && (
-            <Box component="span" sx={{ color: 'text.disabled', textDecoration: 'line-through' }}>
-              {fCurrency(priceSale)}
-            </Box>
-          )}
-
-          <Box component="span">{fCurrency(price)}</Box>
-        </Stack>
+        <Box component="span" sx={{ typography: 'subtitle1' }}>
+          {fCurrency(price)}
+        </Box>
       </Stack>
     </Stack>
   );
 
   return (
     <Card sx={{ '&:hover .add-cart-btn': { opacity: 1 } }}>
-      {renderLabels}
-
       {renderImg}
 
       {renderContent}

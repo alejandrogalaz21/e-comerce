@@ -4,12 +4,10 @@ import Container from '@mui/material/Container';
 import Grid from '@mui/material/Unstable_Grid2';
 import Typography from '@mui/material/Typography';
 
-import { PRODUCT_CHECKOUT_STEPS } from 'src/_mock/_product';
-
 import { CheckoutCart } from '../checkout-cart';
 import { useCheckoutContext } from '../context';
-import { CheckoutSteps } from '../checkout-steps';
 import { CheckoutPayment } from '../checkout-payment';
+import { CheckoutSteps, CHECKOUT_STEPS } from '../checkout-steps';
 import { CheckoutOrderComplete } from '../checkout-order-complete';
 import { CheckoutBillingAddress } from '../checkout-billing-address';
 
@@ -31,7 +29,7 @@ export function CheckoutView() {
 
       <Grid container justifyContent={checkout.completed ? 'center' : 'flex-start'}>
         <Grid xs={12} md={8}>
-          <CheckoutSteps activeStep={checkout.activeStep} steps={PRODUCT_CHECKOUT_STEPS} />
+          <CheckoutSteps activeStep={checkout.activeStep} steps={CHECKOUT_STEPS} />
         </Grid>
       </Grid>
 

@@ -12,6 +12,10 @@ import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 
+export const CHECKOUT_STEPS = ['Cart', 'Billing & address', 'Payment'];
+
+// ----------------------------------------------------------------------
+
 const StepConnector = styled(MuiStepConnector)(({ theme }) => ({
   top: 10,
   left: 'calc(-50% + 20px)',

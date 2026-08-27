@@ -3,61 +3,90 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
+  Check
 } from 'typeorm'
+import { ApiProperty } from '@nestjs/swagger'
 
-@Entity()
+@Entity('products')
+@Check('"price" >= 0')
+@Check('"stock" >= 0')
 export class Product {
+  @ApiProperty({
+    example: '0d6cd087-3f2e-4f30-b0aa-cf9c93b1c0d5',
+    description: 'Product unique identifier (UUID)'
+  })
   @PrimaryGeneratedColumn('uuid')
   id: string
 
-  @Column('text', {
-    unique: true
+  @ApiProperty({
+    example: 'RS-001',
+    description: 'Business SKU, unique per product',
+    maxLength: 50
   })
-  title: string
+  @Column('varchar', { length: 50, unique: true })
+  sku: string
 
-  @Column('float', {
-    default: 0
+  @ApiProperty({
+    example: 'Running Shoes',
+    description: 'Product display name',
+    maxLength: 255
   })
-  price: number
+  @Column('varchar', { length: 255 })
+  name: string
 
-  @Column({
-    type: 'text',
-    nullable: true
+  @ApiProperty({
+    example: 'Lightweight running shoes for daily training',
+    description: 'Product description',
+    nullable: true,
+    required: false
   })
-  description: string
+  @Column('text', { nullable: true })
+  description: string | null
 
-  @Column('text', {
-    unique: true
+  @ApiProperty({
+    example: 'Footwear',
+    description: 'Product category',
+    default: 'Uncategorized',
+    maxLength: 100
   })
-  slug: string
+  @Column('varchar', { length: 100, default: 'Uncategorized' })
+  category: string
 
-  @Column('int', {
-    default: 0
+  @ApiProperty({
+    example: '89.99',
+    description:
+      'Unit price, serialized as string to preserve decimal precision',
+    type: String
   })
+  @Column('numeric', { precision: 10, scale: 2 })
+  price: string
+
+  @ApiProperty({ example: 150, description: 'Units in stock', default: 0 })
+  @Column('int', { default: 0 })
   stock: number
 
-  @Column('text', {
-    array: true
+  @ApiProperty({
+    example: '0.35',
+    description:
+      'Weight in kilograms, serialized as string to preserve decimal precision',
+    type: String,
+    nullable: true,
+    required: false
   })
-  sizes: string[]
-
-  @Column('text')
-  gender: string
-
-  @Column('text', {
-    array: true,
-    default: []
+  @Column('numeric', {
+    name: 'weight_kg',
+    precision: 10,
+    scale: 3,
+    nullable: true
   })
-  tags: string[]
+  weightKg: string | null
 
-  @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @ApiProperty({ example: '2026-08-26T10:00:00.000Z' })
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date
 
-  @UpdateDateColumn({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP'
-  })
+  @ApiProperty({ example: '2026-08-26T10:00:00.000Z' })
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date
 }

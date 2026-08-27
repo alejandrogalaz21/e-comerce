@@ -5,12 +5,10 @@ import type { IAddressItem } from './common';
 export type ICheckoutItem = {
   id: string;
   name: string;
-  coverUrl: string;
-  available: number;
   price: number;
-  colors: string[];
-  size: string;
   quantity: number;
+  stock: number;
+  coverUrl?: string;
   subtotal?: number;
 };
 

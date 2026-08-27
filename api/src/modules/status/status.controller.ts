@@ -56,7 +56,9 @@ export class StatusController {
       const [meta] = await this.dataSource.query(
         'SELECT NOW() AS now, current_database() AS database, version() AS version'
       )
-      const [count] = await this.dataSource.query('SELECT COUNT(*)::int AS total FROM product')
+      const [count] = await this.dataSource.query(
+        'SELECT COUNT(*)::int AS total FROM products'
+      )
       return {
         source: 'postgres',
         ok: true,

@@ -10,7 +10,7 @@ import { useGetProducts } from 'src/sections/product/hooks/use-product';
 const metadata = { title: `Product shop - ${CONFIG.site.name}` };
 
 export default function Page() {
-  const { products, productsLoading } = useGetProducts();
+  const { products, productsLoading } = useGetProducts({ page: 1, limit: 24 });
 
   return (
     <>

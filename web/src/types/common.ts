@@ -21,6 +21,20 @@ export type IAddressItem = {
 
 export type IDateValue = string | number | null;
 
+export type IPaginationMeta = {
+  total: number;
+  per_page: number;
+  current_page: number;
+  last_page: number;
+  from: number;
+  to: number;
+};
+
+export type IPaginatedResponse<T> = {
+  data: T[];
+  pagination: IPaginationMeta;
+};
+
 export type IDatePickerControl = Dayjs | null;
 
 export type ISocialLink = {
