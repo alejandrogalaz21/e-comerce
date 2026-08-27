@@ -11,3 +11,7 @@ export * from './product-create-view';
 export * from './product-details-view';
 
 export * from './product-shop-details-view';
+
+export * from './product-import-batches-view';
+
+export * from './product-import-batch-detail-view';

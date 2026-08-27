@@ -31,6 +31,8 @@ export const paths = {
       root: `${ROOTS.DASHBOARD}/product`,
       new: `${ROOTS.DASHBOARD}/product/new`,
       import: `${ROOTS.DASHBOARD}/product/import`,
+      importBatches: `${ROOTS.DASHBOARD}/product/import/batches`,
+      importBatchDetail: (id: string) => `${ROOTS.DASHBOARD}/product/import/batches/${id}`,
       details: (id: string) => `${ROOTS.DASHBOARD}/product/${id}`,
       edit: (id: string) => `${ROOTS.DASHBOARD}/product/${id}/edit`,
     },

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { formatImportSummary } from './import-utils';
+import { formatImportSummary, importStatusColor } from './import-utils';
 
 describe('formatImportSummary', () => {
   it('summarizes created, updated and rejected counts', () => {
@@ -27,5 +27,19 @@ describe('formatImportSummary', () => {
         skippedEmpty: 0,
       })
     ).toBe('Imported: 0 created, 0 updated, 0 rejected');
+  });
+});
+
+describe('importStatusColor', () => {
+  it('maps completed to success', () => {
+    expect(importStatusColor('completed')).toBe('success');
+  });
+
+  it('maps processing to warning', () => {
+    expect(importStatusColor('processing')).toBe('warning');
+  });
+
+  it('maps failed to error', () => {
+    expect(importStatusColor('failed')).toBe('error');
   });
 });

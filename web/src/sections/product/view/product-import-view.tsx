@@ -59,6 +59,16 @@ export function ProductImportView() {
           { name: 'Product', href: paths.dashboard.product.root },
           { name: 'Import CSV' },
         ]}
+        action={
+          <Button
+            component={RouterLink}
+            href={paths.dashboard.product.importBatches}
+            variant="outlined"
+            startIcon={<Iconify icon="solar:history-bold" />}
+          >
+            Import history
+          </Button>
+        }
         sx={{ mb: { xs: 3, md: 5 } }}
       />
 
@@ -83,6 +93,15 @@ export function ProductImportView() {
           <Stack direction="row" spacing={1.5} justifyContent="flex-end">
             <Button variant="outlined" onClick={handleReset}>
               Import another file
+            </Button>
+
+            <Button
+              component={RouterLink}
+              href={paths.dashboard.product.importBatchDetail(result.batchId)}
+              variant="outlined"
+              startIcon={<Iconify icon="solar:history-bold" />}
+            >
+              View in history
             </Button>
 
             <Button

@@ -48,6 +48,10 @@ export const endpoints = {
     details: (id: string) => `/api/v1/products/${id}`,
     create: '/api/v1/products',
     import: '/api/v1/products/import',
+    batches: {
+      list: '/api/v1/products/import/batches',
+      details: (id: string) => `/api/v1/products/import/batches/${id}`,
+    },
     update: (id: string) => `/api/v1/products/${id}`,
     delete: (id: string) => `/api/v1/products/${id}`,
   },
