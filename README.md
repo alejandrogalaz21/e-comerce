@@ -90,11 +90,11 @@ api/src/
 ├── main.ts                   # bootstrap: prefix api/v1, global ValidationPipe, Swagger, CORS
 ├── app.module.ts             # composition root
 ├── config/                   # typed env namespaces (registerAs): app.*, pg.*, redis.*
-├── database/                 # DATABASE-ONLY — connections, migrations, CLI data source
+├── database/                 # DATA STORES — one folder per engine + versioned schema
 │   ├── postgres/             #   injectable TypeORM connection + pg health
+│   ├── redis/                #   ioredis client provider (cache-ready)
 │   ├── migrations/           #   versioned schema + demo-user data, run automatically at boot
 │   └── data-source.ts        #   typeorm CLI entry (migration:generate|run|revert)
-├── redis/                    # REDIS-ONLY — ioredis client provider (cache-ready)
 ├── common/                   # CROSS-CUTTING — pagination system, sanitizers, logger middleware
 └── modules/<name>/           # TOP-LEVEL feature modules (no nested submodules):
     │                         #   products, import (CSV), users, auth, health, status

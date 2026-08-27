@@ -5,7 +5,7 @@ import { ConfigModule } from '@nestjs/config'
 import { PgConfig, AppConfig, RedisConfig } from '@/config'
 // Database
 import { PgModule } from '@/database/postgres/pg.module'
-import { RedisModule } from '@/redis/redis.module'
+import { RedisModule } from '@/database/redis/redis.module'
 // Common
 import { CommonModule } from '@/common/common.module'
 import { LoggerMiddleware } from '@/common/middleware/logger.middleware'

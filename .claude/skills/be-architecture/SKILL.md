@@ -15,13 +15,14 @@ api/src/
 ├── main.ts                    # bootstrap: global prefix api/v1, ValidationPipe (whitelist+transform), Swagger, CORS
 ├── app.module.ts              # composition root — the only place that wires layers together
 ├── config/                    # typed env namespaces via registerAs: app.*, pg.*, redis.*
-├── database/                  # DATABASE-ONLY layer (PostgreSQL): connection, migrations, CLI.
+├── database/                  # DATA-STORES layer: one folder per engine + the versioned schema.
 │   ├── postgres/              #   TypeORM connection module + pg health service
+│   ├── redis/                 #   ioredis client provider (REDIS_CLIENT token); redis.service/
+│   │                          #     constants get added when Redis gains real usage
 │   ├── migrations/            #   versioned schema + minimal data migrations (demo user) — run at boot
 │   └── data-source.ts         #   standalone DataSource for the typeorm CLI (migration:* scripts)
 │                              #   NOTHING else lives here: no services, no business/bootstrap modules.
-├── redis/                     # REDIS-ONLY layer: ioredis client provider (REDIS_CLIENT token).
-│                              #   redis.service/constants get added when Redis gains real usage.
+│                              #   A new backing service = a new folder under database/.
 ├── common/                    # CROSS-CUTTING, domain-agnostic, reusable
 │   ├── pagination/            #   PaginationHelper + PaginationResponseBuilder ({ data, pagination })
 │   ├── transformers/          #   sanitize/trim transforms shared by DTOs (CRUD + CSV import)
@@ -56,7 +57,7 @@ LoggerMiddleware → (Guard) → ValidationPipe (DTO: transform + whitelist + fo
 | What | Where | Rule |
 |---|---|---|
 | Env access | `config/*.configuration.ts` | ONLY place allowed to read `process.env`. Everything else injects `ConfigService` and reads namespaced keys (`pg.host`). |
-| Third-party clients (DB, cache, future queues) | `database/postgres/`, `redis/`, `<client>/` | One top-level infra folder per backing service, provided as injectable modules/tokens. Domain modules never instantiate clients. |
+| Third-party clients (DB, cache, future queues) | `database/<engine>/` | One folder per backing service under `database/` (`postgres/`, `redis/`, …), provided as injectable modules/tokens. Domain modules never instantiate clients. |
 | Schema changes | `database/migrations/` | Always a migration (`npm run migration:generate`). `synchronize` stays off; `DB_SYNC=true` is a local-dev-only override. |
 | Initial/bootstrap data | `database/migrations/` | Minimal data migrations only (the demo login user, idempotent ON CONFLICT). Business data is NEVER pre-seeded — the app starts with an empty catalog and users create everything through the UI. |
 | Reusable domain-agnostic logic | `common/` | If two domains need it (pagination, sanitizers), it lives here. If it knows about a domain, it does not. |
