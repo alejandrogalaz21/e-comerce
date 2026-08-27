@@ -8,9 +8,12 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  importProductsCsv,
 } from 'src/actions/product';
 
 import { toast } from 'src/components/snackbar';
+
+import { formatImportSummary } from '../import-utils';
 
 // ----------------------------------------------------------------------
 
@@ -23,7 +26,7 @@ export const productKeys = {
 
 // ----------------------------------------------------------------------
 
-function getErrorMessage(error: unknown): string {
+export function getErrorMessage(error: unknown): string {
   if (typeof error === 'string') return error;
   if (error && typeof error === 'object' && 'message' in error) {
     const { message } = error as { message: string | string[] };
@@ -93,6 +96,19 @@ export function useUpdateProduct() {
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
       queryClient.invalidateQueries({ queryKey: productKeys.detail(id) });
       toast.success('Product updated');
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export function useImportProducts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => importProductsCsv(file),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      toast.success(formatImportSummary(result.summary));
     },
     onError: (error) => toast.error(getErrorMessage(error)),
   });
