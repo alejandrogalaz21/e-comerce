@@ -7,7 +7,7 @@ async function main() {
   process.env.APP_STARTED_AT = String(Date.now())
   const app = await NestFactory.create(AppModule)
   const prefix = 'api/v1'
-  const appName = process.env.APP_NAME || 'Project Nest API'
+  const appName = process.env.APP_NAME || 'E-commerce API'
   const apiVersion = process.env.APP_VERSION ?? '1.0.0'
 
   app.setGlobalPrefix(prefix)
