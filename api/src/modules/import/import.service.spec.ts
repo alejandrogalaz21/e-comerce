@@ -207,17 +207,20 @@ describe('ImportService', () => {
       expect(created.weightKg).toBeUndefined()
     })
 
-    it('sanitizes an XSS payload in the name before inserting', async () => {
+    it('rejects an XSS payload in the name instead of sanitizing it', async () => {
       const result = await service.importCsv(
         csvFile([
           "<script>alert('xss')</script>,XS-001,desc,Electronics,19.99,100,0.1"
         ])
       )
 
-      expect(result.summary.inserted).toBe(1)
-      expect(mockProductRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ name: "alert('xss')" })
-      )
+      expect(result.summary.inserted).toBe(0)
+      expect(result.rejected[0]).toEqual({
+        line: 2,
+        sku: 'XS-001',
+        errors: ['name contains invalid content: HTML markup is not allowed']
+      })
+      expect(mockProductRepository.create).not.toHaveBeenCalled()
     })
 
     it('rejects a negative stock with the validator message', async () => {

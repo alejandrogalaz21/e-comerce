@@ -69,16 +69,16 @@ test.describe('product CSV import', () => {
     await expect(page.getByText('Total rows')).toBeVisible({ timeout: 30_000 });
 
     await expectStat(page, 'Total rows', 97);
-    await expectStat(page, 'Created', 88);
+    await expectStat(page, 'Created', 87);
     await expectStat(page, 'Updated', 3);
     await expectStat(page, 'Unchanged', 0);
-    await expectStat(page, 'Rejected', 4);
+    await expectStat(page, 'Rejected', 5);
     await expectStat(page, 'Skipped empty', 2);
 
-    // Rejected rows table: 4 rows with line, sku and errors.
+    // Rejected rows table: 5 rows with line, sku and errors.
     const table = rejectedTable(page);
-    await expect(table.getByText('Rejected rows (4)')).toBeVisible();
-    await expect(table.locator('tbody tr')).toHaveCount(4);
+    await expect(table.getByText('Rejected rows (5)')).toBeVisible();
+    await expect(table.locator('tbody tr')).toHaveCount(5);
 
     const line7 = table
       .locator('tbody tr')
@@ -89,6 +89,11 @@ test.describe('product CSV import', () => {
       .locator('tbody tr')
       .filter({ has: page.getByRole('cell', { name: '16', exact: true }) });
     await expect(line16).toContainText('stock must not be less than 0');
+
+    const line20 = table
+      .locator('tbody tr')
+      .filter({ has: page.getByRole('cell', { name: '20', exact: true }) });
+    await expect(line20).toContainText('name contains invalid content: HTML markup is not allowed');
 
     // Duplicate-sku warnings surface in an Alert (lines 36 RS-001, 56/89 BS-021).
     const warningAlert = page.locator('.MuiAlert-standardWarning');
@@ -115,13 +120,13 @@ test.describe('product CSV import', () => {
     const grid = page.getByRole('grid');
     await expect(grid).toBeVisible();
 
-    // 88 products imported into an empty catalog.
-    await expect(page.getByText(/of 88/)).toBeVisible({ timeout: 15_000 });
+    // 87 products imported into an empty catalog.
+    await expect(page.getByText(/of 87/)).toBeVisible({ timeout: 15_000 });
 
     // Page through the grid (25 rows per page) until both names have been seen.
     await page.getByRole('combobox', { name: /rows per page/i }).click();
     await page.getByRole('option', { name: '25' }).click();
-    await expect(page.getByText(/1–25 of 88/)).toBeVisible();
+    await expect(page.getByText(/1–25 of 87/)).toBeVisible();
 
     const wanted = new Set(['Running Shoes', 'Organic Coffee Beans']);
     const nextPage = page.getByRole('button', { name: 'Go to next page' });

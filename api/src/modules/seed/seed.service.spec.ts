@@ -21,10 +21,10 @@ describe('SeedService', () => {
         batchId: 'batch-1',
         summary: {
           totalRows: 97,
-          inserted: 88,
+          inserted: 87,
           updated: 3,
           unchanged: 0,
-          rejected: 4,
+          rejected: 5,
           skippedEmpty: 2
         },
         rejected: [],

@@ -208,7 +208,7 @@ describe('ImportService (adversarial input hardening)', () => {
   })
 
   describe('hostile cell values', () => {
-    it('sanitizes or rejects malicious cells and still returns a partial-import result', async () => {
+    it('rejects malicious cells and still returns a partial-import result', async () => {
       const hostileRows = [
         '"<script>alert(1)</script>Chair",XS-001,desc,Home,10.00,5,1',
         `"'; DROP TABLE products; --",SQL-002,desc,Home,10.00,5,1`,
@@ -219,15 +219,22 @@ describe('ImportService (adversarial input hardening)', () => {
       )
 
       expect(result.summary.totalRows).toBe(3)
-      expect(result.summary.inserted).toBe(2)
-      expect(result.summary.rejected).toBe(1)
-      expect(mockProductRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ sku: 'XS-001', name: 'alert(1)Chair' })
+      expect(result.summary.inserted).toBe(1)
+      expect(result.summary.rejected).toBe(2)
+      expect(mockProductRepository.create).not.toHaveBeenCalledWith(
+        expect.objectContaining({ sku: 'XS-001' })
       )
       expect(mockProductRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({ sku: 'SQL-002' })
       )
-      expect(result.rejected[0]).toEqual(
+      expect(result.rejected).toEqual([
+        expect.objectContaining({
+          line: 2,
+          sku: 'XS-001',
+          errors: expect.arrayContaining([
+            'name contains invalid content: HTML markup is not allowed'
+          ])
+        }),
         expect.objectContaining({
           line: 4,
           sku: 'BIG-003',
@@ -235,7 +242,7 @@ describe('ImportService (adversarial input hardening)', () => {
             expect.stringContaining('name must be shorter than or equal to 255')
           ])
         })
-      )
+      ])
     })
   })
 
@@ -264,7 +271,7 @@ describe('ImportService (adversarial input hardening)', () => {
       )
 
       expect(result.summary.totalRows).toBe(97)
-      expect(result.summary.rejected).toBe(4)
+      expect(result.summary.rejected).toBe(5)
       expect(result.summary.skippedEmpty).toBe(2)
     })
   })

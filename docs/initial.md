@@ -87,7 +87,7 @@ entrevista. Abajo, cada fila problemática con su número de línea real en el a
 
 | Línea | Producto | Problema | Decisión |
 |---|---|---|---|
-| 20 | `<script>alert('xss')</script>` | Payload XSS en `name` | **Nunca** sanitizar "confiando" en el front. El front escapa al renderizar (React ya lo hace por defecto en JSX), pero además: normalizar/limpiar en el backend con una lista blanca de caracteres para `name`, y loguear el intento como sospechoso. |
+| 20 | `<script>alert('xss')</script>` | Payload XSS en `name` | **Rechazar la fila** reportando el campo inválido (*decisión actualizada 2026-08-27*: la versión inicial proponía sanitizar/limpiar, pero guardar el residuo `alert('xss')` es alterar silenciosamente el dato original — inconsistente con la regla del precio "free" — y deja basura que un consumidor sin escape trataría como HTML). El escape de React al renderizar sigue siendo la segunda capa de defensa. |
 | 29 | `Robert'); DROP TABLE products;--` | Clásico Bobby Tables | Con ORM (TypeORM/Prisma) y *parametrized queries* esto ya es inofensivo por diseño — pero se documenta explícitamente en el README como prueba de que el import es seguro contra inyección. **Nunca** construir SQL con concatenación de strings, ni en el import ni en el buscador. |
 
 ### 1.4 Duplicados — el caso más interesante para discutir en la entrevista
@@ -225,7 +225,7 @@ contra XSS ocurre aquí, antes de tocar la base de datos.
 
 | Campo | Tipo | Regla | Ejemplo que falla (línea del CSV) | Resultado |
 |---|---|---|---|---|
-| `name` | string | Requerido, no vacío tras `trim()`, sanitizado anti-XSS | Línea 25 (vacío), línea 41 (solo espacios), línea 20 (`<script>...`) | Rechaza fila / sanitiza el payload |
+| `name` | string | Requerido, no vacío tras `trim()`, **sin markup HTML** (patrón `<...>` → rechazo) | Línea 25 (vacío), línea 41 (solo espacios), línea 20 (`<script>...`) | Rechaza la fila reportando el campo inválido |
 | `sku` | string | Requerido, único — es la clave de negocio | — (siempre presente en el ejemplo) | Determina si es insert / update / no-op |
 | `description` | string | Opcional, sanitizado contra injection | Línea 29 (`Robert'); DROP TABLE...`) | Se sanea; con ORM parametrizado nunca se ejecuta como SQL |
 | `category` | string/enum | Opcional — si viene vacío, fallback a `"Uncategorized"` | Línea 52 (vacío) | No rechaza, aplica default |

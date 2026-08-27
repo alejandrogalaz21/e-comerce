@@ -63,15 +63,23 @@ describe('CreateProductDto validation', () => {
     expect(messages).toContain('name should not be empty')
   })
 
-  it('accepts an XSS name but strips the HTML tags (CSV line 20)', async () => {
-    const result = await transform({
+  it('rejects an XSS name containing HTML markup (CSV line 20)', async () => {
+    const messages = await expectRejection({
       ...validPayload(),
       name: "<script>alert('xss')</script>"
     })
 
-    expect(result.name).toBe("alert('xss')")
-    expect(result.name).not.toContain('<')
-    expect(result.name).not.toContain('>')
+    expect(messages).toContain(
+      'name contains invalid content: HTML markup is not allowed'
+    )
+  })
+
+  it('accepts a name with a bare comparison sign that forms no tag', async () => {
+    const name = 'Compact drone — weight < 250 g'
+
+    const result = await transform({ ...validPayload(), name })
+
+    expect(result.name).toBe(name)
   })
 
   it('rejects a SQL injection sku via the allowed pattern (CSV line 29)', async () => {
@@ -161,13 +169,15 @@ describe('CreateProductDto validation', () => {
     expect(messages).toContain('property hacked should not exist')
   })
 
-  it('sanitizes HTML tags out of the description', async () => {
-    const result = await transform({
+  it('rejects a description containing HTML tags', async () => {
+    const messages = await expectRejection({
       ...validPayload(),
       description: '<b>bold</b> text'
     })
 
-    expect(result.description).toBe('bold text')
+    expect(messages).toContain(
+      'description contains invalid content: HTML markup is not allowed'
+    )
   })
 })
 
