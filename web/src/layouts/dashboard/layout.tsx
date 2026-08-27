@@ -4,14 +4,11 @@ import type { Theme, SxProps, CSSObject, Breakpoint } from '@mui/material/styles
 
 import { useMemo } from 'react';
 
-import Alert from '@mui/material/Alert';
 import { useTheme } from '@mui/material/styles';
 import { iconButtonClasses } from '@mui/material/IconButton';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
-import { allLangs } from 'src/locales';
-import { _contacts, _notifications } from 'src/_mock';
 import { varAlpha, stylesMode } from 'src/theme/styles';
 
 import { bulletColor } from 'src/components/nav-section';
@@ -22,9 +19,7 @@ import { NavMobile } from './nav-mobile';
 import { layoutClasses } from '../classes';
 import { NavVertical } from './nav-vertical';
 import { NavHorizontal } from './nav-horizontal';
-import { _account } from '../config-nav-account';
 import { HeaderBase } from '../core/header-base';
-import { _workspaces } from '../config-nav-workspace';
 import { LayoutSection } from '../core/layout-section';
 import { navData as dashboardNavData } from '../config-nav-dashboard';
 
@@ -75,25 +70,10 @@ export function DashboardLayout({ sx, children, data }: DashboardLayoutProps) {
             layoutQuery={layoutQuery}
             disableElevation={isNavVertical}
             onOpenNav={mobileNavOpen.onTrue}
-            data={{
-              nav: navData,
-              langs: allLangs,
-              account: _account,
-              contacts: _contacts,
-              workspaces: _workspaces,
-              notifications: _notifications,
-            }}
             slotsDisplay={{
-              signIn: false,
-              purchase: false,
               helpLink: false,
             }}
             slots={{
-              topArea: (
-                <Alert severity="info" sx={{ display: 'none', borderRadius: 0 }}>
-                  This is an info Alert.
-                </Alert>
-              ),
               bottomArea: isNavHorizontal ? (
                 <NavHorizontal
                   data={navData}
@@ -118,9 +98,6 @@ export function DashboardLayout({ sx, children, data }: DashboardLayoutProps) {
                     },
                     [theme.breakpoints.up(layoutQuery)]: {
                       height: 'var(--layout-nav-horizontal-height)',
-                    },
-                    [`& [data-slot="workspaces"]`]: {
-                      color: 'var(--layout-nav-text-primary-color)',
                     },
                     [`& [data-slot="logo"]`]: {
                       display: 'none',

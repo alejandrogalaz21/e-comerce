@@ -11,7 +11,6 @@ export const paths = {
   page403: '/error/403',
   page404: '/error/404',
   page500: '/error/500',
-  status: '/status',
   product: {
     root: `/product`,
     checkout: `/product/checkout`,
@@ -27,6 +26,7 @@ export const paths = {
   // DASHBOARD
   dashboard: {
     root: ROOTS.DASHBOARD,
+    status: `${ROOTS.DASHBOARD}/status`,
     product: {
       root: `${ROOTS.DASHBOARD}/product`,
       new: `${ROOTS.DASHBOARD}/product/new`,
