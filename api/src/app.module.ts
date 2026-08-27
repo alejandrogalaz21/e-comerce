@@ -6,7 +6,6 @@ import { PgConfig, AppConfig, RedisConfig } from '@/config'
 // Database
 import { PgModule } from '@/database/postgres/pg.module'
 import { RedisModule } from '@/database/redis/redis.module'
-import { SeedModule } from '@/database/seed/seed.module'
 // Common
 import { CommonModule } from '@/common/common.module'
 import { LoggerMiddleware } from '@/common/middleware/logger.middleware'
@@ -14,6 +13,8 @@ import { LoggerMiddleware } from '@/common/middleware/logger.middleware'
 import { UsersModule } from '@/modules/users/users.module'
 import { AuthModule } from '@/modules/auth/auth.module'
 import { ProductsModule } from '@/modules/products/products.module'
+import { ImportModule } from '@/modules/import/import.module'
+import { SeedModule } from '@/modules/seed/seed.module'
 import { HealthModule } from '@/modules/health/health.module'
 import { StatusModule } from '@/modules/status/status.module'
 
@@ -25,10 +26,11 @@ import { StatusModule } from '@/modules/status/status.module'
     }),
     PgModule,
     RedisModule,
-    SeedModule,
     CommonModule,
     UsersModule,
+    ImportModule,
     ProductsModule,
+    SeedModule,
     AuthModule,
     HealthModule,
     StatusModule

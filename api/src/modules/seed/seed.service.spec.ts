@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 
 import { Product } from '@/modules/products/entities/product.entity'
-import { ImportService } from '@/modules/products/import/import.service'
+import { ImportService } from '@/modules/import/import.service'
 import { SeedService } from './seed.service'
 
 describe('SeedService', () => {
