@@ -18,7 +18,7 @@ import { useRouter } from 'src/routes/hooks';
 
 import { toApiPayload } from 'src/actions/product.mapper';
 
-import { Form, Field } from 'src/components/hook-form';
+import { Form, Field, applyServerFieldErrors } from 'src/components/hook-form';
 
 import { useCreateProduct, useUpdateProduct } from './hooks/use-product';
 
@@ -60,6 +60,16 @@ export const NewProductSchema = zod.object({
 
 // ----------------------------------------------------------------------
 
+const PRODUCT_FIELD_NAMES = [
+  'sku',
+  'name',
+  'description',
+  'category',
+  'price',
+  'stock',
+  'weightKg',
+] as const satisfies readonly (keyof NewProductSchemaType)[];
+
 type Props = {
   currentProduct?: IProductItem;
 };
@@ -90,6 +100,7 @@ export function ProductNewEditForm({ currentProduct }: Props) {
 
   const {
     reset,
+    setError,
     handleSubmit,
     formState: { isSubmitting },
   } = methods;
@@ -110,8 +121,8 @@ export function ProductNewEditForm({ currentProduct }: Props) {
         await createProduct.mutateAsync(payload);
       }
       router.push(paths.dashboard.product.root);
-    } catch {
-      // errors are surfaced by the mutation hooks
+    } catch (error) {
+      applyServerFieldErrors(error, setError, PRODUCT_FIELD_NAMES);
     }
   });
 
