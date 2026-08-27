@@ -11,8 +11,6 @@ import { SplashScreen } from 'src/components/loading-screen';
 const ProductListPage = lazy(() => import('src/pages/product/list'));
 const ProductDetailsPage = lazy(() => import('src/pages/product/details'));
 const ProductCheckoutPage = lazy(() => import('src/pages/product/checkout'));
-// Status
-const StatusPage = lazy(() => import('src/pages/status'));
 // Error
 const Page500 = lazy(() => import('src/pages/error/500'));
 const Page403 = lazy(() => import('src/pages/error/403'));
@@ -35,7 +33,6 @@ export const mainRoutes = [
           </MainLayout>
         ),
         children: [
-          { path: 'status', element: <StatusPage /> },
           {
             path: 'product',
             children: [

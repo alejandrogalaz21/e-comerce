@@ -1,6 +1,5 @@
 import type { Theme, SxProps, Breakpoint } from '@mui/material/styles';
 
-import Alert from '@mui/material/Alert';
 import { useTheme } from '@mui/material/styles';
 
 import { usePathname } from 'src/routes/hooks';
@@ -53,20 +52,9 @@ export function MainLayout({ sx, data, children }: MainLayoutProps) {
             layoutQuery={layoutQuery}
             onOpenNav={mobileNavOpen.onTrue}
             slotsDisplay={{
-              account: false,
               helpLink: false,
-              contacts: false,
-              searchbar: false,
-              workspaces: false,
-              localization: false,
-              notifications: false,
             }}
             slots={{
-              topArea: (
-                <Alert severity="info" sx={{ display: 'none', borderRadius: 0 }}>
-                  This is an info Alert.
-                </Alert>
-              ),
               rightAreaStart: (
                 <NavDesktop
                   data={navData}

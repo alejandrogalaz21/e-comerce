@@ -1,7 +1,5 @@
 import type { Theme, SxProps, Breakpoint } from '@mui/material/styles';
 
-import Alert from '@mui/material/Alert';
-
 import { useBoolean } from 'src/hooks/use-boolean';
 
 import { CONFIG } from 'src/config-global';
@@ -34,22 +32,7 @@ export function AuthCenteredLayout({ sx, children }: AuthCenteredLayoutProps) {
           layoutQuery={layoutQuery}
           onOpenNav={mobileNavOpen.onTrue}
           slotsDisplay={{
-            signIn: false,
-            account: false,
-            purchase: false,
-            contacts: false,
-            searchbar: false,
-            workspaces: false,
             menuButton: false,
-            localization: false,
-            notifications: false,
-          }}
-          slots={{
-            topArea: (
-              <Alert severity="info" sx={{ display: 'none', borderRadius: 0 }}>
-                This is an info Alert.
-              </Alert>
-            ),
           }}
           slotProps={{ container: { maxWidth: false } }}
           sx={{ position: { [layoutQuery]: 'fixed' } }}

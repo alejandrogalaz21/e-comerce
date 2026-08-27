@@ -22,9 +22,4 @@ export const navData = [
     path: CONFIG.auth.redirectPath,
     icon: <Iconify width={22} icon="solar:widget-5-bold-duotone" />,
   },
-  {
-    title: 'Status',
-    path: paths.status,
-    icon: <Iconify width={22} icon="solar:heart-pulse-bold" />,
-  },
 ];

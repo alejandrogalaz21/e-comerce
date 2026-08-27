@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
-import Button from '@mui/material/Button';
 
 import { usePathname } from 'src/routes/hooks';
 
@@ -11,7 +10,6 @@ import { NavUl } from 'src/components/nav-section';
 import { Scrollbar } from 'src/components/scrollbar';
 
 import { NavList } from './nav-mobile-list';
-import { SignInButton } from '../../../components/sign-in-button';
 
 import type { NavMainProps } from '../types';
 
@@ -65,21 +63,7 @@ export function NavMobile({ data, open, onClose, slots, sx }: NavMobileProps) {
         </Box>
       </Scrollbar>
 
-      {slots?.bottomArea ?? (
-        <Box gap={1.5} display="flex" sx={{ px: 2.5, py: 3 }}>
-          <SignInButton fullWidth />
-
-          <Button
-            fullWidth
-            variant="contained"
-            rel="noopener"
-            target="_blank"
-            href="#"
-          >
-            Purchase
-          </Button>
-        </Box>
-      )}
+      {slots?.bottomArea}
     </Drawer>
   );
 }

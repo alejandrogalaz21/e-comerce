@@ -6,7 +6,7 @@ import { StatusView } from 'src/sections/status/view';
 
 // ----------------------------------------------------------------------
 
-const metadata = { title: `System status - ${CONFIG.site.name}` };
+const metadata = { title: `System status | Dashboard - ${CONFIG.site.name}` };
 
 export default function Page() {
   return (

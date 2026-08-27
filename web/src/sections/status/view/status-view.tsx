@@ -1,12 +1,12 @@
 import type { IDbStatusData, IRedisStatusData } from 'src/types/status';
 
 import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 
 import { fDateTime } from 'src/utils/format-time';
 
 import { CONFIG } from 'src/config-global';
+import { DashboardContent } from 'src/layouts/dashboard';
 
 import { ServiceStatusCard } from '../components';
 import { useDbStatus, useApiHealth, useRedisStatus } from '../hooks/use-status';
@@ -25,7 +25,7 @@ export function StatusView() {
   const redisData = redis?.data as IRedisStatusData | undefined;
 
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 5, md: 8 } }}>
+    <DashboardContent maxWidth="lg">
       <Typography variant="h3" sx={{ mb: 1 }}>
         System status
       </Typography>
@@ -104,6 +104,6 @@ export function StatusView() {
           ]}
         />
       </Box>
-    </Container>
+    </DashboardContent>
   );
 }

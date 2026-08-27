@@ -2,6 +2,7 @@ import { paths } from 'src/routes/paths';
 
 import { CONFIG } from 'src/config-global';
 
+import { Iconify } from 'src/components/iconify';
 import { SvgColor } from 'src/components/svg-color';
 
 // ----------------------------------------------------------------------
@@ -38,6 +39,11 @@ export const navData = [
         path: paths.dashboard.order.root,
         icon: ICONS.order,
         children: [{ title: 'List', path: paths.dashboard.order.root }],
+      },
+      {
+        title: 'Status',
+        path: paths.dashboard.status,
+        icon: <Iconify icon="solar:heart-pulse-bold-duotone" />,
       },
     ],
   },
