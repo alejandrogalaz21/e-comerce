@@ -2,9 +2,12 @@ import type { IPaginatedResponse } from 'src/types/common';
 import type {
   ApiProduct,
   IProductItem,
+  IImportBatch,
   IImportResult,
   IProductPayload,
+  IImportBatchDetail,
   IProductListParams,
+  IImportBatchListParams,
 } from 'src/types/product';
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
@@ -48,5 +51,20 @@ export async function importProductsCsv(file: File): Promise<IImportResult> {
   const formData = new FormData();
   formData.append('file', file);
   const res = await axiosInstance.post<IImportResult>(endpoints.product.import, formData);
+  return res.data;
+}
+
+export async function getImportBatches(
+  params: IImportBatchListParams
+): Promise<IPaginatedResponse<IImportBatch>> {
+  const res = await axiosInstance.get<IPaginatedResponse<IImportBatch>>(
+    endpoints.product.batches.list,
+    { params }
+  );
+  return res.data;
+}
+
+export async function getImportBatch(batchId: string): Promise<IImportBatchDetail> {
+  const res = await axiosInstance.get<IImportBatchDetail>(endpoints.product.batches.details(batchId));
   return res.data;
 }

@@ -16,6 +16,10 @@ const ProductListPage = lazy(() => import('src/pages/dashboard/product/list'));
 const ProductCreatePage = lazy(() => import('src/pages/dashboard/product/new'));
 const ProductEditPage = lazy(() => import('src/pages/dashboard/product/edit'));
 const ProductImportPage = lazy(() => import('src/pages/dashboard/product/import'));
+const ProductImportBatchesPage = lazy(() => import('src/pages/dashboard/product/import-batches'));
+const ProductImportBatchDetailPage = lazy(
+  () => import('src/pages/dashboard/product/import-batch-detail')
+);
 // Order
 const OrderListPage = lazy(() => import('src/pages/dashboard/order/list'));
 const OrderDetailsPage = lazy(() => import('src/pages/dashboard/order/details'));
@@ -45,6 +49,8 @@ export const dashboardRoutes = [
           { path: 'list', element: <ProductListPage /> },
           { path: 'new', element: <ProductCreatePage /> },
           { path: 'import', element: <ProductImportPage /> },
+          { path: 'import/batches', element: <ProductImportBatchesPage /> },
+          { path: 'import/batches/:batchId', element: <ProductImportBatchDetailPage /> },
           { path: ':id', element: <ProductDetailsPage /> },
           { path: ':id/edit', element: <ProductEditPage /> },
         ],

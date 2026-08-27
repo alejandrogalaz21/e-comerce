@@ -76,3 +76,30 @@ export type IImportResult = {
   rejected: IImportRejectedRow[];
   warnings: IImportWarning[];
 };
+
+export type IImportBatchStatus = 'processing' | 'completed' | 'failed';
+
+export type IImportBatch = {
+  id: string;
+  filename: string;
+  status: IImportBatchStatus;
+  totalRows: number;
+  inserted: number;
+  updated: number;
+  unchanged: number;
+  rejected: number;
+  skippedEmpty: number;
+  createdAt: string;
+};
+
+export type IImportBatchDetail = IImportBatch & {
+  report: {
+    rejected: IImportRejectedRow[];
+    warnings: IImportWarning[];
+  };
+};
+
+export type IImportBatchListParams = {
+  page: number;
+  limit: number;
+};
