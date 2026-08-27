@@ -34,3 +34,14 @@ public/*
 
 # misc
 **/jsconfig.json
+
+# storybook
+.storybook/*
+**/*.stories.tsx
+storybook-static/*
+
+# playwright
+e2e/*
+playwright.config.ts
+test-results/*
+playwright-report/*

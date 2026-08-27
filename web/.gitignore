@@ -12,6 +12,9 @@ node_modules
 
 # testing
 coverage
+test-results
+playwright-report
+storybook-static
 
 # production
 .next
