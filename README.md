@@ -35,6 +35,42 @@ cd api && cp .env.example .env && npm install && npm run dev
 cd web && cp .env.example .env && npm install && npm run dev
 ```
 
+## Cómo correr las pruebas
+
+**Backend — unitarias (Jest)** · 28 tests: lógica del servicio de products y validaciones del DTO
+con el `ValidationPipe` real de producción. Cada caso está etiquetado con la línea del CSV de
+ejemplo que cubre (XSS, SQLi, precios/stock inválidos, campos ausentes, Unicode). No requiere
+base de datos ni docker.
+
+```bash
+cd api && npm test
+```
+
+**Frontend — unitarias (Vitest)** · 28 tests: schema zod del formulario (espejo de las
+validaciones del BE), mapper API⇄UI (conversión de decimales, semántica NULL vs 0) y mapeo de
+errores del servidor a campos. Lógica pura, no requiere navegador ni backend.
+
+```bash
+cd web && npm run test
+```
+
+**End-to-end (Playwright)** · 11 tests contra la aplicación real corriendo en docker: flujo CRUD
+completo desde la UI (crear → listar → editar → borrar) y los casos del CSV (XSS sanitizado sin
+disparar alert, SKU con SQLi rechazado —y la tabla sobrevive—, producto gratis, SKU duplicado con
+error inline). **Requiere el stack levantado** (`docker compose up -d`). La primera vez, instalar
+el navegador con `npx playwright install chromium`.
+
+```bash
+cd web && npm run test:e2e
+```
+
+**Storybook** — catálogo interactivo de los componentes reutilizables (no es una suite de tests,
+pero sirve para revisión visual):
+
+```bash
+cd web && npm run storybook
+```
+
 ## Arquitectura del frontend (`web/`)
 
 React 18 + Vite + TypeScript strict + MUI v5 + **TanStack Query (React Query)**, organizado en
