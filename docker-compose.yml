@@ -33,8 +33,10 @@ services:
     container_name: ecommerce-api
     environment:
       NODE_ENV: production
-      SEED_ON_BOOT: 'true'
       PORT: 8080
+      # Schema is owned by versioned migrations, never by the ORM
+      DB_SYNC: 'false'
+      DB_MIGRATIONS_RUN: 'true'
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: ${DB_USER:-postgres}

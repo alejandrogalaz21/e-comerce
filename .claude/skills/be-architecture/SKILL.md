@@ -5,8 +5,8 @@ description: Layered backend architecture for api/ (NestJS + TypeORM + Postgres 
 
 # Backend architecture (api/)
 
-Every BE change MUST respect these layers. The `products` module (with its `import/` submodule)
-is the reference implementation — when in doubt, imitate it.
+Every BE change MUST respect these layers. The `products` module is the reference
+implementation — when in doubt, imitate it.
 
 ## Layer map
 
@@ -15,19 +15,21 @@ api/src/
 ├── main.ts                    # bootstrap: global prefix api/v1, ValidationPipe (whitelist+transform), Swagger, CORS
 ├── app.module.ts              # composition root — the only place that wires layers together
 ├── config/                    # typed env namespaces via registerAs: app.*, pg.*, redis.*
-├── database/                  # DATABASE-ONLY layer: connections, migrations, CLI data source.
+├── database/                  # DATA-STORES layer: one folder per engine + the versioned schema.
 │   ├── postgres/              #   TypeORM connection module + pg health service
-│   ├── redis/                 #   ioredis client provider (inject via REDIS_CLIENT token)
-│   ├── migrations/            #   versioned schema — run automatically at boot (migrationsRun)
+│   ├── redis/                 #   ioredis client provider (REDIS_CLIENT token); redis.service/
+│   │                          #     constants get added when Redis gains real usage
+│   ├── migrations/            #   versioned schema + minimal data migrations (demo user) — run at boot
 │   └── data-source.ts         #   standalone DataSource for the typeorm CLI (migration:* scripts)
 │                              #   NOTHING else lives here: no services, no business/bootstrap modules.
+│                              #   A new backing service = a new folder under database/.
 ├── common/                    # CROSS-CUTTING, domain-agnostic, reusable
 │   ├── pagination/            #   PaginationHelper + PaginationResponseBuilder ({ data, pagination })
 │   ├── transformers/          #   sanitize/trim transforms shared by DTOs (CRUD + CSV import)
 │   ├── middleware/  dto/  interfaces/  common.enum.ts
 └── modules/<name>/            # TOP-LEVEL MODULES (feature-based) — the ONLY place features live:
-    │                          #   products, import (CSV catalog import), seed (boot seeding),
-    │                          #   users, auth, health, status
+    │                          #   products, import (CSV catalog import), users, auth,
+    │                          #   health, status
     ├── <name>.module.ts       #   every feature is its own Nest module — NO submodules nested
     │                          #   inside another feature's folder
     ├── <name>.controller.ts   #   HTTP only: routes, pipes, status codes, Swagger — zero business logic
@@ -37,7 +39,7 @@ api/src/
 ```
 
 Module boundaries: a new capability = a new module under `modules/` that IMPORTS what it needs
-from sibling modules (e.g. `import` uses the Product repo; `seed` calls `ImportService`). Code
+from sibling modules (e.g. `import` uses the Product repo). Code
 organization is independent from URL design — the import module still serves
 `/products/import/*` routes. Module registration order in `app.module.ts` matters for route
 precedence (`import` before `products` so `products/import/*` beats `products/:id`).
@@ -54,10 +56,11 @@ LoggerMiddleware → (Guard) → ValidationPipe (DTO: transform + whitelist + fo
 
 | What | Where | Rule |
 |---|---|---|
-| Env access | `config/*.configuration.ts` | ONLY place allowed to read `process.env`. Everything else injects `ConfigService` and reads namespaced keys (`pg.host`). |
-| Third-party clients (DB, cache, future queues) | `database/<client>/` | Provided as injectable modules/tokens. Domain modules never instantiate clients. |
+| Env access | `config/*.configuration.ts` | ONLY place allowed to read `process.env`. Everything else injects `ConfigService` and reads namespaced keys (`pg.host`). The TypeORM CLI has no DI, so `database/data-source.ts` calls the config factory directly (`PgConfig()`) instead of reading env itself. |
+| DB connection params | `database/postgres/pg-connection.options.ts` | Shared by both consumers — the runtime module (via `ConfigService`) and the CLI data source. Add a new connection option here once, never in two places. |
+| Third-party clients (DB, cache, future queues) | `database/<engine>/` | One folder per backing service under `database/` (`postgres/`, `redis/`, …), provided as injectable modules/tokens. Domain modules never instantiate clients. |
 | Schema changes | `database/migrations/` | Always a migration (`npm run migration:generate`). `synchronize` stays off; `DB_SYNC=true` is a local-dev-only override. |
-| App bootstrap tasks (seed) | `modules/seed/` | A top-level module that ORCHESTRATES domain services (calls `ImportService`), never reimplements domain logic. Runtime assets it consumes (the challenge CSV) are colocated and copied to dist via nest-cli assets. |
+| Initial/bootstrap data | `database/migrations/` | Minimal data migrations only (the demo login user, idempotent ON CONFLICT). Business data is NEVER pre-seeded — the app starts with an empty catalog and users create everything through the UI. |
 | Reusable domain-agnostic logic | `common/` | If two domains need it (pagination, sanitizers), it lives here. If it knows about a domain, it does not. |
 | Business rules | `modules/<domain>/*.service.ts` | Controllers never contain logic; services never touch HTTP concepts beyond throwing HttpExceptions. |
 | Wire contracts | `modules/<domain>/dto/` | class-validator + `@Transform` sanitizers + `@ApiProperty` with realistic examples on every field. |

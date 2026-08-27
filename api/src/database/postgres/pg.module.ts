@@ -2,30 +2,28 @@ import { join } from 'path'
 import { Module } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { DatabaseConfig } from '@/common/interfaces/db.interface'
+import { buildPgConnectionOptions } from './pg-connection.options'
 import { PgHealthService } from './pg-health.service'
 
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('pg.host'),
-        port: configService.get('pg.port'),
-        username: configService.get('pg.user'),
-        password: configService.get('pg.password'),
-        database: configService.get('pg.database'),
-        autoLoadEntities: true,
-        synchronize: configService.get('pg.synchronize'),
-        migrations: [join(__dirname, '..', 'migrations', '*{.ts,.js}')],
-        migrationsRun: configService.get('pg.migrationsRun'),
-        ssl: configService.get('pg.ssl')
-      }),
+      useFactory: (configService: ConfigService) => {
+        const config = configService.get<DatabaseConfig>('pg')
+
+        return {
+          ...buildPgConnectionOptions(config),
+          autoLoadEntities: true,
+          synchronize: config.synchronize,
+          migrations: [join(__dirname, '..', 'migrations', '*{.ts,.js}')],
+          migrationsRun: config.migrationsRun
+        }
+      },
       inject: [ConfigService]
     })
   ],
   providers: [PgHealthService],
   exports: [PgHealthService]
 })
-export class PgModule {
-  constructor(private configService: ConfigService) {}
-}
+export class PgModule {}
