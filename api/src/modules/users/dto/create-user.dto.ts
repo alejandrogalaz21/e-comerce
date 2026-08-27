@@ -67,7 +67,6 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsInt()
-  // No es necesario trim/toLowerCase para números
   age: number
 
   @IsEmail()

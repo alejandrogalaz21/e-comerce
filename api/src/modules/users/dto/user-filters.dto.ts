@@ -7,9 +7,6 @@ export class UserFiltersDTO {
   @IsString()
   role?: string
 
-  /**
-   * Estado del usuario. Solo acepta valores válidos del enum UserStatus.
-   */
   @IsOptional()
   @IsEnum(UserStatus, {
     message: `status must be one of: ACTIVE, INACTIVE, BANNED, PENDING, DELETED`

@@ -10,7 +10,7 @@ import { Repository } from 'typeorm'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { User } from './entities/user.entity'
-import { PaginationUserDTO } from './dto/paginatio-user.dto'
+import { PaginationUserDTO } from './dto/pagination-user.dto'
 import { instanceToPlain } from 'class-transformer'
 import * as bcrypt from 'bcryptjs'
 
