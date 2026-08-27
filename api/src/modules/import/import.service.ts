@@ -10,9 +10,9 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { parse } from 'csv-parse/sync'
 
-import { CreateProductDto } from '../dto/create-product.dto'
-import { Product } from '../entities/product.entity'
-import { ProductsService } from '../products.service'
+import { CreateProductDto } from '@/modules/products/dto/create-product.dto'
+import { Product } from '@/modules/products/entities/product.entity'
+import { ProductsService } from '@/modules/products/products.service'
 import { ImportBatch } from './import-batch.entity'
 import { ImportRowNormalizer } from './import-row.normalizer'
 import {
@@ -137,6 +137,9 @@ export class ImportService {
       throw new BadRequestException(
         `Unsupported file type '${file.mimetype}', expected text/csv`
       )
+
+    if (!file.buffer || file.buffer.length === 0)
+      throw new BadRequestException('CSV file is empty')
   }
 
   private parseCsv(buffer: Buffer): Record<string, unknown>[] {
@@ -150,7 +153,7 @@ export class ImportService {
     } catch (error) {
       if (error instanceof BadRequestException) throw error
       const message = error instanceof Error ? error.message : 'unknown error'
-      throw new BadRequestException(`Unable to parse CSV file: ${message}`)
+      throw new BadRequestException(`Malformed CSV: ${message}`)
     }
   }
 
@@ -163,6 +166,15 @@ export class ImportService {
     if (missing.length > 0)
       throw new BadRequestException(
         `CSV is missing required columns: ${missing.join(', ')}`
+      )
+
+    const unexpected = normalized.filter(
+      header => !EXPECTED_HEADERS.includes(header)
+    )
+
+    if (unexpected.length > 0)
+      throw new BadRequestException(
+        `CSV has unexpected columns: ${unexpected.join(', ')}`
       )
 
     return normalized

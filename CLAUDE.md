@@ -10,12 +10,14 @@
 
 Any BE change MUST follow the layered architecture defined in the `be-architecture` skill
 (`.claude/skills/be-architecture/SKILL.md`). Summary: `config/` (only place reading
-`process.env`, registerAs namespaces) → `database/` (infrastructure: pg/redis clients,
-migrations run at boot, seed bootstrap) → `common/` (cross-cutting: pagination, sanitizers,
-middleware) → `modules/<domain>/` (controller thin / service owns logic / entities = DB
-contract / dto = wire contract with class-validator + Swagger examples; growing capabilities
-become submodules like `products/import/`). Schema changes are always migrations — never
-synchronize. The `products` module is the reference implementation.
+`process.env`, registerAs namespaces) → `database/` (DATABASE-ONLY: pg/redis clients,
+migrations, CLI data-source — no services or feature modules) → `common/` (cross-cutting:
+pagination, sanitizers, middleware) → `modules/<name>/` (TOP-LEVEL feature modules only — no
+nested submodules; a growing capability becomes its own module importing from siblings, like
+`import` and `seed`; controller thin / service owns logic / entities = DB contract / dto =
+wire contract with class-validator + Swagger examples). Schema changes are always migrations —
+never synchronize. The CSV import must survive ANY file (never 500). The `products` module is
+the reference implementation.
 
 ## Frontend architecture (web/)
 

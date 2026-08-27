@@ -87,7 +87,7 @@ export class ImportController {
   @ApiResponse({
     status: 400,
     description:
-      'File-level problem: missing file, not a .csv, bad MIME type, unparseable CSV or missing required columns'
+      'File-level problem: missing file, not a .csv, bad MIME type, empty file, malformed CSV, missing required columns or unexpected columns'
   })
   @ApiResponse({ status: 413, description: 'File larger than 5MB' })
   import(@UploadedFile() file: Express.Multer.File) {

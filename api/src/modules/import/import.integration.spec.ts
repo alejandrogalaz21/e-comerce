@@ -6,8 +6,8 @@ import { getRepositoryToken } from '@nestjs/typeorm'
 import { ImportService } from './import.service'
 import { ImportRowNormalizer } from './import-row.normalizer'
 import { ImportBatch } from './import-batch.entity'
-import { Product } from './../entities/product.entity'
-import { ProductsService } from './../products.service'
+import { Product } from '@/modules/products/entities/product.entity'
+import { ProductsService } from '@/modules/products/products.service'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 
 /**
@@ -28,7 +28,7 @@ import { PaginationResponseBuilder } from '@/common/pagination/pagination-respon
 describe('ImportService (integration with the real fixture)', () => {
   const fixturePath = join(
     __dirname,
-    '../../../../test/fixtures/loanpro-sample.csv'
+    '../../../test/fixtures/loanpro-sample.csv'
   )
 
   let service: ImportService

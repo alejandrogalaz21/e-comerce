@@ -81,13 +81,14 @@ api/src/
 ├── main.ts                   # bootstrap: prefix api/v1, global ValidationPipe, Swagger, CORS
 ├── app.module.ts             # composition root
 ├── config/                   # typed env namespaces (registerAs): app.*, pg.*, redis.*
-├── database/                 # INFRASTRUCTURE — connections, migrations, boot seed
+├── database/                 # DATABASE-ONLY — connections, migrations, CLI data source
 │   ├── postgres/  redis/     #   injectable clients (TypeORM connection, ioredis provider)
 │   ├── migrations/           #   versioned schema, run automatically at boot
-│   ├── data-source.ts        #   typeorm CLI entry (migration:generate|run|revert)
-│   └── seed/                 #   boot bootstrap: seeds via the real import pipeline (+ CSV asset)
+│   └── data-source.ts        #   typeorm CLI entry (migration:generate|run|revert)
 ├── common/                   # CROSS-CUTTING — pagination system, sanitizers, logger middleware
-└── modules/<domain>/         # DOMAIN modules: products (+ import/), users, auth, health, status
+└── modules/<name>/           # TOP-LEVEL feature modules (no nested submodules):
+    │                         #   products, import (CSV), seed (boot seeding via the import
+    │                         #   pipeline + CSV asset), users, auth, health, status
     ├── controller            #   HTTP only (routes, pipes, Swagger) — zero business logic
     ├── service               #   business rules + repositories
     ├── entities/  dto/       #   DB contract (constraints) / wire contract (validation + examples)

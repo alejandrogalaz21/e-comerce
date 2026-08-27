@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 
 import { Product } from '@/modules/products/entities/product.entity'
-import { ImportService } from '@/modules/products/import/import.service'
+import { ImportService } from '@/modules/import/import.service'
 
 const SEED_CSV_FILENAME = 'loanpro-sample.csv'
 
@@ -65,7 +65,7 @@ export class SeedService implements OnApplicationBootstrap {
   private resolveCsvPath(): string | null {
     const candidates = [
       join(__dirname, SEED_CSV_FILENAME),
-      join(process.cwd(), 'src', 'database', 'seed', SEED_CSV_FILENAME)
+      join(process.cwd(), 'src', 'modules', 'seed', SEED_CSV_FILENAME)
     ]
     return candidates.find(path => existsSync(path)) ?? null
   }

@@ -15,24 +15,32 @@ api/src/
 ├── main.ts                    # bootstrap: global prefix api/v1, ValidationPipe (whitelist+transform), Swagger, CORS
 ├── app.module.ts              # composition root — the only place that wires layers together
 ├── config/                    # typed env namespaces via registerAs: app.*, pg.*, redis.*
-├── database/                  # INFRASTRUCTURE layer (no business logic)
+├── database/                  # DATABASE-ONLY layer: connections, migrations, CLI data source.
 │   ├── postgres/              #   TypeORM connection module + pg health service
 │   ├── redis/                 #   ioredis client provider (inject via REDIS_CLIENT token)
 │   ├── migrations/            #   versioned schema — run automatically at boot (migrationsRun)
-│   ├── data-source.ts         #   standalone DataSource for the typeorm CLI (migration:* scripts)
-│   └── seed/                  #   boot-time bootstrap: seeds the catalog through the domain import pipeline
+│   └── data-source.ts         #   standalone DataSource for the typeorm CLI (migration:* scripts)
+│                              #   NOTHING else lives here: no services, no business/bootstrap modules.
 ├── common/                    # CROSS-CUTTING, domain-agnostic, reusable
 │   ├── pagination/            #   PaginationHelper + PaginationResponseBuilder ({ data, pagination })
 │   ├── transformers/          #   sanitize/trim transforms shared by DTOs (CRUD + CSV import)
 │   ├── middleware/  dto/  interfaces/  common.enum.ts
-└── modules/<domain>/          # DOMAIN modules (feature-based): products, users, auth, health, status
-    ├── <domain>.controller.ts #   HTTP only: routes, pipes, status codes, Swagger — zero business logic
-    ├── <domain>.service.ts    #   business logic + persistence via injected repositories
+└── modules/<name>/            # TOP-LEVEL MODULES (feature-based) — the ONLY place features live:
+    │                          #   products, import (CSV catalog import), seed (boot seeding),
+    │                          #   users, auth, health, status
+    ├── <name>.module.ts       #   every feature is its own Nest module — NO submodules nested
+    │                          #   inside another feature's folder
+    ├── <name>.controller.ts   #   HTTP only: routes, pipes, status codes, Swagger — zero business logic
+    ├── <name>.service.ts      #   business logic + persistence via injected repositories
     ├── entities/              #   TypeORM entities = DB contract (constraints live here AND in migrations)
-    ├── dto/                   #   wire contract: class-validator rules + @ApiProperty examples
-    └── <capability>/          #   submodule when a capability grows (e.g. products/import: controller,
-                               #   service, entity, normalizer — same domain, own folder)
+    └── dto/                   #   wire contract: class-validator rules + @ApiProperty examples
 ```
+
+Module boundaries: a new capability = a new module under `modules/` that IMPORTS what it needs
+from sibling modules (e.g. `import` uses the Product repo; `seed` calls `ImportService`). Code
+organization is independent from URL design — the import module still serves
+`/products/import/*` routes. Module registration order in `app.module.ts` matters for route
+precedence (`import` before `products` so `products/import/*` beats `products/:id`).
 
 ## Request lifecycle (every endpoint goes through this)
 
@@ -49,12 +57,12 @@ LoggerMiddleware → (Guard) → ValidationPipe (DTO: transform + whitelist + fo
 | Env access | `config/*.configuration.ts` | ONLY place allowed to read `process.env`. Everything else injects `ConfigService` and reads namespaced keys (`pg.host`). |
 | Third-party clients (DB, cache, future queues) | `database/<client>/` | Provided as injectable modules/tokens. Domain modules never instantiate clients. |
 | Schema changes | `database/migrations/` | Always a migration (`npm run migration:generate`). `synchronize` stays off; `DB_SYNC=true` is a local-dev-only override. |
-| App bootstrap tasks (seed) | `database/seed/` | Infrastructure that ORCHESTRATES domain services (calls `ImportService`), never reimplements domain logic. Runtime assets it consumes (the challenge CSV) are colocated and copied to dist via nest-cli assets. |
+| App bootstrap tasks (seed) | `modules/seed/` | A top-level module that ORCHESTRATES domain services (calls `ImportService`), never reimplements domain logic. Runtime assets it consumes (the challenge CSV) are colocated and copied to dist via nest-cli assets. |
 | Reusable domain-agnostic logic | `common/` | If two domains need it (pagination, sanitizers), it lives here. If it knows about a domain, it does not. |
 | Business rules | `modules/<domain>/*.service.ts` | Controllers never contain logic; services never touch HTTP concepts beyond throwing HttpExceptions. |
 | Wire contracts | `modules/<domain>/dto/` | class-validator + `@Transform` sanitizers + `@ApiProperty` with realistic examples on every field. |
 | DB contracts | `modules/<domain>/entities/` | Constraints (`UNIQUE`, `@Check`) declared on the entity and mirrored in the migration. DECIMAL columns are typed `string` (wire format preserves precision; the FE mapper converts). |
-| Growing capability | `modules/<domain>/<capability>/` | Submodule folder inside the domain (see `products/import/`), registered in the domain's module. Do NOT create a sibling top-level module for something that belongs to an existing domain. |
+| Growing capability | `modules/<capability>/` | A NEW top-level module importing what it needs from sibling modules (see `import`, which uses the Product repository). Never nest a module inside another module's folder. |
 
 ## Hard rules
 
@@ -68,6 +76,10 @@ LoggerMiddleware → (Guard) → ValidationPipe (DTO: transform + whitelist + fo
   storage is a documented future item, not an accident.
 - File-level failures reject the request (400/413); row-level failures NEVER abort a batch
   (partial import by design) — they go to the per-row report.
+- The CSV import accepts ANY file, not just the challenge example: unknown/missing/reordered
+  headers, malformed CSV, binary content, header-only or empty files must all produce a clear
+  400 or a valid partial batch — never a 500. Adversarial cases are covered by
+  `import.hardening.spec.ts`; keep it updated when touching the pipeline.
 - Tests colocated: `*.spec.ts` next to the code. Validation specs run the REAL `ValidationPipe`
   with production options. Integration specs may use real fixtures from `api/test/fixtures/`.
 - Verify before finishing: `npm run build`, `npm test`, `npm run lint` — all green.
