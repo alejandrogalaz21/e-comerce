@@ -8,11 +8,14 @@ resuelve TK-019: el módulo auth JWT (conservado como punto de extensión) pasa 
 
 ## What Changes
 
-- **BE**: migración que agrega `imported_by` (varchar nullable) a `import_batches`; el seed de
-  arranque crea (idempotente) un **usuario admin** con password de env `SEED_ADMIN_PASSWORD`;
-  `POST /products/import` queda protegido con el guard JWT existente y registra el email del
-  usuario en el batch; el seed de catálogo firma como `seed`; los GET de batches exponen
-  `importedBy` (lectura sigue pública).
+- **BE** (*alcance refinado por el usuario 2026-08-27*): la app arranca **sin datos de negocio**
+  — el módulo `seed` y el CSV embebido se eliminan (el catálogo lo crea el usuario desde la UI).
+  Una **migración de datos** idempotente crea el único registro sembrado: el usuario demo
+  `demo@demo.com` / `demo` (datos ficticios, hash bcrypt). Fase 2 del ticket: `imported_by`
+  (varchar nullable) en `import_batches`, `POST /products/import` protegido con el guard JWT y
+  registrando el email del usuario; los GET de batches exponen `importedBy` (lectura pública).
+  De pasada (evaluación de arquitectura, docs/03-be-arquitectura.md): `database/redis/` se movió
+  a `src/redis/` — `database/` queda PostgreSQL-only.
 - **FE**: `endpoints.auth` apuntado a las rutas reales (`/api/v1/auth/*`) y el contexto JWT del
   template conectado de verdad; la página de import exige sesión (CTA a sign-in si no hay);
   historial y detalle de batches muestran **Imported by**.

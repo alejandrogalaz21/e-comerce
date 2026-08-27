@@ -22,6 +22,15 @@ docker compose up --build
 
 No `.env` required (everything has defaults); to override values, copy `.env.example` to `.env`.
 
+The application starts with an **empty catalog** on purpose — you create everything through the
+UI (product CRUD, or CSV import at *Dashboard → Product → Import CSV* using the challenge sample
+file). Migrations run automatically at boot and seed a single **demo login**:
+
+| | |
+|---|---|
+| Email | `demo@demo.com` |
+| Password | `demo` |
+
 ### Local development (manual)
 
 ```bash
@@ -82,13 +91,13 @@ api/src/
 ├── app.module.ts             # composition root
 ├── config/                   # typed env namespaces (registerAs): app.*, pg.*, redis.*
 ├── database/                 # DATABASE-ONLY — connections, migrations, CLI data source
-│   ├── postgres/  redis/     #   injectable clients (TypeORM connection, ioredis provider)
-│   ├── migrations/           #   versioned schema, run automatically at boot
+│   ├── postgres/             #   injectable TypeORM connection + pg health
+│   ├── migrations/           #   versioned schema + demo-user data, run automatically at boot
 │   └── data-source.ts        #   typeorm CLI entry (migration:generate|run|revert)
+├── redis/                    # REDIS-ONLY — ioredis client provider (cache-ready)
 ├── common/                   # CROSS-CUTTING — pagination system, sanitizers, logger middleware
 └── modules/<name>/           # TOP-LEVEL feature modules (no nested submodules):
-    │                         #   products, import (CSV), seed (boot seeding via the import
-    │                         #   pipeline + CSV asset), users, auth, health, status
+    │                         #   products, import (CSV), users, auth, health, status
     ├── controller            #   HTTP only (routes, pipes, Swagger) — zero business logic
     ├── service               #   business rules + repositories
     ├── entities/  dto/       #   DB contract (constraints) / wire contract (validation + examples)

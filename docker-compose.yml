@@ -33,7 +33,6 @@ services:
     container_name: ecommerce-api
     environment:
       NODE_ENV: production
-      SEED_ON_BOOT: 'true'
       PORT: 8080
       DB_HOST: db
       DB_PORT: 5432

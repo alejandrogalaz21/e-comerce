@@ -452,13 +452,13 @@ medias: un mock de login mal hecho en el contexto de una fintech comunica peor q
 diseño deja el punto de extensión listo (un `AuthGuard` de Nest se podría insertar sin refactor)
 pero no se construye.
 
-### 10.3 Seed automático en vez de pasos manuales
+### 10.3 Datos iniciales (*decisión actualizada 2026-08-27 — TK-030*)
 
-Para que quien evalúe el proyecto solo corra `docker-compose up` y ya vea datos:
-- El contenedor `api` corre migraciones + un script de seed al iniciar, que importa el CSV de
-  ejemplo automáticamente **a través del mismo pipeline de import** (no un insert directo — así
-  el seed también prueba que el import funciona de punta a punta).
-- Cero pasos manuales adicionales para ver la app funcionando end-to-end.
+Versión inicial: seed automático del CSV al boot. **Decisión vigente**: la app arranca con el
+catálogo **vacío** — todos los datos de negocio los crea el usuario interactuando con el sitio
+(CRUD o import CSV desde la UI, que sigue probando el pipeline real de punta a punta). Lo único
+sembrado es un **usuario demo** (`demo@demo.com` / `demo`) vía migración de datos idempotente,
+para poder hacer login. Las migraciones sí corren solas al boot — cero pasos manuales.
 
 ### 10.4 Frontend — TanStack sobre Redux
 
@@ -513,7 +513,5 @@ docker-compose up --build
 # Postgres: localhost:5432
 ```
 
-Al levantar, `api` corre migraciones y seed automático (importa el CSV de ejemplo vía el pipeline
-de import real) — no se requiere ningún paso manual adicional para ver productos cargados.
-
-(Se completa con instrucciones reales una vez el código esté armado.)
+Al levantar, `api` corre migraciones automáticamente (schema + usuario demo `demo@demo.com` /
+`demo`). El catálogo arranca vacío: los productos se crean desde la UI (CRUD o import CSV).

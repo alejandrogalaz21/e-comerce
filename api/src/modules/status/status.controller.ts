@@ -3,7 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { InjectDataSource } from '@nestjs/typeorm'
 import { DataSource } from 'typeorm'
 import Redis from 'ioredis'
-import { REDIS_CLIENT } from '@/database/redis/redis.module'
+import { REDIS_CLIENT } from '@/redis/redis.module'
 
 @ApiTags('status')
 @Controller('status')
