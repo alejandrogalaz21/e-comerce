@@ -1,11 +1,7 @@
-# Arquitectura del Backend — estado actual vs propuesta objetivo
+# Arquitectura del Backend — árbol comentado
 
-> Fecha: 2026-08-27 (TK-030). Compara el árbol real de `api/src/` contra la estructura objetivo
-> definida por el usuario, con el gap y la recomendación por cada diferencia.
-
----
-
-## 1. Árbol actual (comentado archivo por archivo)
+> Actualizado: 2026-08-27. Estructura real de `api/src/`, con la responsabilidad de cada
+> directorio y archivo. Se actualiza en el mismo commit que cualquier cambio estructural.
 
 ```
 api/src/
@@ -70,65 +66,3 @@ api/src/
 
 Tests colocados (`*.spec.ts` junto al código, no listados): products.service, create-product.dto,
 import.service, import.integration (fixture real), import.hardening (adversarial).
-
----
-
-## 2. Comparación contra la estructura objetivo
-
-| # | Propuesta objetivo | Estado actual | Gap / veredicto |
-|---|---|---|---|
-| 1 | `config/configuration.ts` centralizado | 3 archivos `registerAs` por namespace + barrel | ✅ **Cumplido (variante)** — mismo objetivo, un archivo por namespace escala mejor que uno monolítico. Sin cambio |
-| 2 | `config/env.validation.ts` | **No existe** — la app arranca con env inválido y falla tarde | ❌ **Gap real** — agregar validación de env al boot (class-validator sobre las vars, fail-fast). → ticket |
-| 3 | `database/` solo PostgreSQL + migrations + data-source | `database/` agrupa **ambos motores**: `postgres/`, `redis/`, más `migrations/` y `data-source.ts` | ✅ **Desviación deliberada** (decisión del usuario 2026-08-27) — Redis es un data store igual que Postgres: agrupar todos los clientes de datos bajo `database/` da simetría y un solo lugar donde buscar "dónde viven los datos". `migrations/` y `data-source.ts` quedan en la raíz porque el schema versionado es exclusivo del motor relacional (Redis no tiene migraciones) |
-| 4 | `redis/` top-level con `redis.service.ts` (abstracción) + `redis.constants.ts` (keys/TTLs) | `database/redis/` con el provider `REDIS_CLIENT`; sin service/constants aún | ⚠️ **Gap parcial** — la ubicación cambió por la decisión de la fila 3. Hoy el único consumidor es `status` y usa el cliente directo; la abstracción (service + constants) se agrega cuando Redis tenga uso real (caché de búsqueda, TK-008/021) |
-| 5 | `common/decorators/` | `validators/` (@NoHtml) + `transformers/` (trimText) | ✅ **Equivalente** — son decoradores/transforms reutilizables con nombres más específicos. Opcional renombrar; no aporta |
-| 6 | `common/guards/` | El guard JWT vive en passport (`AuthGuard('jwt')`), sin carpeta propia | ⚠️ **Pendiente natural** — cuando TK-030 proteja el import, el guard reutilizable puede formalizarse aquí |
-| 7 | `common/interceptors/` | No existe | ⚠️ **Pendiente** — candidato: interceptor de transformación de respuesta/logging. No urgente (el middleware logger cubre hoy) |
-| 8 | `common/filters/` (exception handling global) | **No existe** — cada service repite `handleDBExceptions` | ❌ **Gap real** — es exactamente **TK-014** (shape de error consistente de initial.md §7) |
-| 9 | `common/pipes/` | No hay pipes custom (el ValidationPipe global cubre) | ✅ Sin necesidad actual |
-| 10 | `common/utils/` (pagination, sanitizers) | `pagination/` + `transformers/` como carpetas propias | ✅ **Equivalente** — misma idea con carpetas por tema en vez de un cajón `utils/` |
-| 11 | `modules/<name>/repositories/` (capa de acceso a datos) | Los services usan el `Repository<T>` de TypeORM inyectado directo | ⚠️ **Trade-off consciente** — el Repository de TypeORM *ya es* la abstracción de datos (mockeable en tests, como demuestran los specs). Una clase repository propia se justifica cuando las queries crezcan (búsqueda TK-008: ILIKE + filtros + índices). Adoptar en `products` al implementar TK-008; no retrofitear los módulos simples |
-| 12 | `health/` fuera de modules (opcional) | Dentro de `modules/health/` | ✅ La propia propuesta lo marca opcional — se queda como módulo (consistencia: todo feature es módulo) |
-| 13 | Módulos: auth, users, products, import, seed, health, status | auth, users, products, import, health, status | ✅ — `seed` ya no existe como módulo: se eliminó junto con el seed de catálogo; los datos mínimos (usuario demo) viven en una migración de datos (§3) |
-| 14 | (no está en la propuesta) `common/middleware/` | logger.middleware.ts | ✅ Se mantiene bajo common |
-
-### Resumen ejecutivo
-
-La estructura actual **ya cumple el espíritu de la propuesta** (capas: config → infra → common →
-módulos top-level). Estado de las acciones que salieron de la comparación:
-
-1. ✅ **Hecho (2026-08-27)**: `database/` agrupa los dos motores (`postgres/` y `redis/`) —
-   desviación deliberada de la propuesta, justificada en la fila 3; módulo `seed` eliminado y
-   datos mínimos como migración (§3).
-2. **Tickets existentes**: `common/filters/` = TK-014; guards formales al proteger import (TK-030 fase 2).
-3. **Tickets nuevos**: validación de env al boot (`env.validation`); repository + `redis.service`/
-   `redis.constants` cuando llegue la búsqueda (TK-008).
-
----
-
-## 3. Depuración de datos iniciales (decisión de esta iteración — actualiza initial.md §10.3)
-
-**Antes**: al boot, el seed importaba el CSV del challenge → la app arrancaba con 87 productos.
-
-**Ahora (decisión del usuario)**: la aplicación arranca **vacía de datos de negocio** — todo lo
-crea el usuario interactuando con el sitio (CRUD, import CSV desde la UI). Lo único sembrado es
-un **usuario demo para login**:
-
-| Campo | Valor |
-|---|---|
-| email | `demo@demo.com` |
-| password | `demo` (hash bcrypt en la migración) |
-| resto | datos ficticios (nombre demo, rol/status activos) |
-
-Implementación: **migración de datos** (`demo-user`) junto a la de schema — idempotente
-(`ON CONFLICT DO NOTHING`), corre al boot como cualquier migración. El módulo `seed/` y el CSV
-embebido fueron eliminados; el CSV del challenge sigue disponible como fixture de tests
-(`api/test/fixtures/`) y para subirse manualmente desde la página de import.
-
-Migraciones que quedan (las dos necesarias, nada más):
-
-```
-database/migrations/
-├── 1787702400000-initial-schema.ts   # schema: products, import_batches, user, enums
-└── <timestamp>-demo-user.ts          # datos mínimos: el usuario demo para login
-```
