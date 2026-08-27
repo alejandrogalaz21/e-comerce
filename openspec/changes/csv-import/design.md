@@ -77,12 +77,21 @@ Respuesta 201:
    El payload SQLi (línea 29) es inofensivo por queries parametrizadas — y además su sku
    inválido lo rechaza en la capa 4.
 
-## Resultados esperados con el CSV real (fixture `loanpro-sample.csv`, 97 líneas: 1 header + 96 datos)
+## Resultados con el CSV real (fixture `loanpro-sample.csv`, 98 líneas: 1 header + 97 datos)
 
-Rechazadas (motivo): línea 7 (`price "free"`), 16 (`stock -5`), 25 (name vacío), 41 (name solo
-espacios), 29 (sku con caracteres inválidos — SQLi). Skipped: 62, 63 (vacías). Updates con
-warning: 36 (RS-001), 56 (BS-021), 89 (BS-021 idéntica a 11 → `unchanged`). El resto insertadas.
-Los tests unitarios y el e2e validan estos números exactos contra el fixture.
+**Números verificados por la implementación** (asserted en el spec de integración):
+`totalRows 97 · inserted 88 · updated 3 · unchanged 0 · rejected 4 · skippedEmpty 2`.
+
+- Rechazadas: línea 7 (`price 'free'`), 16 (`stock -5`), 25 y 41 (name vacío/solo espacios).
+- Vacías (skipped): 62–63.
+- Updates con warning: 36 (RS-001), 56 y 89 (BS-021).
+
+Dos correcciones al análisis inicial, descubiertas contra el archivo real:
+1. **Línea 29 se ACEPTA**: el payload SQLi está en la columna `name` (dato inofensivo con ORM
+   parametrizado); su sku es `SQL-001`, perfectamente válido. Rechazarla habría sido incorrecto.
+2. **Línea 89 es update+warning, no no-op**: es idéntica a la línea 11, pero la regla secuencial
+   de duplicados dentro del archivo la compara contra el estado que dejó la línea 56 (que difiere).
+   El camino `unchanged` queda cubierto por test unitario dedicado.
 
 ## FE — página de import (aplica skill fe-architecture)
 
