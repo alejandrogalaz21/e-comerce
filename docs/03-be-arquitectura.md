@@ -19,16 +19,18 @@ api/src/
 │   ├── pg.configuration.ts              #   pg.*: conexión, synchronize (DB_SYNC), migrationsRun, ssl
 │   └── redis.configuration.ts           #   redis.*: host, port
 │
-├── database/                            # DATABASE-ONLY: conexiones, migraciones, CLI
+├── database/                            # DATABASE-ONLY (PostgreSQL): conexión, migraciones, CLI
 │   ├── data-source.ts                   #   DataSource standalone para el CLI (migration:*)
-│   ├── migrations/
-│   │   └── 1787702400000-initial-schema.ts  # schema completo: products, import_batches, user,
-│   │                                        #   enums, extensión uuid — corre al boot
-│   ├── postgres/
-│   │   ├── pg.module.ts                 #   TypeOrmModule.forRootAsync desde config pg.*
-│   │   └── pg-health.service.ts         #   ping + pg_stat_activity (lo consume health)
-│   └── redis/
-│       └── redis.module.ts              #   provider global REDIS_CLIENT (ioredis) + shutdown
+│   ├── migrations/                      #   las ÚNICAS dos migraciones — corren solas al boot
+│   │   ├── 1787702400000-initial-schema.ts  # schema: products, import_batches, user, enums, uuid ext
+│   │   └── 1787788800000-demo-user.ts       # datos mínimos: usuario demo@demo.com/demo (idempotente)
+│   └── postgres/
+│       ├── pg.module.ts                 #   TypeOrmModule.forRootAsync desde config pg.*
+│       └── pg-health.service.ts         #   ping + pg_stat_activity (lo consume health)
+│
+├── redis/                               # REDIS-ONLY (top-level, fuera de database/)
+│   └── redis.module.ts                  #   provider global REDIS_CLIENT (ioredis) + shutdown
+│                                        #   redis.service/constants llegan con su primer uso real (TK-008)
 │
 ├── common/                              # CROSS-CUTTING, agnóstico de dominio
 │   ├── common.module.ts                 #   módulo @Global: provee PaginationResponseBuilder
@@ -61,9 +63,6 @@ api/src/
     │   ├── import-row.normalizer.ts     #     trim, limpieza de moneda, vacíos → undefined
     │   ├── import-batch.entity.ts       #     auditoría: contadores + reporte JSONB
     │   └── import-result.interface.ts   #     shapes de la respuesta
-    ├── seed/                            #   ⚠️ EN DEPURACIÓN (esta iteración): sembraba el
-    │   ├── seed.module.ts / seed.service.ts          # catálogo desde el CSV al boot
-    │   └── loanpro-sample.csv           #     asset — SE ELIMINA (ver §3)
     ├── health/                          #   GET / y /health (app + recursos + postgres)
     │   └── health.module.ts / health.controller.ts
     └── status/                          #   GET /status/db y /status/redis (página de status FE)
@@ -71,7 +70,7 @@ api/src/
 ```
 
 Tests colocados (`*.spec.ts` junto al código, no listados): products.service, create-product.dto,
-import.service, import.integration (fixture real), import.hardening (adversarial), seed.service.
+import.service, import.integration (fixture real), import.hardening (adversarial).
 
 ---
 
@@ -81,8 +80,8 @@ import.service, import.integration (fixture real), import.hardening (adversarial
 |---|---|---|---|
 | 1 | `config/configuration.ts` centralizado | 3 archivos `registerAs` por namespace + barrel | ✅ **Cumplido (variante)** — mismo objetivo, un archivo por namespace escala mejor que uno monolítico. Sin cambio |
 | 2 | `config/env.validation.ts` | **No existe** — la app arranca con env inválido y falla tarde | ❌ **Gap real** — agregar validación de env al boot (class-validator sobre las vars, fail-fast). → ticket |
-| 3 | `database/` solo PostgreSQL + migrations + data-source | Cumple, pero **`database/redis/` vive adentro** | ⚠️ **Desviación** — la propuesta saca Redis a `src/redis/` como top-level. Acordado: mover |
-| 4 | `redis/` top-level con `redis.service.ts` (abstracción) + `redis.constants.ts` (keys/TTLs) | Solo el provider `REDIS_CLIENT`; los consumidores usan el cliente ioredis directo | ⚠️ **Gap parcial** — hoy el único consumidor es `status`. La abstracción (service + constants) se justifica cuando Redis tenga uso real (caché de búsqueda, TK-008/021). Mover ya; abstraer al implementar TK-008 |
+| 3 | `database/` solo PostgreSQL + migrations + data-source | ✅ Cumple — `redis` ya se movió fuera (2026-08-27) | ✅ **Resuelto** — `database/` es PostgreSQL-only |
+| 4 | `redis/` top-level con `redis.service.ts` (abstracción) + `redis.constants.ts` (keys/TTLs) | ✅ `src/redis/` top-level con el provider `REDIS_CLIENT`; sin service/constants aún | ⚠️ **Gap parcial** — hoy el único consumidor es `status` y usa el cliente directo. La abstracción (service + constants) se agrega cuando Redis tenga uso real (caché de búsqueda, TK-008/021) |
 | 5 | `common/decorators/` | `validators/` (@NoHtml) + `transformers/` (trimText) | ✅ **Equivalente** — son decoradores/transforms reutilizables con nombres más específicos. Opcional renombrar; no aporta |
 | 6 | `common/guards/` | El guard JWT vive en passport (`AuthGuard('jwt')`), sin carpeta propia | ⚠️ **Pendiente natural** — cuando TK-030 proteja el import, el guard reutilizable puede formalizarse aquí |
 | 7 | `common/interceptors/` | No existe | ⚠️ **Pendiente** — candidato: interceptor de transformación de respuesta/logging. No urgente (el middleware logger cubre hoy) |
@@ -91,16 +90,17 @@ import.service, import.integration (fixture real), import.hardening (adversarial
 | 10 | `common/utils/` (pagination, sanitizers) | `pagination/` + `transformers/` como carpetas propias | ✅ **Equivalente** — misma idea con carpetas por tema en vez de un cajón `utils/` |
 | 11 | `modules/<name>/repositories/` (capa de acceso a datos) | Los services usan el `Repository<T>` de TypeORM inyectado directo | ⚠️ **Trade-off consciente** — el Repository de TypeORM *ya es* la abstracción de datos (mockeable en tests, como demuestran los specs). Una clase repository propia se justifica cuando las queries crezcan (búsqueda TK-008: ILIKE + filtros + índices). Adoptar en `products` al implementar TK-008; no retrofitear los módulos simples |
 | 12 | `health/` fuera de modules (opcional) | Dentro de `modules/health/` | ✅ La propia propuesta lo marca opcional — se queda como módulo (consistencia: todo feature es módulo) |
-| 13 | Módulos: auth, users, products, import, seed, health, status | Idéntico | ✅ — con la nota de que `seed` cambia de propósito en esta iteración (§3) |
+| 13 | Módulos: auth, users, products, import, seed, health, status | auth, users, products, import, health, status | ✅ — `seed` ya no existe como módulo: se eliminó junto con el seed de catálogo; los datos mínimos (usuario demo) viven en una migración de datos (§3) |
 | 14 | (no está en la propuesta) `common/middleware/` | logger.middleware.ts | ✅ Se mantiene bajo common |
 
 ### Resumen ejecutivo
 
 La estructura actual **ya cumple el espíritu de la propuesta** (capas: config → infra → common →
-módulos top-level). Las 3 acciones que salen de la comparación:
+módulos top-level). Estado de las acciones que salieron de la comparación:
 
-1. **Ahora (esta iteración)**: mover `database/redis/` → `src/redis/` (database queda PostgreSQL-only).
-2. **Tickets existentes**: `common/filters/` = TK-014; guards formales al proteger import (TK-030).
+1. ✅ **Hecho (2026-08-27)**: `database/redis/` → `src/redis/` (database quedó PostgreSQL-only);
+   módulo `seed` eliminado y datos mínimos como migración (§3).
+2. **Tickets existentes**: `common/filters/` = TK-014; guards formales al proteger import (TK-030 fase 2).
 3. **Tickets nuevos**: validación de env al boot (`env.validation`); repository + `redis.service`/
    `redis.constants` cuando llegue la búsqueda (TK-008).
 
@@ -122,7 +122,7 @@ un **usuario demo para login**:
 
 Implementación: **migración de datos** (`demo-user`) junto a la de schema — idempotente
 (`ON CONFLICT DO NOTHING`), corre al boot como cualquier migración. El módulo `seed/` y el CSV
-embebido se eliminan; el CSV del challenge sigue disponible como fixture de tests
+embebido fueron eliminados; el CSV del challenge sigue disponible como fixture de tests
 (`api/test/fixtures/`) y para subirse manualmente desde la página de import.
 
 Migraciones que quedan (las dos necesarias, nada más):
