@@ -2,6 +2,7 @@ import type { IPaginatedResponse } from 'src/types/common';
 import type {
   ApiProduct,
   IProductItem,
+  IImportResult,
   IProductPayload,
   IProductListParams,
 } from 'src/types/product';
@@ -41,4 +42,11 @@ export async function updateProduct(
 
 export async function deleteProduct(productId: string): Promise<void> {
   await axiosInstance.delete(endpoints.product.delete(productId));
+}
+
+export async function importProductsCsv(file: File): Promise<IImportResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await axiosInstance.post<IImportResult>(endpoints.product.import, formData);
+  return res.data;
 }
