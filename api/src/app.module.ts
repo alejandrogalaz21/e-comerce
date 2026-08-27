@@ -6,6 +6,7 @@ import { PgConfig, AppConfig, RedisConfig } from '@/config'
 // Database
 import { PgModule } from '@/database/postgres/pg.module'
 import { RedisModule } from '@/database/redis/redis.module'
+import { SeedModule } from '@/database/seed/seed.module'
 // Common
 import { CommonModule } from '@/common/common.module'
 import { LoggerMiddleware } from '@/common/middleware/logger.middleware'
@@ -24,6 +25,7 @@ import { StatusModule } from '@/modules/status/status.module'
     }),
     PgModule,
     RedisModule,
+    SeedModule,
     CommonModule,
     UsersModule,
     ProductsModule,

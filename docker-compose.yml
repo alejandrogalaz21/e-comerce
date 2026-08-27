@@ -33,8 +33,7 @@ services:
     container_name: ecommerce-api
     environment:
       NODE_ENV: production
-      # DB_SYNC=true hasta que existan migraciones TypeORM (pendiente documentado en docs/02-analisis-base.md)
-      DB_SYNC: 'true'
+      SEED_ON_BOOT: 'true'
       PORT: 8080
       DB_HOST: db
       DB_PORT: 5432

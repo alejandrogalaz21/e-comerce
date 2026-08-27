@@ -1,4 +1,4 @@
-// src/database/postgres/pg.module.ts
+import { join } from 'path'
 import { Module } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
@@ -16,6 +16,8 @@ import { PgHealthService } from './pg-health.service'
         database: configService.get('pg.database'),
         autoLoadEntities: true,
         synchronize: configService.get('pg.synchronize'),
+        migrations: [join(__dirname, '..', 'migrations', '*{.ts,.js}')],
+        migrationsRun: configService.get('pg.migrationsRun'),
         ssl: configService.get('pg.ssl')
       }),
       inject: [ConfigService]
