@@ -56,7 +56,8 @@ LoggerMiddleware → (Guard) → ValidationPipe (DTO: transform + whitelist + fo
 
 | What | Where | Rule |
 |---|---|---|
-| Env access | `config/*.configuration.ts` | ONLY place allowed to read `process.env`. Everything else injects `ConfigService` and reads namespaced keys (`pg.host`). |
+| Env access | `config/*.configuration.ts` | ONLY place allowed to read `process.env`. Everything else injects `ConfigService` and reads namespaced keys (`pg.host`). The TypeORM CLI has no DI, so `database/data-source.ts` calls the config factory directly (`PgConfig()`) instead of reading env itself. |
+| DB connection params | `database/postgres/pg-connection.options.ts` | Shared by both consumers — the runtime module (via `ConfigService`) and the CLI data source. Add a new connection option here once, never in two places. |
 | Third-party clients (DB, cache, future queues) | `database/<engine>/` | One folder per backing service under `database/` (`postgres/`, `redis/`, …), provided as injectable modules/tokens. Domain modules never instantiate clients. |
 | Schema changes | `database/migrations/` | Always a migration (`npm run migration:generate`). `synchronize` stays off; `DB_SYNC=true` is a local-dev-only override. |
 | Initial/bootstrap data | `database/migrations/` | Minimal data migrations only (the demo login user, idempotent ON CONFLICT). Business data is NEVER pre-seeded — the app starts with an empty catalog and users create everything through the UI. |

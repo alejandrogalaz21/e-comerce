@@ -16,12 +16,15 @@ api/src/
 │   └── redis.configuration.ts           #   redis.*: host, port
 │
 ├── database/                            # DATA STORES: un subdirectorio por motor + el schema versionado
-│   ├── data-source.ts                   #   DataSource standalone para el CLI (migration:*)
+│   ├── data-source.ts                   #   DataSource standalone para el CLI (migration:*) —
+│                                        #     sin DI: reusa PgConfig() y el factory de conexión
 │   ├── migrations/                      #   las ÚNICAS dos migraciones — corren solas al boot
 │   │   ├── 1787702400000-initial-schema.ts  # schema: products, import_batches, user, enums, uuid ext
 │   │   └── 1787788800000-demo-user.ts       # datos mínimos: usuario demo@demo.com/demo (idempotente)
 │   ├── postgres/                        #   motor relacional (fuente de verdad)
 │   │   ├── pg.module.ts                 #     TypeOrmModule.forRootAsync desde config pg.*
+│   │   ├── pg-connection.options.ts     #     factory de opciones de conexión, compartido
+│   │   │                                #       entre el módulo (runtime) y el CLI
 │   │   └── pg-health.service.ts         #     ping + pg_stat_activity (lo consume health)
 │   └── redis/                           #   motor clave-valor (cache/locks a futuro)
 │       └── redis.module.ts              #     provider global REDIS_CLIENT (ioredis) + shutdown
