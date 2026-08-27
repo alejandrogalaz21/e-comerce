@@ -10,9 +10,10 @@ export default registerAs(
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      synchronize: process.env.DB_SYNC
-        ? process.env.DB_SYNC === 'true'
-        : process.env.NODE_ENV !== 'production',
+      synchronize: process.env.DB_SYNC === 'true',
+      migrationsRun: process.env.DB_MIGRATIONS_RUN
+        ? process.env.DB_MIGRATIONS_RUN === 'true'
+        : true,
       ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
     }
 )

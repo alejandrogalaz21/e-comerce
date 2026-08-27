@@ -6,5 +6,6 @@ export interface DatabaseConfig {
   password: string
   url?: string
   synchronize?: boolean
+  migrationsRun?: boolean
   ssl?: boolean | { rejectUnauthorized: boolean }
 }

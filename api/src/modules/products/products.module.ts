@@ -12,6 +12,7 @@ import { ImportRowNormalizer } from './import/import-row.normalizer'
 @Module({
   controllers: [ImportController, ProductsController],
   providers: [ProductsService, ImportService, ImportRowNormalizer],
-  imports: [TypeOrmModule.forFeature([Product, ImportBatch])]
+  imports: [TypeOrmModule.forFeature([Product, ImportBatch])],
+  exports: [ImportService]
 })
 export class ProductsModule {}
