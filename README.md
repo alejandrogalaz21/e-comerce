@@ -70,6 +70,39 @@ visual review):
 cd web && npm run storybook
 ```
 
+## Backend architecture (`api/`)
+
+NestJS 10 + TypeORM + PostgreSQL 16 + Redis, organized in three layers plus feature-based
+domain modules. The `products` module (with its `import/` submodule) is the reference
+implementation.
+
+```
+api/src/
+├── main.ts                   # bootstrap: prefix api/v1, global ValidationPipe, Swagger, CORS
+├── app.module.ts             # composition root
+├── config/                   # typed env namespaces (registerAs): app.*, pg.*, redis.*
+├── database/                 # INFRASTRUCTURE — connections, migrations, boot seed
+│   ├── postgres/  redis/     #   injectable clients (TypeORM connection, ioredis provider)
+│   ├── migrations/           #   versioned schema, run automatically at boot
+│   ├── data-source.ts        #   typeorm CLI entry (migration:generate|run|revert)
+│   └── seed/                 #   boot bootstrap: seeds via the real import pipeline (+ CSV asset)
+├── common/                   # CROSS-CUTTING — pagination system, sanitizers, logger middleware
+└── modules/<domain>/         # DOMAIN modules: products (+ import/), users, auth, health, status
+    ├── controller            #   HTTP only (routes, pipes, Swagger) — zero business logic
+    ├── service               #   business rules + repositories
+    ├── entities/  dto/       #   DB contract (constraints) / wire contract (validation + examples)
+```
+
+```
+Request flow:  middleware → guard → ValidationPipe (DTO) → controller → service → repository → DB constraints
+```
+
+Key rules: `process.env` is read only inside `config/`; schema changes are always migrations
+(`synchronize` off); money/weights are `numeric` (never float) and travel as strings; uploaded
+CSVs are processed **in memory** and never written to disk — what persists is the audit record
+(`import_batches` counters + per-row JSONB report). Full guide in
+`.claude/skills/be-architecture/SKILL.md`.
+
 ## Frontend architecture (`web/`)
 
 React 18 + Vite + strict TypeScript + MUI v5 + **TanStack Query (React Query)**, organized in
