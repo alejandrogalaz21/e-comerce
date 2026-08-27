@@ -24,6 +24,11 @@
 - [x] Docs: API_ENDPOINTS.md reescrito; dashboard público vía `CONFIG.auth.skip` (decisión spec §10.2)
 - [x] Backlog TK-007 → closed
 
+## Cobertura de tests de los casos del CSV (agregada post-cierre)
+- BE Jest: 28 tests (10 service + 18 DTO con el ValidationPipe real — XSS, SQLi, trims, límites, whitelist)
+- FE Vitest: 28 tests (schema zod, mapper ACL decimal/NULL, applyServerFieldErrors)
+- Playwright: 11 e2e (5 CRUD + 6 casos CSV en la UI real, incluida la verificación de que la tabla sobrevive al SQLi)
+
 ## Notas de cierre
 - Hallazgo UX (no bloqueante): en viewports < ~1300px el DataGrid virtualiza la columna de acciones
   fuera de vista (scroll horizontal para llegar al menú). Anotado para pulido futuro.
