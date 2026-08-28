@@ -126,11 +126,11 @@ export function ProductListView() {
   );
 
   const columns: GridColDef[] = [
-    { field: 'sku', headerName: 'SKU', width: 140, sortable: false },
+    { field: 'sku', headerName: 'SKU', width: 120, sortable: false },
     {
       field: 'name',
       headerName: 'Name',
-      width: 240,
+      width: 200,
       hideable: false,
       renderCell: (params) => (
         <RenderCellProduct params={params} onViewRow={() => handleViewRow(params.row.id)} />
@@ -140,40 +140,40 @@ export function ProductListView() {
       field: 'description',
       headerName: 'Description',
       flex: 1,
-      minWidth: 220,
+      minWidth: 180,
       sortable: false,
       renderCell: (params) => <RenderCellDescription params={params} />,
     },
-    { field: 'category', headerName: 'Category', width: 160, sortable: false },
+    { field: 'category', headerName: 'Category', width: 130, sortable: false },
     {
       field: 'price',
       headerName: 'Price',
-      width: 120,
+      width: 100,
       valueFormatter: (value: number) => fCurrency(value),
     },
     {
       field: 'stock',
       headerName: 'Stock',
-      width: 100,
+      width: 90,
       renderCell: (params) => <RenderCellStock params={params} />,
     },
     {
       field: 'weightKg',
       headerName: 'Weight (kg)',
-      width: 120,
+      width: 110,
       sortable: false,
       valueFormatter: (value: number | null) => (value == null ? '-' : value),
     },
     {
       field: 'createdAt',
       headerName: 'Created at',
-      width: 160,
+      width: 150,
       renderCell: (params) => <RenderCellCreatedAt params={params} />,
     },
     {
       field: 'updatedAt',
       headerName: 'Updated at',
-      width: 160,
+      width: 150,
       renderCell: (params) => <RenderCellUpdatedAt params={params} />,
     },
     {
@@ -182,7 +182,7 @@ export function ProductListView() {
       headerName: ' ',
       align: 'right',
       headerAlign: 'right',
-      width: 80,
+      width: 60,
       sortable: false,
       filterable: false,
       disableColumnMenu: true,
