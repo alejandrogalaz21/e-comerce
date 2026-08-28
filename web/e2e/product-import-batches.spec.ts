@@ -1,8 +1,9 @@
-import { test, expect, request } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 import type { Page } from '@playwright/test';
 
-const API_URL = 'http://localhost:4000';
+import { deleteAllProducts, createAuthenticatedApiContext } from './support/auth';
+
 const CSV_FIXTURE = 'e2e/fixtures/loanpro-sample.csv';
 
 test.describe.configure({ mode: 'serial' });
@@ -28,19 +29,9 @@ async function expectStat(page: Page, label: string, value: number) {
 }
 
 test.beforeAll(async () => {
-  const api = await request.newContext({ baseURL: API_URL });
+  const api = await createAuthenticatedApiContext();
 
-  for (let guard = 0; guard < 50; guard += 1) {
-    const res = await api.get('/api/v1/products', { params: { page: 1, limit: 100 } });
-    expect(res.ok()).toBeTruthy();
-
-    const body = (await res.json()) as { data: Array<{ id: string }> };
-    if (!body.data.length) {
-      break;
-    }
-
-    await Promise.all(body.data.map((item) => api.delete(`/api/v1/products/${item.id}`)));
-  }
+  await deleteAllProducts(api);
 
   await api.dispose();
 });

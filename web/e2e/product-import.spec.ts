@@ -1,8 +1,9 @@
-import { test, expect, request } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 import type { Page } from '@playwright/test';
 
-const API_URL = 'http://localhost:4000';
+import { deleteAllProducts, createAuthenticatedApiContext } from './support/auth';
+
 const CSV_FIXTURE = 'e2e/fixtures/loanpro-sample.csv';
 const TXT_FIXTURE = 'e2e/fixtures/not-a-csv.txt';
 
@@ -22,19 +23,9 @@ function rejectedTable(page: Page) {
 
 test.beforeAll(async () => {
   // Wipe all products so the import numbers are deterministic regardless of prior runs.
-  const api = await request.newContext({ baseURL: API_URL });
+  const api = await createAuthenticatedApiContext();
 
-  for (let guard = 0; guard < 50; guard += 1) {
-    const res = await api.get('/api/v1/products', { params: { page: 1, limit: 100 } });
-    expect(res.ok()).toBeTruthy();
-
-    const body = (await res.json()) as { data: Array<{ id: string }> };
-    if (!body.data.length) {
-      break;
-    }
-
-    await Promise.all(body.data.map((item) => api.delete(`/api/v1/products/${item.id}`)));
-  }
+  await deleteAllProducts(api);
 
   const check = await api.get('/api/v1/products', { params: { page: 1, limit: 1 } });
   const checkBody = (await check.json()) as { data: unknown[] };

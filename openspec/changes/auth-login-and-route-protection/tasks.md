@@ -42,10 +42,10 @@
 
 ## 6. QA y documentación
 
-- [ ] 6.1 Playwright: fixture de sesión con el usuario demo reutilizando el estado de almacenamiento
-- [ ] 6.2 Adaptar los specs existentes del dashboard (products CRUD, import, batches) para que se autentiquen
-- [ ] 6.3 Specs nuevos: dashboard sin sesión redirige a login; tras login aterriza en el destino solicitado; la tienda y la compra siguen operando **sin** sesión
-- [ ] 6.4 Verificación end-to-end en docker desde volumen vacío: login demo, alta de producto, import, y compra anónima
+- [x] 6.1 Playwright: fixture de sesión con el usuario demo reutilizando el estado de almacenamiento
+- [x] 6.2 Adaptar los specs existentes del dashboard (products CRUD, import, batches) para que se autentiquen
+- [x] 6.3 Specs nuevos: dashboard sin sesión redirige a login; tras login aterriza en el destino solicitado; la tienda y la compra siguen operando **sin** sesión
+- [x] 6.4 Verificación end-to-end en docker desde volumen vacío: login demo, alta de producto, import, y compra anónima
 - [x] 6.5 `README.md`: credenciales demo, qué queda público y qué exige sesión
 - [x] 6.6 `docs/initial.md` §10.2: actualizar la decisión "sin autenticación" con el alcance real y su justificación
 - [ ] 6.7 Cerrar TK-031 y TK-030 en `docs/backlog.md` al archivar el change
