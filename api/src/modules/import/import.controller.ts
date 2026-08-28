@@ -60,10 +60,10 @@ export class ImportController {
         batchId: '0d6cd087-3f2e-4f30-b0aa-cf9c93b1c0d5',
         summary: {
           totalRows: 97,
-          inserted: 88,
-          updated: 3,
+          inserted: 85,
+          updated: 0,
           unchanged: 0,
-          rejected: 4,
+          rejected: 10,
           skippedEmpty: 2
         },
         rejected: [
@@ -76,12 +76,19 @@ export class ImportController {
             line: 16,
             sku: 'DL-007',
             errors: ['stock must not be less than 0']
+          },
+          {
+            line: 36,
+            sku: 'RS-001',
+            errors: [
+              'duplicate sku in the file (lines 2, 36) with conflicting data — a sku must appear at most once per import'
+            ]
           }
         ],
         warnings: [
           {
-            line: 36,
-            sku: 'RS-001',
+            line: 12,
+            sku: 'CB-010',
             message: 'sku already exists with different data — updated'
           }
         ],

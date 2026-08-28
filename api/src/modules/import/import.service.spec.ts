@@ -293,7 +293,7 @@ describe('ImportService', () => {
       )
     })
 
-    it('processes in-file duplicates sequentially against the in-memory state', async () => {
+    it('rejects every row of a sku duplicated in the file with conflicting data', async () => {
       const result = await service.importCsv(
         csvFile([
           'Bluetooth Speaker,BS-021,Portable speaker,Electronics,59.99,110,0.8',
@@ -302,16 +302,47 @@ describe('ImportService', () => {
       )
 
       expect(result.summary).toEqual(
-        expect.objectContaining({ inserted: 1, updated: 1, unchanged: 0 })
+        expect.objectContaining({
+          inserted: 0,
+          updated: 0,
+          unchanged: 0,
+          rejected: 2
+        })
       )
-      expect(result.warnings).toEqual([
-        {
-          line: 3,
-          sku: 'BS-021',
-          message: 'sku already exists with different data — updated'
-        }
+      expect(result.rejected.map(row => row.line)).toEqual([2, 3])
+      expect(result.rejected[0].errors[0]).toContain('duplicate sku in the file')
+      expect(result.rejected[0].errors[0]).toContain('conflicting data')
+      expect(result.warnings).toEqual([])
+      expect(mockProductRepository.create).not.toHaveBeenCalled()
+      expect(mockProductRepository.save).not.toHaveBeenCalled()
+    })
+
+    it('rejects a sku duplicated with identical data and says so in the message', async () => {
+      const row = 'Bluetooth Speaker,BS-021,Portable speaker,Electronics,59.99,110,0.8'
+      const result = await service.importCsv(csvFile([row, row]))
+
+      expect(result.summary).toEqual(
+        expect.objectContaining({ inserted: 0, rejected: 2 })
+      )
+      expect(result.rejected[0].errors[0]).toContain('identical data')
+      expect(mockProductRepository.create).not.toHaveBeenCalled()
+    })
+
+    it('keeps importing the rows whose sku is not duplicated', async () => {
+      const result = await service.importCsv(
+        csvFile([
+          'Camping Tent,CT-005,Tent,Outdoors,199.99,25,4.5',
+          'Bluetooth Speaker,BS-021,Portable speaker,Electronics,59.99,110,0.8',
+          'Bluetooth Speaker,BS-021,Same SKU different price,Electronics,49.99,200,0.75'
+        ])
+      )
+
+      expect(result.summary).toEqual(
+        expect.objectContaining({ inserted: 1, rejected: 2 })
+      )
+      expect(result.created).toEqual([
+        { line: 2, sku: 'CT-005', name: 'Camping Tent' }
       ])
-      expect(mockProductRepository.findOne).toHaveBeenCalledTimes(1)
     })
   })
 

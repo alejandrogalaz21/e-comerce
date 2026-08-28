@@ -59,10 +59,10 @@ test.describe('product CSV import', () => {
     await expect(page.getByText('Total rows')).toBeVisible({ timeout: 30_000 });
 
     await expectStat(page, 'Total rows', 97);
-    await expectStat(page, 'Created', 87);
-    await expectStat(page, 'Updated', 3);
+    await expectStat(page, 'Created', 85);
+    await expectStat(page, 'Updated', 0);
     await expectStat(page, 'Unchanged', 0);
-    await expectStat(page, 'Rejected', 5);
+    await expectStat(page, 'Rejected', 10);
     await expectStat(page, 'Skipped empty', 2);
 
     // Issues table: 5 rejected rows plus the 3 duplicate-sku updates, merged and
@@ -70,8 +70,8 @@ test.describe('product CSV import', () => {
     const issues = page.getByTestId('import-issues');
     await expect(issues.getByText('Rows with issues (8)')).toBeVisible();
     await expect(issues.locator('tbody tr')).toHaveCount(8);
-    await expect(issues.locator('tbody tr').filter({ hasText: 'Rejected row' })).toHaveCount(5);
-    await expect(issues.locator('tbody tr').filter({ hasText: 'Updated row' })).toHaveCount(3);
+    await expect(issues.locator('tbody tr').filter({ hasText: 'Rejected row' })).toHaveCount(10);
+    await expect(issues.locator('tbody tr').filter({ hasText: 'Updated row' })).toHaveCount(0);
 
     const line7 = issues
       .locator('tbody tr')
@@ -93,12 +93,13 @@ test.describe('product CSV import', () => {
       .locator('tbody tr')
       .filter({ has: page.getByRole('cell', { name: '36', exact: true }) });
     await expect(line36).toContainText('RS-001');
-    await expect(line36).toContainText('Updated row');
+    await expect(line36).toContainText('Rejected row');
+    await expect(line36).toContainText('duplicate sku in the file');
 
     // Created rows table: one row per inserted product.
     const created = page.getByTestId('import-created');
-    await expect(created.getByText('Created rows (87)')).toBeVisible();
-    await expect(created.locator('tbody tr')).toHaveCount(87);
+    await expect(created.getByText('Created rows (85)')).toBeVisible();
+    await expect(created.locator('tbody tr')).toHaveCount(85);
     await expect(
       created.locator('tbody tr').filter({ hasText: 'RS-001' }).first()
     ).toContainText('Running Shoes');
@@ -123,13 +124,13 @@ test.describe('product CSV import', () => {
     const grid = page.getByRole('grid');
     await expect(grid).toBeVisible();
 
-    // 87 products imported into an empty catalog.
-    await expect(page.getByText(/of 87/)).toBeVisible({ timeout: 15_000 });
+    // 85 products imported into an empty catalog.
+    await expect(page.getByText(/of 85/)).toBeVisible({ timeout: 15_000 });
 
     // Page through the grid (25 rows per page) until both names have been seen.
     await page.getByRole('combobox', { name: /rows per page/i }).click();
     await page.getByRole('option', { name: '25' }).click();
-    await expect(page.getByText(/1–25 of 87/)).toBeVisible();
+    await expect(page.getByText(/1–25 of 85/)).toBeVisible();
 
     const wanted = new Set(['Running Shoes', 'Organic Coffee Beans']);
     const nextPage = page.getByRole('button', { name: 'Go to next page' });
