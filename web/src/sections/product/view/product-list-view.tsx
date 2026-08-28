@@ -6,7 +6,7 @@ import type {
   GridRowSelectionModel,
 } from '@mui/x-data-grid';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
@@ -25,7 +25,6 @@ import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
 import { useBoolean } from 'src/hooks/use-boolean';
-import { useDebounce } from 'src/hooks/use-debounce';
 
 import { fCurrency } from 'src/utils/format-number';
 
@@ -37,6 +36,7 @@ import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { useProductListParams } from '../hooks/use-product-list-params';
+import { useProductListColumns } from '../hooks/use-product-list-columns';
 import { ProductFiltersToolbar } from '../components/product-filters-toolbar';
 import { DEFAULT_SORT_BY, DEFAULT_SORT_DIR, toProductListParams } from '../product-list-params';
 import { useGetProducts, useDeleteProduct, useGetProductCategories } from '../hooks/use-product';
@@ -45,6 +45,7 @@ import {
   RenderCellProduct,
   RenderCellCreatedAt,
   RenderCellUpdatedAt,
+  RenderCellDescription,
 } from '../product-table-row';
 
 // ----------------------------------------------------------------------
@@ -56,20 +57,7 @@ export function ProductListView() {
 
   const { state, apply, reset } = useProductListParams();
 
-  const [searchTerm, setSearchTerm] = useState(state.q);
-
-  const debouncedSearchTerm = useDebounce(searchTerm, 400);
-
-  useEffect(() => {
-    setSearchTerm(state.q);
-  }, [state.q]);
-
-  useEffect(() => {
-    if (debouncedSearchTerm !== state.q) {
-      apply({ q: debouncedSearchTerm }, { replace: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchTerm]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { products, pagination, productsLoading, productsValidating } = useGetProducts(
     toProductListParams(state)
@@ -142,12 +130,19 @@ export function ProductListView() {
     {
       field: 'name',
       headerName: 'Name',
-      flex: 1,
-      minWidth: 240,
+      width: 240,
       hideable: false,
       renderCell: (params) => (
         <RenderCellProduct params={params} onViewRow={() => handleViewRow(params.row.id)} />
       ),
+    },
+    {
+      field: 'description',
+      headerName: 'Description',
+      flex: 1,
+      minWidth: 220,
+      sortable: false,
+      renderCell: (params) => <RenderCellDescription params={params} />,
     },
     { field: 'category', headerName: 'Category', width: 160, sortable: false },
     {
@@ -215,10 +210,19 @@ export function ProductListView() {
     },
   ];
 
+  const {
+    columns: sizedColumns,
+    columnVisibilityModel,
+    onColumnWidthChange,
+    onColumnVisibilityModelChange,
+    resetColumns,
+    columnsCustomized,
+  } = useProductListColumns(columns);
+
   const totalResults = pagination?.total ?? 0;
 
   const hasActiveFilters =
-    !!state.q ||
+    !!state.q.length ||
     !!state.category.length ||
     state.minPrice !== undefined ||
     state.maxPrice !== undefined ||
@@ -282,7 +286,10 @@ export function ProductListView() {
             checkboxSelection
             disableRowSelectionOnClick
             rows={products}
-            columns={columns}
+            columns={sizedColumns}
+            columnVisibilityModel={columnVisibilityModel}
+            onColumnWidthChange={onColumnWidthChange}
+            onColumnVisibilityModelChange={onColumnVisibilityModelChange}
             loading={productsLoading || productsValidating}
             pageSizeOptions={[5, 10, 25]}
             paginationMode="server"
@@ -296,8 +303,8 @@ export function ProductListView() {
             slots={{
               toolbar: CustomToolbar,
               noRowsOverlay: () => {
-                if (state.q) {
-                  return <EmptyContent title={`No results found for "${state.q}"`} />;
+                if (state.q.length) {
+                  return <EmptyContent title={`No results found for "${state.q.join('", "')}"`} />;
                 }
                 return hasActiveFilters ? (
                   <EmptyContent title="No products match these filters" />
@@ -311,6 +318,8 @@ export function ProductListView() {
               toolbar: {
                 selectedRowIds,
                 onOpenConfirmDeleteRows: handleOpenConfirmDeleteRows,
+                onResetColumns: resetColumns,
+                columnsCustomized,
               },
             }}
             sx={{ [`& .${gridClasses.cell}`]: { alignItems: 'center', display: 'inline-flex' } }}
@@ -343,13 +352,20 @@ export function ProductListView() {
 type CustomToolbarProps = {
   selectedRowIds: GridRowSelectionModel;
   onOpenConfirmDeleteRows: () => void;
+  onResetColumns: () => void;
+  columnsCustomized: boolean;
 };
 
 declare module '@mui/x-data-grid' {
   interface ToolbarPropsOverrides extends CustomToolbarProps {}
 }
 
-function CustomToolbar({ selectedRowIds, onOpenConfirmDeleteRows }: CustomToolbarProps) {
+function CustomToolbar({
+  selectedRowIds,
+  onOpenConfirmDeleteRows,
+  onResetColumns,
+  columnsCustomized,
+}: CustomToolbarProps) {
   return (
     <GridToolbarContainer>
       <Stack spacing={1} flexGrow={1} direction="row" alignItems="center" justifyContent="flex-end">
@@ -362,6 +378,17 @@ function CustomToolbar({ selectedRowIds, onOpenConfirmDeleteRows }: CustomToolba
             onClick={onOpenConfirmDeleteRows}
           >
             Delete ({selectedRowIds.length})
+          </Button>
+        )}
+
+        {columnsCustomized && (
+          <Button
+            size="small"
+            color="inherit"
+            startIcon={<Iconify icon="solar:restart-bold" />}
+            onClick={onResetColumns}
+          >
+            Reset layout
           </Button>
         )}
 

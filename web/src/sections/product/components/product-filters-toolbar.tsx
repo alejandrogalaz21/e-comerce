@@ -46,11 +46,30 @@ export function ProductFiltersToolbar({
   onReset,
 }: Props) {
   const hasFilters =
-    !!state.q ||
+    !!state.q.length ||
     !!state.category.length ||
     state.minPrice !== undefined ||
     state.maxPrice !== undefined ||
     state.inStock !== undefined;
+
+  const handleRemoveTerm = useCallback(
+    (value: string) => {
+      onApply({ q: state.q.filter((term) => term !== value) });
+    },
+    [onApply, state.q]
+  );
+
+  const handleSubmitTerm = useCallback(() => {
+    const term = searchTerm.trim();
+
+    if (!term || state.q.includes(term)) {
+      onSearchChange('');
+      return;
+    }
+
+    onApply({ q: [...state.q, term] });
+    onSearchChange('');
+  }, [onApply, onSearchChange, searchTerm, state.q]);
 
   const handleRemoveCategory = useCallback(
     (value: string) => {
@@ -64,8 +83,14 @@ export function ProductFiltersToolbar({
       size="small"
       value={searchTerm}
       onChange={(event) => onSearchChange(event.target.value)}
-      placeholder="Search products..."
+      placeholder="Search and press Enter..."
       inputProps={{ 'aria-label': 'Search products' }}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          handleSubmitTerm();
+        }
+      }}
       sx={{ width: { xs: 1, sm: 260 } }}
       InputProps={{
         startAdornment: (
@@ -152,8 +177,15 @@ export function ProductFiltersToolbar({
 
       {hasFilters && (
         <FiltersResult totalResults={totalResults} onReset={onReset}>
-          <FiltersBlock label="Search:" isShow={!!state.q}>
-            <Chip {...chipProps} label={state.q} onDelete={() => onApply({ q: '' })} />
+          <FiltersBlock label="Search:" isShow={!!state.q.length}>
+            {state.q.map((term) => (
+              <Chip
+                {...chipProps}
+                key={term}
+                label={term}
+                onDelete={() => handleRemoveTerm(term)}
+              />
+            ))}
           </FiltersBlock>
 
           <FiltersBlock label="Category:" isShow={!!state.category.length}>

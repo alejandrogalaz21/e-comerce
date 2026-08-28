@@ -56,6 +56,7 @@ test.describe('product search', () => {
     await expect(rowBySku(page, targetSku)).toHaveCount(0);
 
     await page.getByLabel('Search products').fill(targetSku);
+    await page.getByLabel('Search products').press('Enter');
 
     await expect(rowBySku(page, targetSku)).toHaveCount(1);
     await expect(rowBySku(page, targetSku)).toContainText(targetName);
@@ -70,10 +71,16 @@ test.describe('product search', () => {
     const searchBox = page.getByLabel('Search products');
 
     await searchBox.fill(`no-such-product-${runId}`);
+    await searchBox.press('Enter');
 
     await expect(page.getByText(`No results found for "no-such-product-${runId}"`)).toBeVisible();
 
-    await page.getByRole('button', { name: 'Clear search' }).click();
+    // The term became a chip, so clearing it means removing the chip.
+    await page
+      .locator('.MuiChip-root')
+      .filter({ hasText: `no-such-product-${runId}` })
+      .locator('.MuiChip-deleteIcon')
+      .click();
 
     await expect(searchBox).toHaveValue('');
     await expect(page.getByRole('row').filter({ hasText: `FILL-${runId}-` })).not.toHaveCount(0);

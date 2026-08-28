@@ -22,7 +22,12 @@ const authEndpoints = {
   signUp: '/api/v1/auth/sign-up',
 };
 
-const axiosInstance = axios.create({ baseURL: CONFIG.site.serverUrl });
+const axiosInstance = axios.create({
+  baseURL: CONFIG.site.serverUrl,
+  // Repeat the key for array params (`q=a&q=b`) instead of axios' default `q[]=a`,
+  // which the API does not parse.
+  paramsSerializer: { indexes: null },
+});
 
 axiosInstance.interceptors.request.use((config) => attachAccessToken(config, getAccessToken()));
 

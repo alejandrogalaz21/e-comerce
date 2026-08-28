@@ -26,7 +26,7 @@ export function useProductListParams() {
 
   const navigateTo = useCallback(
     (next: IProductListState, options?: ApplyOptions) => {
-      const query = new URLSearchParams(serializeProductListState(next)).toString();
+      const query = serializeProductListState(next).toString();
       const href = query ? `${pathname}?${query}` : pathname;
 
       if (options?.replace) {

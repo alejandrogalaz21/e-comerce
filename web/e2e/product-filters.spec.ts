@@ -198,4 +198,51 @@ test.describe('product list filters', () => {
 
     await expect(firstDataRow(page)).not.toContainText(target);
   });
+
+  test('searches several terms at once and returns the union', async ({ page }) => {
+    await page.goto('/dashboard/product');
+
+    const search = page.getByLabel('Search products');
+
+    await search.fill(skuFor(1));
+    await search.press('Enter');
+    await expect(totalResults(page)).toHaveText('1');
+
+    await search.fill(skuFor(2));
+    await search.press('Enter');
+
+    // Union, not intersection: no product matches both SKUs at once.
+    await expect(totalResults(page)).toHaveText('2');
+    await expect(page.locator('.MuiDataGrid-row')).toHaveCount(2);
+
+    await page
+      .locator('.MuiChip-root')
+      .filter({ hasText: skuFor(1) })
+      .locator('.MuiChip-deleteIcon')
+      .click();
+
+    await expect(totalResults(page)).toHaveText('1');
+  });
+
+  test('remembers a resized column across navigation', async ({ page }) => {
+    await page.goto('/dashboard/product');
+
+    const header = page.locator('.MuiDataGrid-columnHeader[data-field="name"]');
+    const before = await header.boundingBox();
+
+    await page.evaluate(() => {
+      window.localStorage.setItem(
+        'product-list-columns',
+        JSON.stringify({ widths: { name: 420 }, visibility: {} })
+      );
+    });
+
+    await page.goto('/dashboard/product/import');
+    await page.goto('/dashboard/product');
+
+    const after = await header.boundingBox();
+
+    expect(before?.width).toBeTruthy();
+    expect(Math.round(after?.width ?? 0)).toBe(420);
+  });
 });

@@ -71,12 +71,22 @@ export class ProductsService {
       .skip(offset)
       .take(limit)
 
-    const term = filters.q?.trim()
-    if (term) {
-      query.andWhere(
-        `(product.name ILIKE :term OR product.sku ILIKE :term OR product.description ILIKE :term OR product.category ILIKE :term)`,
-        { term: `%${escapeLikeWildcards(term)}%` }
+    const terms = filters.q?.map(value => value.trim()).filter(Boolean)
+    if (terms?.length) {
+      // Several terms are a union: the admin asks for "these products", not for
+      // rows matching all of them at once.
+      const clauses = terms.map(
+        (_, index) =>
+          `(product.name ILIKE :term${index} OR product.sku ILIKE :term${index} OR product.description ILIKE :term${index} OR product.category ILIKE :term${index})`
       )
+      const parameters = Object.fromEntries(
+        terms.map((term, index) => [
+          `term${index}`,
+          `%${escapeLikeWildcards(term)}%`
+        ])
+      )
+
+      query.andWhere(`(${clauses.join(' OR ')})`, parameters)
     }
 
     const categories = filters.category?.filter(value => value.trim())

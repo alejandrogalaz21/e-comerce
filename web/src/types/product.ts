@@ -51,7 +51,7 @@ export type IProductSortField = (typeof PRODUCT_SORT_FIELDS)[number];
 export type IProductSortDirection = 'asc' | 'desc';
 
 export type IProductFilters = {
-  q?: string;
+  q?: string[];
   category?: string[];
   minPrice?: number;
   maxPrice?: number;

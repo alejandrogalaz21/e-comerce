@@ -9,7 +9,7 @@ import { PRODUCT_SORT_FIELDS } from 'src/types/product';
 // ----------------------------------------------------------------------
 
 export type IProductListState = {
-  q: string;
+  q: string[];
   category: string[];
   minPrice?: number;
   maxPrice?: number;
@@ -26,7 +26,7 @@ export const DEFAULT_PAGE = 1;
 export const DEFAULT_LIMIT = 10;
 
 export const defaultProductListState: IProductListState = {
-  q: '',
+  q: [],
   category: [],
   sortBy: DEFAULT_SORT_BY,
   sortDir: DEFAULT_SORT_DIR,
@@ -53,6 +53,12 @@ function parseBoolean(raw: string | null): boolean | undefined {
   return undefined;
 }
 
+/** Search terms travel as repeated params, since a term may itself contain a comma. */
+function parseTerms(raw: string[]): string[] {
+  const terms = raw.map((value) => value.trim()).filter(Boolean);
+  return Array.from(new Set(terms));
+}
+
 function parseCategories(raw: string | null): string[] {
   if (!raw) return [];
   const categories = raw
@@ -76,7 +82,7 @@ export function parseProductListState(searchParams: URLSearchParams): IProductLi
   const rangeIsValid = isPriceRangeValid(minPrice, maxPrice);
 
   return {
-    q: searchParams.get('q')?.trim() ?? '',
+    q: parseTerms(searchParams.getAll('q')),
     category: parseCategories(searchParams.get('category')),
     minPrice: rangeIsValid ? minPrice : undefined,
     maxPrice: rangeIsValid ? maxPrice : undefined,
@@ -90,18 +96,19 @@ export function parseProductListState(searchParams: URLSearchParams): IProductLi
   };
 }
 
-export function serializeProductListState(state: IProductListState): Record<string, string> {
-  const params: Record<string, string> = {};
+export function serializeProductListState(state: IProductListState): URLSearchParams {
+  const params = new URLSearchParams();
 
-  if (state.q.trim()) params.q = state.q.trim();
-  if (state.category.length) params.category = state.category.join(',');
-  if (state.minPrice !== undefined) params.minPrice = String(state.minPrice);
-  if (state.maxPrice !== undefined) params.maxPrice = String(state.maxPrice);
-  if (state.inStock !== undefined) params.inStock = String(state.inStock);
-  if (state.sortBy !== DEFAULT_SORT_BY) params.sortBy = state.sortBy;
-  if (state.sortDir !== DEFAULT_SORT_DIR) params.sortDir = state.sortDir;
-  if (state.page !== DEFAULT_PAGE) params.page = String(state.page);
-  if (state.limit !== DEFAULT_LIMIT) params.limit = String(state.limit);
+  state.q.forEach((term) => params.append('q', term));
+
+  if (state.category.length) params.set('category', state.category.join(','));
+  if (state.minPrice !== undefined) params.set('minPrice', String(state.minPrice));
+  if (state.maxPrice !== undefined) params.set('maxPrice', String(state.maxPrice));
+  if (state.inStock !== undefined) params.set('inStock', String(state.inStock));
+  if (state.sortBy !== DEFAULT_SORT_BY) params.set('sortBy', state.sortBy);
+  if (state.sortDir !== DEFAULT_SORT_DIR) params.set('sortDir', state.sortDir);
+  if (state.page !== DEFAULT_PAGE) params.set('page', String(state.page));
+  if (state.limit !== DEFAULT_LIMIT) params.set('limit', String(state.limit));
 
   return params;
 }
@@ -110,7 +117,7 @@ export function toProductListParams(state: IProductListState): IProductListParam
   return {
     page: state.page,
     limit: state.limit,
-    ...(state.q ? { q: state.q } : {}),
+    ...(state.q.length ? { q: state.q } : {}),
     ...(state.category.length ? { category: state.category } : {}),
     ...(state.minPrice !== undefined ? { minPrice: state.minPrice } : {}),
     ...(state.maxPrice !== undefined ? { maxPrice: state.maxPrice } : {}),
@@ -122,7 +129,7 @@ export function toProductListParams(state: IProductListState): IProductListParam
 
 export function countActiveFilters(state: IProductListState): number {
   return (
-    (state.q ? 1 : 0) +
+    state.q.length +
     state.category.length +
     (state.minPrice !== undefined || state.maxPrice !== undefined ? 1 : 0) +
     (state.inStock !== undefined ? 1 : 0)

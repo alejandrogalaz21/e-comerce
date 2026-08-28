@@ -22,7 +22,7 @@ describe('parseProductListState', () => {
 
   it('reads every supported parameter', () => {
     expect(parse('q=camping&category=Electronics,Tools&minPrice=10&maxPrice=30&inStock=true&sortBy=price&sortDir=asc&page=3&limit=25')).toEqual({
-      q: 'camping',
+      q: ['camping'],
       category: ['Electronics', 'Tools'],
       minPrice: 10,
       maxPrice: 30,
@@ -84,12 +84,12 @@ describe('parseProductListState', () => {
 
 describe('serializeProductListState', () => {
   it('omits every default so a clean view has a clean URL', () => {
-    expect(serializeProductListState(defaultProductListState)).toEqual({});
+    expect(serializeProductListState(defaultProductListState).toString()).toBe('');
   });
 
   it('round trips a fully populated state', () => {
     const state = {
-      q: 'camping',
+      q: ['camping', 'PST-017'],
       category: ['Electronics', 'Tools'],
       minPrice: 10,
       maxPrice: 30,
@@ -100,14 +100,14 @@ describe('serializeProductListState', () => {
       limit: 25,
     };
 
-    const query = new URLSearchParams(serializeProductListState(state)).toString();
+    const query = serializeProductListState(state).toString();
 
     expect(parseProductListState(new URLSearchParams(query))).toEqual(state);
   });
 
   it('keeps inStock=false in the URL, since it is a real filter', () => {
     expect(
-      serializeProductListState({ ...defaultProductListState, inStock: false }).inStock
+      serializeProductListState({ ...defaultProductListState, inStock: false }).get('inStock')
     ).toBe('false');
   });
 });
@@ -125,14 +125,14 @@ describe('toProductListParams', () => {
   it('forwards the active filters', () => {
     const params = toProductListParams({
       ...defaultProductListState,
-      q: 'shoes',
+      q: ['shoes'],
       category: ['Footwear'],
       minPrice: 10,
       inStock: true,
     });
 
     expect(params).toMatchObject({
-      q: 'shoes',
+      q: ['shoes'],
       category: ['Footwear'],
       minPrice: 10,
       inStock: true,
@@ -157,16 +157,41 @@ describe('countActiveFilters', () => {
     expect(
       countActiveFilters({
         ...defaultProductListState,
-        q: 'shoes',
+        q: ['shoes', 'boots'],
         category: ['Electronics', 'Tools'],
         minPrice: 10,
         maxPrice: 30,
         inStock: true,
       })
-    ).toBe(5);
+    ).toBe(6);
   });
 
   it('is zero for a clean state', () => {
     expect(countActiveFilters(defaultProductListState)).toBe(0);
+  });
+});
+
+describe('multi-term search', () => {
+  it('reads repeated q params as separate terms', () => {
+    expect(parse('q=PST-017&q=PRJ-001').q).toEqual(['PST-017', 'PRJ-001']);
+  });
+
+  it('trims and deduplicates terms', () => {
+    expect(parse('q=%20shoes%20&q=shoes&q=').q).toEqual(['shoes']);
+  });
+
+  it('keeps a term containing a comma intact', () => {
+    const state = { ...defaultProductListState, q: ['Single origin, medium roast'] };
+    const query = serializeProductListState(state).toString();
+
+    expect(parseProductListState(new URLSearchParams(query)).q).toEqual([
+      'Single origin, medium roast',
+    ]);
+  });
+
+  it('writes one q param per term', () => {
+    const params = serializeProductListState({ ...defaultProductListState, q: ['a', 'b'] });
+
+    expect(params.getAll('q')).toEqual(['a', 'b']);
   });
 });

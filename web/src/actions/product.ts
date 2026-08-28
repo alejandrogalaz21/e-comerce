@@ -26,7 +26,7 @@ export async function getProducts(
     params: {
       page,
       limit,
-      ...(q?.trim() ? { q: q.trim() } : {}),
+      ...(q?.length ? { q } : {}),
       ...(category?.length ? { category: category.join(',') } : {}),
       ...(minPrice !== undefined ? { minPrice } : {}),
       ...(maxPrice !== undefined ? { maxPrice } : {}),

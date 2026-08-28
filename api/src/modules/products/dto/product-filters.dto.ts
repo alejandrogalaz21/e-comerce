@@ -34,6 +34,7 @@ export const DEFAULT_PRODUCT_SORT_FIELD: ProductSortField = 'createdAt'
 export const DEFAULT_PRODUCT_SORT_DIRECTION: ProductSortDirection = 'desc'
 
 const MAX_CATEGORIES = 20
+const MAX_SEARCH_TERMS = 10
 
 function toCategoryList(raw: unknown): unknown {
   const source = Array.isArray(raw) ? raw.join(',') : raw
@@ -48,6 +49,16 @@ function toCategoryList(raw: unknown): unknown {
   return Array.from(new Set(categories))
 }
 
+function toTermList(raw: unknown): unknown {
+  const values = Array.isArray(raw) ? raw : [raw]
+  const terms = values
+    .filter((value): value is string => typeof value === 'string')
+    .map(value => value.trim())
+    .filter(Boolean)
+
+  return terms.length ? Array.from(new Set(terms)) : undefined
+}
+
 function toBoolean(raw: unknown): unknown {
   if (raw === 'true' || raw === true) return true
   if (raw === 'false' || raw === false) return false
@@ -58,14 +69,16 @@ export class ProductFiltersDto extends PaginationDTO {
   @ApiPropertyOptional({
     example: 'camping',
     description:
-      'Free-text search, case-insensitive, matched against name, sku, description and category',
+      'Free-text search, case-insensitive, matched against name, sku, description and category. Repeat the parameter to search several terms at once: a product matching any of them is returned',
     maxLength: 100
   })
   @IsOptional()
-  @Transform(({ value }) => trimText(value))
-  @IsString()
-  @MaxLength(100)
-  q?: string
+  @Transform(({ obj }) => toTermList((obj as Record<string, unknown>).q))
+  @IsArray()
+  @ArrayMaxSize(MAX_SEARCH_TERMS)
+  @IsString({ each: true })
+  @MaxLength(100, { each: true })
+  q?: string[]
 
   @ApiPropertyOptional({
     example: 'Electronics,Tools',

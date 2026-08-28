@@ -113,8 +113,8 @@ describe('ProductsService', () => {
   })
 
   describe('findAll', () => {
-    const searchWhere =
-      '(product.name ILIKE :term OR product.sku ILIKE :term OR product.description ILIKE :term OR product.category ILIKE :term)'
+    const searchWhere = (index = 0) =>
+      `((product.name ILIKE :term${index} OR product.sku ILIKE :term${index} OR product.description ILIKE :term${index} OR product.category ILIKE :term${index}))`
 
     beforeEach(() => {
       mockQueryBuilder.getManyAndCount.mockResolvedValue([[productEntity], 1])
@@ -150,34 +150,68 @@ describe('ProductsService', () => {
     })
 
     it('matches q across name, sku, description and category as a bound parameter', async () => {
-      await service.findAll({ q: 'camping' })
+      await service.findAll({ q: ['camping'] })
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(searchWhere, {
-        term: '%camping%'
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(searchWhere(), {
+        term0: '%camping%'
       })
     })
 
     it('passes a SQL injection payload as a bound parameter instead of inlining it', async () => {
       const payload = "Robert'); DROP TABLE products;--"
 
-      const result = await service.findAll({ q: payload })
+      const result = await service.findAll({ q: [payload] })
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(searchWhere, {
-        term: `%${payload}%`
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(searchWhere(), {
+        term0: `%${payload}%`
       })
 
       const [sql] = mockQueryBuilder.andWhere.mock.calls[0]
       expect(sql).not.toContain('DROP TABLE')
-      expect(sql).toContain(':term')
+      expect(sql).toContain(':term0')
       expect(result.data).toEqual([productEntity])
     })
 
     it('escapes LIKE wildcards so they are matched literally', async () => {
-      await service.findAll({ q: '100%_off\\' })
+      await service.findAll({ q: ['100%_off\\'] })
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(searchWhere, {
-        term: '%100\\%\\_off\\\\%'
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(searchWhere(), {
+        term0: '%100\\%\\_off\\\\%'
       })
+    })
+
+    it('unions several search terms so any of them matches', async () => {
+      await service.findAll({ q: ['PST-017', 'PRJ-001'] })
+
+      const [sql, parameters] = mockQueryBuilder.andWhere.mock.calls[0]
+
+      expect(sql).toContain(':term0')
+      expect(sql).toContain(':term1')
+      expect(sql.split(' OR ').length).toBeGreaterThan(4)
+      expect(parameters).toEqual({
+        term0: '%PST-017%',
+        term1: '%PRJ-001%'
+      })
+    })
+
+    it('keeps several terms as a single conjunctive clause', async () => {
+      await service.findAll({ q: ['a', 'b', 'c'], category: ['Electronics'] })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(2)
+    })
+
+    it('ignores blank terms', async () => {
+      await service.findAll({ q: ['  ', ''] })
+
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled()
+    })
+
+    it('escapes every term, not just the first', async () => {
+      await service.findAll({ q: ['safe', '100%_off'] })
+
+      const [, parameters] = mockQueryBuilder.andWhere.mock.calls[0]
+
+      expect(parameters.term1).toBe('%100\\%\\_off%')
     })
 
     it('filters by category case-insensitively', async () => {
@@ -254,14 +288,14 @@ describe('ProductsService', () => {
     })
 
     it('does not filter by availability when inStock is absent', async () => {
-      await service.findAll({ q: 'shoes' })
+      await service.findAll({ q: ['shoes'] })
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(1)
     })
 
     it('combines every filter conjunctively', async () => {
       await service.findAll({
-        q: 'stand',
+        q: ['stand'],
         category: ['Electronics'],
         minPrice: 10,
         maxPrice: 30,
