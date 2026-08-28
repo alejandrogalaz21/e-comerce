@@ -17,7 +17,7 @@ import { Iconify } from 'src/components/iconify';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { ImportSummary } from '../components/import-summary';
-import { ImportRejectedTable } from '../components/import-rejected-table';
+import { ImportReportTables } from '../components/import-report-tables';
 import { getErrorMessage, useImportProducts } from '../hooks/use-product';
 
 // ----------------------------------------------------------------------
@@ -76,19 +76,7 @@ export function ProductImportView() {
         <Stack spacing={3}>
           <ImportSummary summary={result.summary} />
 
-          {!!result.warnings.length && (
-            <Alert severity="warning">
-              <Stack spacing={0.5}>
-                {result.warnings.map((warning) => (
-                  <span key={`${warning.line}-${warning.sku}`}>
-                    Line {warning.line} ({warning.sku}): {warning.message}
-                  </span>
-                ))}
-              </Stack>
-            </Alert>
-          )}
-
-          {!!result.rejected.length && <ImportRejectedTable rows={result.rejected} />}
+          <ImportReportTables report={result} />
 
           <Stack direction="row" spacing={1.5} justifyContent="flex-end">
             <Button variant="outlined" onClick={handleReset}>

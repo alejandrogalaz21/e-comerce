@@ -70,11 +70,30 @@ export type IImportWarning = {
   message: string;
 };
 
+export type IImportCreatedRow = {
+  line: number;
+  sku: string;
+  name: string;
+};
+
+export type IImportReport = {
+  rejected: IImportRejectedRow[];
+  warnings: IImportWarning[];
+  created: IImportCreatedRow[];
+};
+
 export type IImportResult = {
   batchId: string;
   summary: IImportSummary;
-  rejected: IImportRejectedRow[];
-  warnings: IImportWarning[];
+} & IImportReport;
+
+export type IImportIssueSeverity = 'rejected' | 'updated';
+
+export type IImportIssueRow = {
+  line: number;
+  sku?: string;
+  severity: IImportIssueSeverity;
+  message: string;
 };
 
 export type IImportBatchStatus = 'processing' | 'completed' | 'failed';
@@ -94,10 +113,7 @@ export type IImportBatch = {
 };
 
 export type IImportBatchDetail = IImportBatch & {
-  report: {
-    rejected: IImportRejectedRow[];
-    warnings: IImportWarning[];
-  };
+  report: IImportReport;
 };
 
 export type IImportBatchListParams = {

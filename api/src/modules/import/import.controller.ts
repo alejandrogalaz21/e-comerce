@@ -84,6 +84,10 @@ export class ImportController {
             sku: 'RS-001',
             message: 'sku already exists with different data — updated'
           }
+        ],
+        created: [
+          { line: 2, sku: 'RS-001', name: 'Running Shoes' },
+          { line: 3, sku: 'WM-042', name: 'Wireless Mouse' }
         ]
       }
     }

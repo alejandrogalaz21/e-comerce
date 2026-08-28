@@ -84,7 +84,7 @@ describe('import attribution', () => {
   })
 
   it('attributes the batch to the email carried by the token', async () => {
-    await controller.import(
+    const result = await controller.import(
       csvFile(['Running Shoes,RS-001,desc,Footwear,89.99,150,0.35']),
       'demo@demo.com'
     )
@@ -92,6 +92,9 @@ describe('import attribution', () => {
     expect(mockBatchRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({ importedBy: 'demo@demo.com' })
     )
+    expect(result.created).toEqual([
+      { line: 2, sku: 'RS-001', name: 'Running Shoes' }
+    ])
   })
 
   it('reads the email from the request user, not from the payload', () => {
@@ -157,6 +160,7 @@ describe('import attribution', () => {
     const batch = await service.findBatch('legacy-batch')
 
     expect(batch.importedBy).toBeNull()
+    expect(batch.report).toEqual({ rejected: [], warnings: [], created: [] })
     expect(() => JSON.stringify(batch)).not.toThrow()
   })
 })

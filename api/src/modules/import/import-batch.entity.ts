@@ -70,7 +70,8 @@ export class ImportBatch {
   skippedEmpty: number
 
   @ApiProperty({
-    description: 'Full report: { rejected: [...], warnings: [...] }',
+    description:
+      'Full report: { rejected: [...], warnings: [...], created: [...] }',
     nullable: true,
     required: false
   })

@@ -10,6 +10,12 @@ export interface ImportWarning {
   message: string
 }
 
+export interface ImportCreatedRow {
+  line: number
+  sku: string
+  name: string
+}
+
 export interface ImportSummary {
   totalRows: number
   inserted: number
@@ -22,6 +28,7 @@ export interface ImportSummary {
 export interface ImportBatchReport {
   rejected: ImportRejectedRow[]
   warnings: ImportWarning[]
+  created: ImportCreatedRow[]
 }
 
 export interface ImportResult {
@@ -29,4 +36,5 @@ export interface ImportResult {
   summary: ImportSummary
   rejected: ImportRejectedRow[]
   warnings: ImportWarning[]
+  created: ImportCreatedRow[]
 }

@@ -246,6 +246,9 @@ describe('ImportService', () => {
         expect.objectContaining({ inserted: 1, updated: 0, unchanged: 0 })
       )
       expect(result.warnings).toHaveLength(0)
+      expect(result.created).toEqual([
+        { line: 2, sku: 'RS-001', name: 'Running Shoes' }
+      ])
     })
 
     it('counts unchanged when all imported fields are identical', async () => {
@@ -261,6 +264,7 @@ describe('ImportService', () => {
         expect.objectContaining({ inserted: 0, updated: 0, unchanged: 1 })
       )
       expect(result.warnings).toHaveLength(0)
+      expect(result.created).toHaveLength(0)
       expect(mockProductRepository.save).not.toHaveBeenCalled()
       expect(mockProductRepository.create).not.toHaveBeenCalled()
     })
@@ -343,7 +347,8 @@ describe('ImportService', () => {
                 errors: ["price is not a valid number: 'free'"]
               }
             ],
-            warnings: []
+            warnings: [],
+            created: [{ line: 2, sku: 'RS-001', name: 'Running Shoes' }]
           }
         })
       )

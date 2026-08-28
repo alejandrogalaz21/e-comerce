@@ -1,4 +1,3 @@
-import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
@@ -19,7 +18,7 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { importStatusColor } from '../import-utils';
 import { ImportSummary } from '../components/import-summary';
 import { useGetImportBatch } from '../hooks/use-import-batches';
-import { ImportRejectedTable } from '../components/import-rejected-table';
+import { ImportReportTables } from '../components/import-report-tables';
 
 // ----------------------------------------------------------------------
 
@@ -101,19 +100,7 @@ export function ProductImportBatchDetailView({ batchId }: Props) {
           }}
         />
 
-        {!!batch.report.warnings.length && (
-          <Alert severity="warning">
-            <Stack spacing={0.5}>
-              {batch.report.warnings.map((warning) => (
-                <span key={`${warning.line}-${warning.sku}`}>
-                  Line {warning.line} ({warning.sku}): {warning.message}
-                </span>
-              ))}
-            </Stack>
-          </Alert>
-        )}
-
-        {!!batch.report.rejected.length && <ImportRejectedTable rows={batch.report.rejected} />}
+        <ImportReportTables report={batch.report} />
 
         <Stack direction="row" spacing={1.5} justifyContent="flex-end">
           <Button

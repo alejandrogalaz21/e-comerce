@@ -21,7 +21,10 @@ let importSummary: ImportSummaryShape;
 let importBatchId: string;
 
 function statCard(page: Page, label: string) {
-  return page.locator('.MuiCard-root').filter({ has: page.getByText(label, { exact: true }) });
+  return page
+    .getByTestId('import-summary')
+    .locator('.MuiCard-root')
+    .filter({ has: page.getByText(label, { exact: true }) });
 }
 
 async function expectStat(page: Page, label: string, value: number) {
@@ -113,13 +116,22 @@ test.describe('product import batch history', () => {
     await expectStat(page, 'Rejected', importSummary.rejected);
     await expectStat(page, 'Skipped empty', importSummary.skippedEmpty);
 
-    const table = page.locator('.MuiCard-root').filter({ hasText: 'Rejected rows' });
-    await expect(table.getByText(`Rejected rows (${importSummary.rejected})`)).toBeVisible();
+    const issues = page.getByTestId('import-issues');
+    await expect(
+      issues.getByText(`Rows with issues (${importSummary.rejected + importSummary.updated})`)
+    ).toBeVisible();
+    await expect(issues.locator('tbody tr').filter({ hasText: 'Rejected row' })).toHaveCount(
+      importSummary.rejected
+    );
 
-    const line7 = table
+    const line7 = issues
       .locator('tbody tr')
       .filter({ has: page.getByRole('cell', { name: '7', exact: true }) });
     await expect(line7).toContainText("price is not a valid number: 'free'");
+
+    const created = page.getByTestId('import-created');
+    await expect(created.getByText(`Created rows (${importSummary.inserted})`)).toBeVisible();
+    await expect(created.locator('tbody tr')).toHaveCount(importSummary.inserted);
 
     await page.getByRole('link', { name: 'Back to history' }).click();
     await expect(page).toHaveURL(/\/dashboard\/product\/import\/batches$/);

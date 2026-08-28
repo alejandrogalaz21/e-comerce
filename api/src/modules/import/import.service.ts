@@ -16,6 +16,8 @@ import { ProductsService } from '@/modules/products/products.service'
 import { ImportBatch } from './import-batch.entity'
 import { ImportRowNormalizer } from './import-row.normalizer'
 import {
+  ImportBatchReport,
+  ImportCreatedRow,
   ImportRejectedRow,
   ImportResult,
   ImportSummary,
@@ -83,7 +85,11 @@ export class ImportService {
 
       Object.assign(batch, result.summary, {
         status: 'completed',
-        report: { rejected: result.rejected, warnings: result.warnings }
+        report: {
+          rejected: result.rejected,
+          warnings: result.warnings,
+          created: result.created
+        }
       })
       await this.batchRepository.save(batch)
 
@@ -129,7 +135,19 @@ export class ImportService {
     if (!batch)
       throw new NotFoundException(`Import batch with id '${id}' not found`)
 
+    batch.report = this.normalizeReport(batch.report)
+
     return batch
+  }
+
+  private normalizeReport(
+    report: Partial<ImportBatchReport> | null
+  ): ImportBatchReport {
+    return {
+      rejected: report?.rejected ?? [],
+      warnings: report?.warnings ?? [],
+      created: report?.created ?? []
+    }
   }
 
   private validateFile(file: Express.Multer.File | undefined): void {
@@ -196,6 +214,7 @@ export class ImportService {
     }
     const rejected: ImportRejectedRow[] = []
     const warnings: ImportWarning[] = []
+    const created: ImportCreatedRow[] = []
     const processedBySku = new Map<string, Product>()
 
     for (let index = 0; index < records.length; index++) {
@@ -235,9 +254,10 @@ export class ImportService {
           (await this.productRepository.findOne({ where: { sku: dto.sku } }))
 
         if (!existing) {
-          const created = await this.productsService.create(dto)
-          processedBySku.set(dto.sku, created)
+          const product = await this.productsService.create(dto)
+          processedBySku.set(dto.sku, product)
           summary.inserted++
+          created.push({ line, sku: dto.sku, name: dto.name })
         } else if (this.isIdentical(existing, dto)) {
           processedBySku.set(dto.sku, existing)
           summary.unchanged++
@@ -265,7 +285,7 @@ export class ImportService {
     }
 
     summary.rejected = rejected.length
-    return { summary, rejected, warnings }
+    return { summary, rejected, warnings, created }
   }
 
   private extractValidationMessages(error: unknown): string[] {

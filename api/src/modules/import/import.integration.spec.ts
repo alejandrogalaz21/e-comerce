@@ -104,6 +104,21 @@ describe('ImportService (integration with the real fixture)', () => {
     })
   })
 
+  it('lists one created row per inserted product', async () => {
+    const result = await importFixture()
+
+    expect(result.created).toHaveLength(result.summary.inserted)
+    expect(new Set(result.created.map(row => row.sku)).size).toBe(
+      result.summary.inserted
+    )
+    expect(result.created[0]).toEqual({
+      line: 2,
+      sku: 'RS-001',
+      name: 'Running Shoes'
+    })
+    expect(result.created.map(row => row.line)).not.toContain(7)
+  })
+
   it('rejects exactly lines 7, 16, 20, 25 and 41 with clear messages', async () => {
     const result = await importFixture()
 
@@ -236,5 +251,6 @@ describe('ImportService (integration with the real fixture)', () => {
     )
     expect(finalBatch.report.rejected).toEqual(result.rejected)
     expect(finalBatch.report.warnings).toEqual(result.warnings)
+    expect(finalBatch.report.created).toEqual(result.created)
   })
 })

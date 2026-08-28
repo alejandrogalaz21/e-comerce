@@ -10,15 +10,14 @@ const TXT_FIXTURE = 'e2e/fixtures/not-a-csv.txt';
 test.describe.configure({ mode: 'serial' });
 
 function statCard(page: Page, label: string) {
-  return page.locator('.MuiCard-root').filter({ has: page.getByText(label, { exact: true }) });
+  return page
+    .getByTestId('import-summary')
+    .locator('.MuiCard-root')
+    .filter({ has: page.getByText(label, { exact: true }) });
 }
 
 async function expectStat(page: Page, label: string, value: number) {
   await expect(statCard(page, label).getByRole('heading')).toHaveText(String(value));
-}
-
-function rejectedTable(page: Page) {
-  return page.locator('.MuiCard-root').filter({ hasText: 'Rejected rows' });
 }
 
 test.beforeAll(async () => {
@@ -66,30 +65,43 @@ test.describe('product CSV import', () => {
     await expectStat(page, 'Rejected', 5);
     await expectStat(page, 'Skipped empty', 2);
 
-    // Rejected rows table: 5 rows with line, sku and errors.
-    const table = rejectedTable(page);
-    await expect(table.getByText('Rejected rows (5)')).toBeVisible();
-    await expect(table.locator('tbody tr')).toHaveCount(5);
+    // Issues table: 5 rejected rows plus the 3 duplicate-sku updates, merged and
+    // ordered by line (lines 36 RS-001, 56/89 BS-021).
+    const issues = page.getByTestId('import-issues');
+    await expect(issues.getByText('Rows with issues (8)')).toBeVisible();
+    await expect(issues.locator('tbody tr')).toHaveCount(8);
+    await expect(issues.locator('tbody tr').filter({ hasText: 'Rejected row' })).toHaveCount(5);
+    await expect(issues.locator('tbody tr').filter({ hasText: 'Updated row' })).toHaveCount(3);
 
-    const line7 = table
+    const line7 = issues
       .locator('tbody tr')
       .filter({ has: page.getByRole('cell', { name: '7', exact: true }) });
     await expect(line7).toContainText("price is not a valid number: 'free'");
+    await expect(line7).toContainText('Rejected row');
 
-    const line16 = table
+    const line16 = issues
       .locator('tbody tr')
       .filter({ has: page.getByRole('cell', { name: '16', exact: true }) });
     await expect(line16).toContainText('stock must not be less than 0');
 
-    const line20 = table
+    const line20 = issues
       .locator('tbody tr')
       .filter({ has: page.getByRole('cell', { name: '20', exact: true }) });
     await expect(line20).toContainText('name contains invalid content: HTML markup is not allowed');
 
-    // Duplicate-sku warnings surface in an Alert (lines 36 RS-001, 56/89 BS-021).
-    const warningAlert = page.locator('.MuiAlert-standardWarning');
-    await expect(warningAlert).toBeVisible();
-    await expect(warningAlert).toContainText(/RS-001|BS-021/);
+    const line36 = issues
+      .locator('tbody tr')
+      .filter({ has: page.getByRole('cell', { name: '36', exact: true }) });
+    await expect(line36).toContainText('RS-001');
+    await expect(line36).toContainText('Updated row');
+
+    // Created rows table: one row per inserted product.
+    const created = page.getByTestId('import-created');
+    await expect(created.getByText('Created rows (87)')).toBeVisible();
+    await expect(created.locator('tbody tr')).toHaveCount(87);
+    await expect(
+      created.locator('tbody tr').filter({ hasText: 'RS-001' }).first()
+    ).toContainText('Running Shoes');
 
     await expect(page.getByRole('button', { name: 'Import another file' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Go to products' })).toBeVisible();
