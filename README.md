@@ -31,6 +31,19 @@ file). Migrations run automatically at boot and seed a single **demo login**:
 | Email | `demo@demo.com` |
 | Password | `demo` |
 
+### What needs a session
+
+Shopping is open to everyone; managing the catalog is not.
+
+| Open to anyone | Requires signing in |
+|---|---|
+| Browsing the catalog, product detail, and completing a purchase | Creating, editing and deleting products |
+| `GET /health` (monitoring) | CSV import and its batch history |
+| | Infrastructure status and user administration |
+
+The API enforces this with a global JWT guard and an explicit `@Public()` opt-out, so it fails
+closed: a new endpoint is protected unless someone deliberately opens it.
+
 ### Local development (manual)
 
 ```bash

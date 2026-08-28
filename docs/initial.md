@@ -445,12 +445,28 @@ loanpro-ecommerce-challenge/
 Regla: **un solo `docker-compose.yml` en la raíz orquesta todo**. Si el template de `api` trae
 su propio compose, se decide cuál manda tras revisar el contenido real (pendiente de URLs).
 
-### 10.2 Sin autenticación — decisión final
+### 10.2 Autenticación (*decisión actualizada 2026-08-27 — TK-031*)
 
-El challenge no pide auth. Se documenta en el README como decisión consciente, no como bonus a
-medias: un mock de login mal hecho en el contexto de una fintech comunica peor que no tenerlo. El
-diseño deja el punto de extensión listo (un `AuthGuard` de Nest se podría insertar sin refactor)
-pero no se construye.
+Versión inicial: sin auth, dejando el punto de extensión listo pero sin construirlo. **Decisión
+vigente**: la auth se construye, pero acotada a lo que realmente lo justifica. El disparador fue
+concreto: `POST /products/import` hace upsert masivo del catálogo, y dejar esa operación abierta
+al mundo no se sostiene ni en un ejercicio.
+
+La frontera, deliberada:
+
+- **Público**: catálogo, búsqueda, detalle y **la compra**. Un cliente compra sin cuenta, como en
+  cualquier e-commerce real. Cerrar el checkout habría sido resolver un problema que no existe.
+- **Protegido** (JWT): alta y gestión de productos, import CSV y su historial, diagnóstico de
+  infraestructura y administración de usuarios.
+
+Implementación: guard global con opt-out explícito (`@Public()`), de modo que el sistema **falla
+cerrado** — un endpoint nuevo nace protegido y olvidar marcarlo público produce un 401 evidente,
+en vez del fallo silencioso de olvidar protegerlo. Sin roles: cualquier usuario autenticado
+gestiona el catálogo (initial.md no los pide y añadirlos sería alcance inventado).
+
+Se sigue evitando el "mock de login a medias" que esta sección rechazaba: el login es real contra
+el API, con un usuario sembrado por migración (`demo@demo.com` / `demo`) documentado en el README
+para que el evaluador entre sin fricción.
 
 ### 10.3 Datos iniciales (*decisión actualizada 2026-08-27 — TK-030*)
 
