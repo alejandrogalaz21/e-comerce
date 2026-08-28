@@ -15,7 +15,7 @@ import type { APIRequestContext } from '@playwright/test';
  * storage state, so they sign in over HTTP and carry an explicit bearer token.
  */
 
-export const API_URL = 'http://localhost:4000';
+export const API_URL = process.env.E2E_API_URL ?? 'http://localhost:4000';
 
 export const DEMO_CREDENTIALS = { email: 'demo@demo.com', password: 'demo' };
 

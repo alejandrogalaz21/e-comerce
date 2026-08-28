@@ -5,12 +5,19 @@ import { useState, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
+import TextField from '@mui/material/TextField';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import { DataGrid, gridClasses, GridActionsCellItem } from '@mui/x-data-grid';
 
 import { paths } from 'src/routes/paths';
 import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
+
+import { useDebounce } from 'src/hooks/use-debounce';
 
 import { fDateTime } from 'src/utils/format-time';
 
@@ -34,10 +41,20 @@ export function ProductImportBatchesView() {
     pageSize: 10,
   });
 
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 400);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchTerm(value);
+    setPaginationModel((prev) => (prev.page === 0 ? prev : { ...prev, page: 0 }));
+  }, []);
+
   const { batches, pagination, batchesLoading, batchesValidating, batchesEmpty } =
     useGetImportBatches({
       page: paginationModel.page + 1,
       limit: paginationModel.pageSize,
+      q: debouncedSearchTerm,
     });
 
   const handleViewReport = useCallback(
@@ -126,7 +143,7 @@ export function ProductImportBatchesView() {
         sx={{ mb: { xs: 3, md: 5 } }}
       />
 
-      {batchesEmpty ? (
+      {batchesEmpty && !debouncedSearchTerm ? (
         <EmptyContent
           filled
           title="No imports yet"
@@ -153,6 +170,37 @@ export function ProductImportBatchesView() {
             flexDirection: { md: 'column' },
           }}
         >
+          <Stack sx={{ p: 2.5 }}>
+            <TextField
+              size="small"
+              value={searchTerm}
+              onChange={(event) => handleSearchChange(event.target.value)}
+              placeholder="Search by filename..."
+              inputProps={{ 'aria-label': 'Search import batches' }}
+              sx={{ width: { xs: 1, sm: 280 } }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: searchTerm ? (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      aria-label="Clear search"
+                      onClick={() => handleSearchChange('')}
+                    >
+                      <Iconify icon="mingcute:close-line" width={18} />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
+              }}
+            />
+          </Stack>
+
+          <Divider />
+
           <DataGrid
             disableRowSelectionOnClick
             rows={batches}
@@ -164,7 +212,12 @@ export function ProductImportBatchesView() {
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             slots={{
-              noRowsOverlay: () => <EmptyContent />,
+              noRowsOverlay: () =>
+                debouncedSearchTerm ? (
+                  <EmptyContent title={`No imports found for "${debouncedSearchTerm}"`} />
+                ) : (
+                  <EmptyContent />
+                ),
               noResultsOverlay: () => <EmptyContent title="No results found" />,
             }}
             sx={{ [`& .${gridClasses.cell}`]: { alignItems: 'center', display: 'inline-flex' } }}

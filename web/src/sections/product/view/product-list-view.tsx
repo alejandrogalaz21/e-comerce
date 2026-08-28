@@ -1,17 +1,17 @@
+import type { IProductSortField } from 'src/types/product';
 import type {
   GridColDef,
+  GridSortModel,
   GridPaginationModel,
   GridRowSelectionModel,
 } from '@mui/x-data-grid';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
+import Divider from '@mui/material/Divider';
 import {
   DataGrid,
   gridClasses,
@@ -36,11 +36,15 @@ import { EmptyContent } from 'src/components/empty-content';
 import { ConfirmDialog } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
-import { useGetProducts, useDeleteProduct } from '../hooks/use-product';
+import { useProductListParams } from '../hooks/use-product-list-params';
+import { ProductFiltersToolbar } from '../components/product-filters-toolbar';
+import { DEFAULT_SORT_BY, DEFAULT_SORT_DIR, toProductListParams } from '../product-list-params';
+import { useGetProducts, useDeleteProduct, useGetProductCategories } from '../hooks/use-product';
 import {
   RenderCellStock,
   RenderCellProduct,
   RenderCellCreatedAt,
+  RenderCellUpdatedAt,
 } from '../product-table-row';
 
 // ----------------------------------------------------------------------
@@ -50,25 +54,28 @@ export function ProductListView() {
 
   const router = useRouter();
 
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    page: 0,
-    pageSize: 10,
-  });
+  const { state, apply, reset } = useProductListParams();
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(state.q);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 400);
 
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchTerm(value);
-    setPaginationModel((prev) => (prev.page === 0 ? prev : { ...prev, page: 0 }));
-  }, []);
+  useEffect(() => {
+    setSearchTerm(state.q);
+  }, [state.q]);
 
-  const { products, pagination, productsLoading, productsValidating } = useGetProducts({
-    page: paginationModel.page + 1,
-    limit: paginationModel.pageSize,
-    q: debouncedSearchTerm,
-  });
+  useEffect(() => {
+    if (debouncedSearchTerm !== state.q) {
+      apply({ q: debouncedSearchTerm }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm]);
+
+  const { products, pagination, productsLoading, productsValidating } = useGetProducts(
+    toProductListParams(state)
+  );
+
+  const { categories } = useGetProductCategories();
 
   const deleteProduct = useDeleteProduct();
 
@@ -109,11 +116,32 @@ export function ProductListView() {
     [handleOpenConfirm, selectedRowIds]
   );
 
+  const handlePaginationModelChange = useCallback(
+    (model: GridPaginationModel) => {
+      apply({ page: model.page + 1, limit: model.pageSize });
+    },
+    [apply]
+  );
+
+  const handleSortModelChange = useCallback(
+    (model: GridSortModel) => {
+      const [next] = model;
+
+      if (!next || !next.sort) {
+        apply({ sortBy: DEFAULT_SORT_BY, sortDir: DEFAULT_SORT_DIR });
+        return;
+      }
+
+      apply({ sortBy: next.field as IProductSortField, sortDir: next.sort });
+    },
+    [apply]
+  );
+
   const columns: GridColDef[] = [
-    { field: 'sku', headerName: 'SKU', width: 140 },
+    { field: 'sku', headerName: 'SKU', width: 140, sortable: false },
     {
       field: 'name',
-      headerName: 'Product',
+      headerName: 'Name',
       flex: 1,
       minWidth: 240,
       hideable: false,
@@ -121,7 +149,7 @@ export function ProductListView() {
         <RenderCellProduct params={params} onViewRow={() => handleViewRow(params.row.id)} />
       ),
     },
-    { field: 'category', headerName: 'Category', width: 160 },
+    { field: 'category', headerName: 'Category', width: 160, sortable: false },
     {
       field: 'price',
       headerName: 'Price',
@@ -138,6 +166,7 @@ export function ProductListView() {
       field: 'weightKg',
       headerName: 'Weight (kg)',
       width: 120,
+      sortable: false,
       valueFormatter: (value: number | null) => (value == null ? '-' : value),
     },
     {
@@ -145,6 +174,12 @@ export function ProductListView() {
       headerName: 'Created at',
       width: 160,
       renderCell: (params) => <RenderCellCreatedAt params={params} />,
+    },
+    {
+      field: 'updatedAt',
+      headerName: 'Updated at',
+      width: 160,
+      renderCell: (params) => <RenderCellUpdatedAt params={params} />,
     },
     {
       type: 'actions',
@@ -179,6 +214,15 @@ export function ProductListView() {
       ],
     },
   ];
+
+  const totalResults = pagination?.total ?? 0;
+
+  const hasActiveFilters =
+    !!state.q ||
+    !!state.category.length ||
+    state.minPrice !== undefined ||
+    state.maxPrice !== undefined ||
+    state.inStock !== undefined;
 
   return (
     <>
@@ -222,6 +266,18 @@ export function ProductListView() {
             flexDirection: { md: 'column' },
           }}
         >
+          <ProductFiltersToolbar
+            state={state}
+            categories={categories}
+            totalResults={totalResults}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onApply={apply}
+            onReset={reset}
+          />
+
+          <Divider />
+
           <DataGrid
             checkboxSelection
             disableRowSelectionOnClick
@@ -230,24 +286,29 @@ export function ProductListView() {
             loading={productsLoading || productsValidating}
             pageSizeOptions={[5, 10, 25]}
             paginationMode="server"
-            rowCount={pagination?.total ?? 0}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
+            sortingMode="server"
+            rowCount={totalResults}
+            paginationModel={{ page: state.page - 1, pageSize: state.limit }}
+            sortModel={[{ field: state.sortBy, sort: state.sortDir }]}
+            onPaginationModelChange={handlePaginationModelChange}
+            onSortModelChange={handleSortModelChange}
             onRowSelectionModelChange={(newSelectionModel) => setSelectedRowIds(newSelectionModel)}
             slots={{
               toolbar: CustomToolbar,
-              noRowsOverlay: () =>
-                debouncedSearchTerm ? (
-                  <EmptyContent title={`No results found for "${debouncedSearchTerm}"`} />
+              noRowsOverlay: () => {
+                if (state.q) {
+                  return <EmptyContent title={`No results found for "${state.q}"`} />;
+                }
+                return hasActiveFilters ? (
+                  <EmptyContent title="No products match these filters" />
                 ) : (
-                  <EmptyContent />
-                ),
+                  <EmptyContent title="No products yet" />
+                );
+              },
               noResultsOverlay: () => <EmptyContent title="No results found" />,
             }}
             slotProps={{
               toolbar: {
-                searchTerm,
-                onSearchChange: handleSearchChange,
                 selectedRowIds,
                 onOpenConfirmDeleteRows: handleOpenConfirmDeleteRows,
               },
@@ -280,8 +341,6 @@ export function ProductListView() {
 // ----------------------------------------------------------------------
 
 type CustomToolbarProps = {
-  searchTerm: string;
-  onSearchChange: (value: string) => void;
   selectedRowIds: GridRowSelectionModel;
   onOpenConfirmDeleteRows: () => void;
 };
@@ -290,48 +349,15 @@ declare module '@mui/x-data-grid' {
   interface ToolbarPropsOverrides extends CustomToolbarProps {}
 }
 
-function CustomToolbar({
-  searchTerm,
-  onSearchChange,
-  selectedRowIds,
-  onOpenConfirmDeleteRows,
-}: CustomToolbarProps) {
+function CustomToolbar({ selectedRowIds, onOpenConfirmDeleteRows }: CustomToolbarProps) {
   return (
     <GridToolbarContainer>
-      <Stack
-        spacing={1}
-        flexGrow={1}
-        direction="row"
-        alignItems="center"
-        justifyContent="flex-end"
-      >
-        <TextField
-          size="small"
-          value={searchTerm}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search products..."
-          inputProps={{ 'aria-label': 'Search products' }}
-          sx={{ mr: 'auto', width: { xs: 1, sm: 280 } }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
-              </InputAdornment>
-            ),
-            endAdornment: searchTerm ? (
-              <InputAdornment position="end">
-                <IconButton size="small" aria-label="Clear search" onClick={() => onSearchChange('')}>
-                  <Iconify icon="mingcute:close-line" width={18} />
-                </IconButton>
-              </InputAdornment>
-            ) : null,
-          }}
-        />
-
+      <Stack spacing={1} flexGrow={1} direction="row" alignItems="center" justifyContent="flex-end">
         {!!selectedRowIds.length && (
           <Button
             size="small"
             color="error"
+            sx={{ mr: 'auto' }}
             startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}
             onClick={onOpenConfirmDeleteRows}
           >

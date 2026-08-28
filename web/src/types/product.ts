@@ -44,11 +44,30 @@ export type IProductFormValues = {
   weightKg: string;
 };
 
-export type IProductListParams = {
+export const PRODUCT_SORT_FIELDS = ['name', 'price', 'stock', 'createdAt', 'updatedAt'] as const;
+
+export type IProductSortField = (typeof PRODUCT_SORT_FIELDS)[number];
+
+export type IProductSortDirection = 'asc' | 'desc';
+
+export type IProductFilters = {
+  q?: string;
+  category?: string[];
+  minPrice?: number;
+  maxPrice?: number;
+  inStock?: boolean;
+};
+
+export type IProductListParams = IProductFilters & {
   page: number;
   limit: number;
-  q?: string;
-  category?: string;
+  sortBy?: IProductSortField;
+  sortDir?: IProductSortDirection;
+};
+
+export type IProductCategory = {
+  category: string;
+  count: number;
 };
 
 export type IImportSummary = {
@@ -72,10 +91,16 @@ export type IImportWarning = {
   message: string;
 };
 
+/** Fields beyond line/sku/name are optional: batches stored before they existed lack them. */
 export type IImportCreatedRow = {
   line: number;
   sku: string;
   name: string;
+  description?: string | null;
+  category?: string;
+  price?: string;
+  stock?: number;
+  weightKg?: string | null;
 };
 
 export type IImportReport = {
@@ -121,4 +146,5 @@ export type IImportBatchDetail = IImportBatch & {
 export type IImportBatchListParams = {
   page: number;
   limit: number;
+  q?: string;
 };

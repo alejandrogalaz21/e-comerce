@@ -40,10 +40,20 @@ describe('import attribution', () => {
     findOne: jest.fn(async () => null)
   }
 
+  const mockBatchQueryBuilder = {
+    select: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    addOrderBy: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    getManyAndCount: jest.fn()
+  }
+
   const mockBatchRepository = {
     create: jest.fn(data => ({ ...data })),
     save: jest.fn(async batch => ({ id: 'generated-batch-id', ...batch })),
-    findAndCount: jest.fn(),
+    createQueryBuilder: jest.fn(() => mockBatchQueryBuilder),
     findOneBy: jest.fn()
   }
 
@@ -93,7 +103,12 @@ describe('import attribution', () => {
       expect.objectContaining({ importedBy: 'demo@demo.com' })
     )
     expect(result.created).toEqual([
-      { line: 2, sku: 'RS-001', name: 'Running Shoes' }
+      expect.objectContaining({
+        line: 2,
+        sku: 'RS-001',
+        name: 'Running Shoes',
+        category: 'Footwear'
+      })
     ])
   })
 
@@ -131,21 +146,71 @@ describe('import attribution', () => {
   })
 
   it('exposes the attribution in the paginated batch list', async () => {
-    mockBatchRepository.findAndCount.mockResolvedValue([
+    mockBatchQueryBuilder.getManyAndCount.mockResolvedValue([
       [{ id: 'batch-1', filename: 'a.csv', importedBy: 'demo@demo.com' }],
       1
     ])
 
     const result = await service.findAllBatches({})
 
-    expect(mockBatchRepository.findAndCount).toHaveBeenCalledWith(
-      expect.objectContaining({
-        select: expect.arrayContaining(['importedBy'])
-      })
+    expect(mockBatchQueryBuilder.select).toHaveBeenCalledWith(
+      expect.arrayContaining(['batch.importedBy'])
     )
     expect(result.data[0]).toEqual(
       expect.objectContaining({ importedBy: 'demo@demo.com' })
     )
+  })
+
+  describe('batch search by filename', () => {
+    beforeEach(() => {
+      mockBatchQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
+    })
+
+    it('matches the filename case-insensitively as a bound parameter', async () => {
+      await service.findAllBatches({ q: 'LoanPro' })
+
+      expect(mockBatchQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'batch.filename ILIKE :term',
+        { term: '%LoanPro%' }
+      )
+    })
+
+    it('escapes LIKE wildcards so they are matched literally', async () => {
+      await service.findAllBatches({ q: '100%_off' })
+
+      expect(mockBatchQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'batch.filename ILIKE :term',
+        { term: '%100\\%\\_off%' }
+      )
+    })
+
+    it('does not filter when the term is absent or blank', async () => {
+      await service.findAllBatches({ q: '   ' })
+
+      expect(mockBatchQueryBuilder.andWhere).not.toHaveBeenCalled()
+    })
+
+    it('reports a zero total when nothing matches', async () => {
+      const result = await service.findAllBatches({ q: 'nothing' })
+
+      expect(result.pagination.total).toBe(0)
+      expect(result.data).toEqual([])
+    })
+
+    it('keeps a deterministic order across pages', async () => {
+      await service.findAllBatches({ q: 'loanpro', page: '2', limit: '5' })
+
+      expect(mockBatchQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'batch.createdAt',
+        'DESC'
+      )
+      expect(mockBatchQueryBuilder.addOrderBy).toHaveBeenCalledWith(
+        'batch.id',
+        'ASC'
+      )
+      expect(mockBatchQueryBuilder.skip).toHaveBeenCalledWith(5)
+      expect(mockBatchQueryBuilder.take).toHaveBeenCalledWith(5)
+    })
   })
 
   it('serializes a historical batch with no attribution', async () => {

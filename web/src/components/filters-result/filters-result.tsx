@@ -24,7 +24,7 @@ export function FiltersResult({ totalResults, onReset, sx, children }: FiltersRe
   return (
     <Box sx={sx}>
       <Box sx={{ mb: 1.5, typography: 'body2' }}>
-        <strong>{totalResults}</strong>
+        <strong data-testid="filters-result-total">{totalResults}</strong>
         <Box component="span" sx={{ color: 'text.secondary', ml: 0.25 }}>
           results found
         </Box>

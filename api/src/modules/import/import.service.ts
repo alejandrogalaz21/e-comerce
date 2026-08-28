@@ -15,6 +15,7 @@ import { Product } from '@/modules/products/entities/product.entity'
 import { ProductsService } from '@/modules/products/products.service'
 import { ImportBatch } from './import-batch.entity'
 import { ImportRowNormalizer } from './import-row.normalizer'
+import { ImportBatchFiltersDto } from './import-batch-filters.dto'
 import {
   ImportBatchReport,
   ImportCreatedRow,
@@ -23,9 +24,9 @@ import {
   ImportSummary,
   ImportWarning
 } from './import-result.interface'
-import { PaginationDTO } from '@/common/dto/pagination.dto'
 import { PaginationHelper } from '@/common/pagination/pagination.helper'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
+import { escapeLikeWildcards } from '@/common/transformers/sanitize.transformer'
 
 const EXPECTED_HEADERS = [
   'name',
@@ -104,27 +105,37 @@ export class ImportService {
     }
   }
 
-  async findAllBatches(paginationDto: PaginationDTO) {
-    const { page, limit, offset } = PaginationHelper.parse(paginationDto)
+  async findAllBatches(filters: ImportBatchFiltersDto) {
+    const { page, limit, offset } = PaginationHelper.parse(filters)
 
-    const [batches, total] = await this.batchRepository.findAndCount({
-      select: [
-        'id',
-        'filename',
-        'status',
-        'totalRows',
-        'inserted',
-        'updated',
-        'unchanged',
-        'rejected',
-        'skippedEmpty',
-        'importedBy',
-        'createdAt'
-      ],
-      order: { createdAt: 'DESC' },
-      take: limit,
-      skip: offset
-    })
+    const query = this.batchRepository
+      .createQueryBuilder('batch')
+      .select([
+        'batch.id',
+        'batch.filename',
+        'batch.status',
+        'batch.totalRows',
+        'batch.inserted',
+        'batch.updated',
+        'batch.unchanged',
+        'batch.rejected',
+        'batch.skippedEmpty',
+        'batch.importedBy',
+        'batch.createdAt'
+      ])
+      .orderBy('batch.createdAt', 'DESC')
+      .addOrderBy('batch.id', 'ASC')
+      .skip(offset)
+      .take(limit)
+
+    const term = filters.q?.trim()
+    if (term) {
+      query.andWhere('batch.filename ILIKE :term', {
+        term: `%${escapeLikeWildcards(term)}%`
+      })
+    }
+
+    const [batches, total] = await query.getManyAndCount()
 
     return this.paginationBuilder.build(batches, total, page, limit)
   }
@@ -257,7 +268,16 @@ export class ImportService {
           const product = await this.productsService.create(dto)
           processedBySku.set(dto.sku, product)
           summary.inserted++
-          created.push({ line, sku: dto.sku, name: dto.name })
+          created.push({
+            line,
+            sku: product.sku,
+            name: product.name,
+            description: product.description ?? null,
+            category: product.category,
+            price: product.price,
+            stock: product.stock,
+            weightKg: product.weightKg ?? null
+          })
         } else if (this.isIdentical(existing, dto)) {
           processedBySku.set(dto.sku, existing)
           summary.unchanged++

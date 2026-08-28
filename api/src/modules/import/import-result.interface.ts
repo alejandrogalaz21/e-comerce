@@ -14,6 +14,11 @@ export interface ImportCreatedRow {
   line: number
   sku: string
   name: string
+  description: string | null
+  category: string
+  price: string
+  stock: number
+  weightKg: string | null
 }
 
 export interface ImportSummary {

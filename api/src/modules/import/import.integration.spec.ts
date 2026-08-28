@@ -114,7 +114,12 @@ describe('ImportService (integration with the real fixture)', () => {
     expect(result.created[0]).toEqual({
       line: 2,
       sku: 'RS-001',
-      name: 'Running Shoes'
+      name: 'Running Shoes',
+      description: 'Lightweight running shoes for daily training',
+      category: 'Footwear',
+      price: '89.99',
+      stock: 150,
+      weightKg: '0.35'
     })
     expect(result.created.map(row => row.line)).not.toContain(7)
   })

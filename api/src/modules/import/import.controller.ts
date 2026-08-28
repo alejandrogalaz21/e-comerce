@@ -14,13 +14,14 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags
 } from '@nestjs/swagger'
 
 import { ImportService } from './import.service'
 import { ImportBatch } from './import-batch.entity'
-import { PaginationDTO } from '@/common/dto/pagination.dto'
+import { ImportBatchFiltersDto } from './import-batch-filters.dto'
 import { CurrentUser } from '@/common/decorators/current-user.decorator'
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
@@ -106,14 +107,22 @@ export class ImportController {
   }
 
   @Get('batches')
-  @ApiOperation({ summary: 'List import batches with pagination' })
+  @ApiOperation({ summary: 'List import batches with pagination and search' })
+  @ApiQuery({ name: 'page', required: false, example: '1' })
+  @ApiQuery({ name: 'limit', required: false, example: '10' })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    example: 'loanpro',
+    description: 'Free-text search, case-insensitive, matched against filename'
+  })
   @ApiResponse({
     status: 200,
     description:
       'Paginated list without the heavy report field: { data: ImportBatch[], pagination: { total, per_page, current_page, last_page, from, to } }'
   })
-  findAllBatches(@Query() pagination: PaginationDTO) {
-    return this.importService.findAllBatches(pagination)
+  findAllBatches(@Query() filters: ImportBatchFiltersDto) {
+    return this.importService.findAllBatches(filters)
   }
 
   @Get('batches/:id')

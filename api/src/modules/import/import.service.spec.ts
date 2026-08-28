@@ -247,7 +247,13 @@ describe('ImportService', () => {
       )
       expect(result.warnings).toHaveLength(0)
       expect(result.created).toEqual([
-        { line: 2, sku: 'RS-001', name: 'Running Shoes' }
+        expect.objectContaining({
+          line: 2,
+          sku: 'RS-001',
+          name: 'Running Shoes',
+          category: 'Footwear',
+          stock: 150
+        })
       ])
     })
 
@@ -348,7 +354,16 @@ describe('ImportService', () => {
               }
             ],
             warnings: [],
-            created: [{ line: 2, sku: 'RS-001', name: 'Running Shoes' }]
+            created: [
+              expect.objectContaining({
+                line: 2,
+                sku: 'RS-001',
+                name: 'Running Shoes',
+                category: 'Footwear',
+                price: '89.99',
+                stock: 150
+              })
+            ]
           }
         })
       )

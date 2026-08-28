@@ -83,6 +83,7 @@ export const endpoints = {
   auth: authEndpoints,
   product: {
     list: '/api/v1/products',
+    categories: '/api/v1/products/categories',
     details: (id: string) => `/api/v1/products/${id}`,
     create: '/api/v1/products',
     import: '/api/v1/products/import',

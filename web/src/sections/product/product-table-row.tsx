@@ -19,20 +19,28 @@ export function RenderCellPrice({ params }: ParamsProps) {
   return fCurrency(params.row.price);
 }
 
-export function RenderCellCreatedAt({ params }: ParamsProps) {
+function RenderCellDate({ value }: { value: string }) {
   return (
     <Stack direction="row" spacing={0.75} alignItems="baseline" sx={{ minWidth: 0 }}>
       <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
-        {fDate(params.row.createdAt)}
+        {fDate(value)}
       </Box>
       <Box
         component="span"
         sx={{ typography: 'caption', color: 'text.secondary', whiteSpace: 'nowrap' }}
       >
-        {fTime(params.row.createdAt)}
+        {fTime(value)}
       </Box>
     </Stack>
   );
+}
+
+export function RenderCellCreatedAt({ params }: ParamsProps) {
+  return <RenderCellDate value={params.row.createdAt} />;
+}
+
+export function RenderCellUpdatedAt({ params }: ParamsProps) {
+  return <RenderCellDate value={params.row.updatedAt} />;
 }
 
 export function RenderCellStock({ params }: ParamsProps) {
