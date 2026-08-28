@@ -47,6 +47,8 @@ export type IProductFormValues = {
 export type IProductListParams = {
   page: number;
   limit: number;
+  q?: string;
+  category?: string;
 };
 
 export type IImportSummary = {

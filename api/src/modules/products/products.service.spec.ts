@@ -10,10 +10,18 @@ import { CreateProductDto } from './dto/create-product.dto'
 describe('ProductsService', () => {
   let service: ProductsService
 
+  const mockQueryBuilder = {
+    orderBy: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    getManyAndCount: jest.fn()
+  }
+
   const mockRepository = {
     create: jest.fn(),
     save: jest.fn(),
-    findAndCount: jest.fn(),
+    createQueryBuilder: jest.fn(() => mockQueryBuilder),
     findOneBy: jest.fn(),
     merge: jest.fn(),
     remove: jest.fn()
@@ -100,16 +108,23 @@ describe('ProductsService', () => {
   })
 
   describe('findAll', () => {
-    it('returns the pagination builder envelope ordered by createdAt DESC', async () => {
-      mockRepository.findAndCount.mockResolvedValue([[productEntity], 1])
+    const searchWhere =
+      '(product.name ILIKE :term OR product.sku ILIKE :term OR product.description ILIKE :term OR product.category ILIKE :term)'
 
+    beforeEach(() => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[productEntity], 1])
+    })
+
+    it('returns the pagination builder envelope ordered by createdAt DESC', async () => {
       const result = await service.findAll({ page: '1', limit: '10' })
 
-      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
-        take: 10,
-        skip: 0,
-        order: { createdAt: 'DESC' }
-      })
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('product')
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'product.createdAt',
+        'DESC'
+      )
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0)
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(10)
       expect(result).toEqual({
         data: [productEntity],
         pagination: {
@@ -121,6 +136,58 @@ describe('ProductsService', () => {
           to: 1
         }
       })
+    })
+
+    it('applies no filters when q and category are absent', async () => {
+      await service.findAll({ page: '1', limit: '10' })
+
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled()
+    })
+
+    it('matches q across name, sku, description and category as a bound parameter', async () => {
+      await service.findAll({ q: 'camping' })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(searchWhere, {
+        term: '%camping%'
+      })
+    })
+
+    it('passes a SQL injection payload as a bound parameter instead of inlining it', async () => {
+      const payload = "Robert'); DROP TABLE products;--"
+
+      const result = await service.findAll({ q: payload })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(searchWhere, {
+        term: `%${payload}%`
+      })
+
+      const [sql] = mockQueryBuilder.andWhere.mock.calls[0]
+      expect(sql).not.toContain('DROP TABLE')
+      expect(sql).toContain(':term')
+      expect(result.data).toEqual([productEntity])
+    })
+
+    it('escapes LIKE wildcards so they are matched literally', async () => {
+      await service.findAll({ q: '100%_off\\' })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(searchWhere, {
+        term: '%100\\%\\_off\\\\%'
+      })
+    })
+
+    it('filters by category case-insensitively', async () => {
+      await service.findAll({ category: 'footwear' })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'LOWER(product.category) = LOWER(:category)',
+        { category: 'footwear' }
+      )
+    })
+
+    it('combines q and category filters', async () => {
+      await service.findAll({ q: 'shoes', category: 'Footwear' })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(2)
     })
   })
 

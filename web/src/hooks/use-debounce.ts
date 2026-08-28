@@ -17,9 +17,7 @@ export function useDebounce(value: string, delay = 500): UseDebounceReturn {
     };
   }, [value, delay]);
 
-  useEffect(() => {
-    debounceHandler();
-  }, [debounceHandler]);
+  useEffect(() => debounceHandler(), [debounceHandler]);
 
   const memoizedValue = useMemo(() => debouncedValue, [debouncedValue]);
 

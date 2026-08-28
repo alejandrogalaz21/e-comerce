@@ -10,9 +10,10 @@ import { DeepPartial, Repository } from 'typeorm'
 
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
-import { PaginationDTO } from '@/common/dto/pagination.dto'
+import { ProductFiltersDto } from './dto/product-filters.dto'
 import { PaginationHelper } from '@/common/pagination/pagination.helper'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
+import { escapeLikeWildcards } from '@/common/transformers/sanitize.transformer'
 
 import { Product } from './entities/product.entity'
 
@@ -37,14 +38,29 @@ export class ProductsService {
     }
   }
 
-  async findAll(paginationDto: PaginationDTO) {
-    const { page, limit, offset } = PaginationHelper.parse(paginationDto)
+  async findAll(filters: ProductFiltersDto = {}) {
+    const { page, limit, offset } = PaginationHelper.parse(filters)
 
-    const [products, total] = await this.productRepository.findAndCount({
-      take: limit,
-      skip: offset,
-      order: { createdAt: 'DESC' }
-    })
+    const query = this.productRepository
+      .createQueryBuilder('product')
+      .orderBy('product.createdAt', 'DESC')
+      .skip(offset)
+      .take(limit)
+
+    const term = filters.q?.trim()
+    if (term) {
+      query.andWhere(
+        `(product.name ILIKE :term OR product.sku ILIKE :term OR product.description ILIKE :term OR product.category ILIKE :term)`,
+        { term: `%${escapeLikeWildcards(term)}%` }
+      )
+    }
+
+    const category = filters.category?.trim()
+    if (category) {
+      query.andWhere('LOWER(product.category) = LOWER(:category)', { category })
+    }
+
+    const [products, total] = await query.getManyAndCount()
 
     return this.paginationBuilder.build(products, total, page, limit)
   }

@@ -21,9 +21,14 @@ export function RenderCellPrice({ params }: ParamsProps) {
 
 export function RenderCellCreatedAt({ params }: ParamsProps) {
   return (
-    <Stack spacing={0.5}>
-      <Box component="span">{fDate(params.row.createdAt)}</Box>
-      <Box component="span" sx={{ typography: 'caption', color: 'text.secondary' }}>
+    <Stack direction="row" spacing={0.75} alignItems="baseline" sx={{ minWidth: 0 }}>
+      <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
+        {fDate(params.row.createdAt)}
+      </Box>
+      <Box
+        component="span"
+        sx={{ typography: 'caption', color: 'text.secondary', whiteSpace: 'nowrap' }}
+      >
         {fTime(params.row.createdAt)}
       </Box>
     </Stack>

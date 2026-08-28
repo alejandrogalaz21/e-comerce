@@ -9,6 +9,9 @@ import { useState, useCallback } from 'react';
 import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import {
   DataGrid,
   gridClasses,
@@ -22,6 +25,7 @@ import { useRouter } from 'src/routes/hooks';
 import { RouterLink } from 'src/routes/components';
 
 import { useBoolean } from 'src/hooks/use-boolean';
+import { useDebounce } from 'src/hooks/use-debounce';
 
 import { fCurrency } from 'src/utils/format-number';
 
@@ -51,9 +55,19 @@ export function ProductListView() {
     pageSize: 10,
   });
 
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const debouncedSearchTerm = useDebounce(searchTerm, 400);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchTerm(value);
+    setPaginationModel((prev) => (prev.page === 0 ? prev : { ...prev, page: 0 }));
+  }, []);
+
   const { products, pagination, productsLoading, productsValidating } = useGetProducts({
     page: paginationModel.page + 1,
     limit: paginationModel.pageSize,
+    q: debouncedSearchTerm,
   });
 
   const deleteProduct = useDeleteProduct();
@@ -90,14 +104,9 @@ export function ProductListView() {
     [router]
   );
 
-  const CustomToolbarCallback = useCallback(
-    () => (
-      <CustomToolbar
-        selectedRowIds={selectedRowIds}
-        onOpenConfirmDeleteRows={() => handleOpenConfirm(selectedRowIds.map(String))}
-      />
-    ),
-    [selectedRowIds, handleOpenConfirm]
+  const handleOpenConfirmDeleteRows = useCallback(
+    () => handleOpenConfirm(selectedRowIds.map(String)),
+    [handleOpenConfirm, selectedRowIds]
   );
 
   const columns: GridColDef[] = [
@@ -226,9 +235,22 @@ export function ProductListView() {
             onPaginationModelChange={setPaginationModel}
             onRowSelectionModelChange={(newSelectionModel) => setSelectedRowIds(newSelectionModel)}
             slots={{
-              toolbar: CustomToolbarCallback,
-              noRowsOverlay: () => <EmptyContent />,
+              toolbar: CustomToolbar,
+              noRowsOverlay: () =>
+                debouncedSearchTerm ? (
+                  <EmptyContent title={`No results found for "${debouncedSearchTerm}"`} />
+                ) : (
+                  <EmptyContent />
+                ),
               noResultsOverlay: () => <EmptyContent title="No results found" />,
+            }}
+            slotProps={{
+              toolbar: {
+                searchTerm,
+                onSearchChange: handleSearchChange,
+                selectedRowIds,
+                onOpenConfirmDeleteRows: handleOpenConfirmDeleteRows,
+              },
             }}
             sx={{ [`& .${gridClasses.cell}`]: { alignItems: 'center', display: 'inline-flex' } }}
           />
@@ -258,11 +280,22 @@ export function ProductListView() {
 // ----------------------------------------------------------------------
 
 type CustomToolbarProps = {
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
   selectedRowIds: GridRowSelectionModel;
   onOpenConfirmDeleteRows: () => void;
 };
 
-function CustomToolbar({ selectedRowIds, onOpenConfirmDeleteRows }: CustomToolbarProps) {
+declare module '@mui/x-data-grid' {
+  interface ToolbarPropsOverrides extends CustomToolbarProps {}
+}
+
+function CustomToolbar({
+  searchTerm,
+  onSearchChange,
+  selectedRowIds,
+  onOpenConfirmDeleteRows,
+}: CustomToolbarProps) {
   return (
     <GridToolbarContainer>
       <Stack
@@ -272,6 +305,29 @@ function CustomToolbar({ selectedRowIds, onOpenConfirmDeleteRows }: CustomToolba
         alignItems="center"
         justifyContent="flex-end"
       >
+        <TextField
+          size="small"
+          value={searchTerm}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder="Search products..."
+          inputProps={{ 'aria-label': 'Search products' }}
+          sx={{ mr: 'auto', width: { xs: 1, sm: 280 } }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
+              </InputAdornment>
+            ),
+            endAdornment: searchTerm ? (
+              <InputAdornment position="end">
+                <IconButton size="small" aria-label="Clear search" onClick={() => onSearchChange('')}>
+                  <Iconify icon="mingcute:close-line" width={18} />
+                </IconButton>
+              </InputAdornment>
+            ) : null,
+          }}
+        />
+
         {!!selectedRowIds.length && (
           <Button
             size="small"

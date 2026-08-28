@@ -14,13 +14,14 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags
 } from '@nestjs/swagger'
 import { ProductsService } from './products.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
-import { PaginationDTO } from '@/common/dto/pagination.dto'
+import { ProductFiltersDto } from './dto/product-filters.dto'
 import { Product } from './entities/product.entity'
 import { Public } from '@/common/decorators/public.decorator'
 
@@ -48,14 +49,35 @@ export class ProductsController {
 
   @Get()
   @Public()
-  @ApiOperation({ summary: 'List products with pagination' })
+  @ApiOperation({
+    summary: 'List products with pagination, search and filters'
+  })
+  @ApiQuery({ name: 'page', required: false, example: '1' })
+  @ApiQuery({ name: 'limit', required: false, example: '10' })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    example: 'camping',
+    description:
+      'Free-text search, case-insensitive, matched against name, sku, description and category'
+  })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    example: 'Footwear',
+    description: 'Exact category filter, case-insensitive'
+  })
   @ApiResponse({
     status: 200,
     description:
       'Paginated list: { data: Product[], pagination: { total, per_page, current_page, last_page, from, to } }'
   })
-  findAll(@Query() pagination: PaginationDTO) {
-    return this.productsService.findAll(pagination)
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error: { statusCode, message: string[], error }'
+  })
+  findAll(@Query() filters: ProductFiltersDto) {
+    return this.productsService.findAll(filters)
   }
 
   @Get(':id')
