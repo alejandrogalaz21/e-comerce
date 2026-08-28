@@ -101,9 +101,13 @@ test.describe('product CSV import', () => {
     const created = page.getByTestId('import-created');
     await expect(created.getByText('Created rows (85)')).toBeVisible();
     await expect(created.locator('tbody tr')).toHaveCount(85);
-    await expect(
-      created.locator('tbody tr').filter({ hasText: 'RS-001' }).first()
-    ).toContainText('Running Shoes');
+    // RS-001 heads the file but is rejected as a duplicate, so the first created
+    // row is line 3. Its cells carry the stored, normalized values.
+    const firstCreated = created.locator('tbody tr').first();
+    await expect(firstCreated).toContainText('CB-010');
+    await expect(firstCreated).toContainText('Organic Coffee Beans');
+    await expect(firstCreated).toContainText('Food & Beverage');
+    await expect(created.locator('tbody tr').filter({ hasText: 'RS-001' })).toHaveCount(0);
 
     await expect(page.getByRole('button', { name: 'Import another file' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Go to products' })).toBeVisible();

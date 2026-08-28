@@ -204,11 +204,13 @@ test.describe('product list filters', () => {
 
     const search = page.getByLabel('Search products');
 
-    await search.fill(skuFor(1));
+    // Indices 4 and 5 are used because a low index like 1 is a prefix of 10..13,
+    // and a substring search would then match five products instead of one.
+    await search.fill(skuFor(4));
     await search.press('Enter');
     await expect(totalResults(page)).toHaveText('1');
 
-    await search.fill(skuFor(2));
+    await search.fill(skuFor(5));
     await search.press('Enter');
 
     // Union, not intersection: no product matches both SKUs at once.
@@ -217,7 +219,7 @@ test.describe('product list filters', () => {
 
     await page
       .locator('.MuiChip-root')
-      .filter({ hasText: skuFor(1) })
+      .filter({ hasText: skuFor(4) })
       .locator('.MuiChip-deleteIcon')
       .click();
 
