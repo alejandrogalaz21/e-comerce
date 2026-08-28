@@ -167,13 +167,13 @@ export function ProductListView() {
     {
       field: 'createdAt',
       headerName: 'Created at',
-      width: 150,
+      width: 130,
       renderCell: (params) => <RenderCellCreatedAt params={params} />,
     },
     {
       field: 'updatedAt',
       headerName: 'Updated at',
-      width: 150,
+      width: 130,
       renderCell: (params) => <RenderCellUpdatedAt params={params} />,
     },
     {

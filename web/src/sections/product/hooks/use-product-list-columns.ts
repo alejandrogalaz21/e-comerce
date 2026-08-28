@@ -13,7 +13,16 @@ type StoredColumnState = {
   visibility: GridColumnVisibilityModel;
 };
 
-const initialState: StoredColumnState = { widths: {}, visibility: {} };
+/**
+ * Ten columns do not fit the grid viewport, and the ones past the edge are not
+ * rendered at all — including the row actions. Weight and creation date are the
+ * two the catalog review needs least, so they start hidden and stay one click away
+ * in the Columns menu; the choice is then remembered.
+ */
+const initialState: StoredColumnState = {
+  widths: {},
+  visibility: { weightKg: false, createdAt: false },
+};
 
 /**
  * Column widths and visibility are a per-user viewing preference, not catalog data:
