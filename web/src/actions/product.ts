@@ -12,7 +12,7 @@ import type {
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
-import { toProductItem } from './product.mapper';
+import { toImportBatch, toProductItem } from './product.mapper';
 
 // ----------------------------------------------------------------------
 
@@ -61,10 +61,12 @@ export async function getImportBatches(
     endpoints.product.batches.list,
     { params }
   );
-  return res.data;
+  return { data: res.data.data.map(toImportBatch), pagination: res.data.pagination };
 }
 
 export async function getImportBatch(batchId: string): Promise<IImportBatchDetail> {
-  const res = await axiosInstance.get<IImportBatchDetail>(endpoints.product.batches.details(batchId));
-  return res.data;
+  const res = await axiosInstance.get<IImportBatchDetail>(
+    endpoints.product.batches.details(batchId)
+  );
+  return toImportBatch(res.data);
 }

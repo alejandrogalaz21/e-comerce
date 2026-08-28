@@ -73,6 +73,12 @@ export function ProductImportBatchesView() {
       ),
     },
     {
+      field: 'importedBy',
+      headerName: 'Imported by',
+      width: 200,
+      valueFormatter: (value: string | null) => value || '—',
+    },
+    {
       field: 'createdAt',
       headerName: 'Date',
       width: 180,

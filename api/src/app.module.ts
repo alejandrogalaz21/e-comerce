@@ -1,6 +1,7 @@
 // src/app.module.ts
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
+import { APP_GUARD } from '@nestjs/core'
 // Config
 import { PgConfig, AppConfig, RedisConfig } from '@/config'
 // Database
@@ -9,6 +10,7 @@ import { RedisModule } from '@/database/redis/redis.module'
 // Common
 import { CommonModule } from '@/common/common.module'
 import { LoggerMiddleware } from '@/common/middleware/logger.middleware'
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard'
 // Business Modules
 import { UsersModule } from '@/modules/users/users.module'
 import { AuthModule } from '@/modules/auth/auth.module'
@@ -34,7 +36,7 @@ import { StatusModule } from '@/modules/status/status.module'
     StatusModule
   ],
   controllers: [],
-  providers: [],
+  providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
   exports: []
 })
 export class AppModule implements NestModule {

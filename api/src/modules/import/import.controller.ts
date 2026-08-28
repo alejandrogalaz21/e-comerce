@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
@@ -20,10 +21,13 @@ import {
 import { ImportService } from './import.service'
 import { ImportBatch } from './import-batch.entity'
 import { PaginationDTO } from '@/common/dto/pagination.dto'
+import { CurrentUser } from '@/common/decorators/current-user.decorator'
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
 
 @ApiTags('products import')
+@ApiBearerAuth('jwt')
+@ApiResponse({ status: 401, description: 'Missing or invalid access token' })
 @Controller('products/import')
 export class ImportController {
   constructor(private readonly importService: ImportService) {}
@@ -90,8 +94,11 @@ export class ImportController {
       'File-level problem: missing file, not a .csv, bad MIME type, empty file, malformed CSV, missing required columns or unexpected columns'
   })
   @ApiResponse({ status: 413, description: 'File larger than 5MB' })
-  import(@UploadedFile() file: Express.Multer.File) {
-    return this.importService.importCsv(file)
+  import(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser('email') email: string
+  ) {
+    return this.importService.importCsv(file, email)
   }
 
   @Get('batches')

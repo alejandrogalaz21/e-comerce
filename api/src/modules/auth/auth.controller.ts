@@ -3,15 +3,17 @@ import {
   Post,
   Body,
   UnauthorizedException,
-  Get,
-  UseGuards,
-  Req
+  Get
 } from '@nestjs/common'
-import { AuthGuard } from '@nestjs/passport'
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { AuthService } from './auth.service'
 import { UsersService } from '../users/users.service'
 import { CreateUserDto } from '../users/dto/create-user.dto'
+import { Public } from '@/common/decorators/public.decorator'
+import {
+  AuthenticatedUser,
+  CurrentUser
+} from '@/common/decorators/current-user.decorator'
 
 @ApiTags('auth')
 @Controller('auth')
@@ -22,11 +24,18 @@ export class AuthController {
   ) {}
 
   @Post('sign-up')
+  @Public()
   async signup(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto)
   }
 
   @Post('sign-in')
+  @Public()
+  @ApiResponse({
+    status: 200,
+    description: 'Access token and public user data'
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async signin(@Body() body: { email: string; password: string }) {
     const user = await this.authService.validateUser(body.email, body.password)
     if (!user) {
@@ -35,14 +44,10 @@ export class AuthController {
     return this.authService.login(user)
   }
 
-  // GET endpoint to return the logged-in user's information
   @Get('me')
-  // Protects the route using NestJS AuthGuard for JWT authentication
   @ApiBearerAuth('jwt')
-  @UseGuards(AuthGuard('jwt'))
-  async getProfile(@Req() req) {
-    // req.user is populated by JwtStrategy.validate with userId and email
-    const user = await this.usersService.findOne(req.user.userId)
-    return user
+  @ApiResponse({ status: 401, description: 'Missing or invalid access token' })
+  async getProfile(@CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.findOne(user.userId)
   }
 }

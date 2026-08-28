@@ -89,6 +89,7 @@ export type IImportBatch = {
   unchanged: number;
   rejected: number;
   skippedEmpty: number;
+  importedBy: string | null;
   createdAt: string;
 };
 

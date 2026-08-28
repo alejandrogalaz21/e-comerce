@@ -21,7 +21,11 @@ import { Iconify } from 'src/components/iconify';
 import { Form, Field } from 'src/components/hook-form';
 
 import { useAuthContext } from 'src/auth/hooks';
-import { signInWithPassword } from 'src/auth/context/jwt';
+import { getAuthErrorMessage, signInWithPassword } from 'src/auth/context/jwt';
+
+// ----------------------------------------------------------------------
+
+const DEMO_CREDENTIALS = { email: 'demo@demo.com', password: 'demo' };
 
 // ----------------------------------------------------------------------
 
@@ -32,10 +36,7 @@ export const SignInSchema = zod.object({
     .string()
     .min(1, { message: 'Email is required!' })
     .email({ message: 'Email must be a valid email address!' }),
-  password: zod
-    .string()
-    .min(1, { message: 'Password is required!' })
-    .min(6, { message: 'Password must be at least 6 characters!' }),
+  password: zod.string().min(1, { message: 'Password is required!' }),
 });
 
 // ----------------------------------------------------------------------
@@ -49,14 +50,9 @@ export function JwtSignInView() {
 
   const password = useBoolean();
 
-  const defaultValues = {
-    email: 'demo@minimals.cc',
-    password: '@demo1',
-  };
-
   const methods = useForm<SignInSchemaType>({
     resolver: zodResolver(SignInSchema),
-    defaultValues,
+    defaultValues: DEMO_CREDENTIALS,
   });
 
   const {
@@ -65,14 +61,15 @@ export function JwtSignInView() {
   } = methods;
 
   const onSubmit = handleSubmit(async (data) => {
+    setErrorMsg('');
+
     try {
       await signInWithPassword({ email: data.email, password: data.password });
       await checkUserSession?.();
 
       router.refresh();
     } catch (error) {
-      console.error(error);
-      setErrorMsg(error instanceof Error ? error.message : error);
+      setErrorMsg(getAuthErrorMessage(error));
     }
   });
 
@@ -97,16 +94,6 @@ export function JwtSignInView() {
       <Field.Text name="email" label="Email address" InputLabelProps={{ shrink: true }} />
 
       <Stack spacing={1.5}>
-        <Link
-          component={RouterLink}
-          href="#"
-          variant="body2"
-          color="inherit"
-          sx={{ alignSelf: 'flex-end' }}
-        >
-          Forgot password?
-        </Link>
-
         <Field.Text
           name="password"
           label="Password"
@@ -144,9 +131,9 @@ export function JwtSignInView() {
       {renderHead}
 
       <Alert severity="info" sx={{ mb: 3 }}>
-        Use <strong>{defaultValues.email}</strong>
-        {' with password '}
-        <strong>{defaultValues.password}</strong>
+        Demo account: <strong>{DEMO_CREDENTIALS.email}</strong>
+        {' / '}
+        <strong>{DEMO_CREDENTIALS.password}</strong>
       </Alert>
 
       {!!errorMsg && (

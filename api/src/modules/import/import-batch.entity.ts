@@ -4,7 +4,7 @@ import {
   Column,
   CreateDateColumn
 } from 'typeorm'
-import { ApiProperty } from '@nestjs/swagger'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { ImportBatchReport } from './import-result.interface'
 
 @Entity('import_batches')
@@ -31,6 +31,16 @@ export class ImportBatch {
   })
   @Column('varchar', { length: 20, default: 'processing' })
   status: string
+
+  @ApiPropertyOptional({
+    example: 'demo@demo.com',
+    description:
+      'Email of the authenticated user who ran the import, taken from the access token. Null for batches created before attribution existed',
+    maxLength: 255,
+    nullable: true
+  })
+  @Column('varchar', { name: 'imported_by', length: 255, nullable: true })
+  importedBy: string | null
 
   @ApiProperty({ example: 97, description: 'Data rows found in the file' })
   @Column('int', { name: 'total_rows', default: 0 })

@@ -1,26 +1,26 @@
 ## 1. BE — Infraestructura de auth reutilizable
 
-- [ ] 1.1 `common/guards/jwt-auth.guard.ts`: guard nombrado sobre `AuthGuard('jwt')`, que respeta el decorador `@Public()` vía `Reflector`
-- [ ] 1.2 `common/decorators/public.decorator.ts`: `@Public()` para marcar endpoints abiertos
-- [ ] 1.3 `common/decorators/current-user.decorator.ts`: `@CurrentUser()` para leer el usuario del request sin tocar `req` en los controladores
-- [ ] 1.4 Registrar el guard como `APP_GUARD` global en `app.module.ts` (falla cerrado por defecto)
-- [ ] 1.5 Fijar de forma explícita la expiración del token en la configuración del módulo JWT (Open Question del design)
-- [ ] 1.6 Tests unitarios del guard: request sin token → 401; con token válido → pasa; endpoint `@Public()` → pasa sin token
+- [x] 1.1 `common/guards/jwt-auth.guard.ts`: guard nombrado sobre `AuthGuard('jwt')`, que respeta el decorador `@Public()` vía `Reflector`
+- [x] 1.2 `common/decorators/public.decorator.ts`: `@Public()` para marcar endpoints abiertos
+- [x] 1.3 `common/decorators/current-user.decorator.ts`: `@CurrentUser()` para leer el usuario del request sin tocar `req` en los controladores
+- [x] 1.4 Registrar el guard como `APP_GUARD` global en `app.module.ts` (falla cerrado por defecto)
+- [x] 1.5 Fijar de forma explícita la expiración del token en la configuración del módulo JWT (Open Question del design)
+- [x] 1.6 Tests unitarios del guard: request sin token → 401; con token válido → pasa; endpoint `@Public()` → pasa sin token
 
 ## 2. BE — Aplicar la frontera público/protegido
 
-- [ ] 2.1 Marcar `@Public()`: `GET /health`, `GET /products`, `GET /products/:id`, `POST /auth/sign-in`, `POST /auth/sign-up`
-- [ ] 2.2 Verificar que quedan protegidos por omisión: `POST/PATCH/DELETE /products`, `POST /products/import`, `GET /products/import/batches*`, `/status/*`, `/users/*`
-- [ ] 2.3 Documentar 401 en Swagger para cada endpoint protegido y añadir `addBearerAuth` al `DocumentBuilder` si no está
-- [ ] 2.4 Tests de los controladores protegidos: sin token → 401 y la operación no ocurre; con token → comportamiento normal
-- [ ] 2.5 Test de regresión de la superficie pública: catálogo y detalle responden 200 sin token
+- [x] 2.1 Marcar `@Public()`: `GET /health`, `GET /products`, `GET /products/:id`, `POST /auth/sign-in`, `POST /auth/sign-up`
+- [x] 2.2 Verificar que quedan protegidos por omisión: `POST/PATCH/DELETE /products`, `POST /products/import`, `GET /products/import/batches*`, `/status/*`, `/users/*`
+- [x] 2.3 Documentar 401 en Swagger para cada endpoint protegido y añadir `addBearerAuth` al `DocumentBuilder` si no está
+- [x] 2.4 Tests de los controladores protegidos: sin token → 401 y la operación no ocurre; con token → comportamiento normal
+- [x] 2.5 Test de regresión de la superficie pública: catálogo y detalle responden 200 sin token
 
 ## 3. BE — Atribución de imports (ex TK-030)
 
-- [ ] 3.1 Migración que agrega `imported_by` (varchar nullable) a `import_batches`
-- [ ] 3.2 Campo en la entidad `ImportBatch` + exposición en el detalle y el listado de batches
-- [ ] 3.3 `ImportController` toma el email desde `@CurrentUser()` (nunca del cuerpo) y lo pasa al servicio
-- [ ] 3.4 Tests: el batch queda atribuido al usuario del token; un `importedBy` enviado por el cliente se ignora; un batch histórico sin atribución se serializa sin error
+- [x] 3.1 Migración que agrega `imported_by` (varchar nullable) a `import_batches`
+- [x] 3.2 Campo en la entidad `ImportBatch` + exposición en el detalle y el listado de batches
+- [x] 3.3 `ImportController` toma el email desde `@CurrentUser()` (nunca del cuerpo) y lo pasa al servicio
+- [x] 3.4 Tests: el batch queda atribuido al usuario del token; un `importedBy` enviado por el cliente se ignora; un batch histórico sin atribución se serializa sin error
 
 ## 4. FE — Sesión funcional
 

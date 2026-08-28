@@ -84,6 +84,10 @@ export function ProductImportBatchDetailView({ batchId }: Props) {
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             {fDateTime(batch.createdAt)}
           </Typography>
+
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Imported by {batch.importedBy || '—'}
+          </Typography>
         </Stack>
 
         <ImportSummary

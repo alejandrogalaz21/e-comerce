@@ -1,4 +1,11 @@
-import type { ApiProduct, IProductItem, IProductPayload, IProductFormValues } from 'src/types/product';
+import type {
+  ApiProduct,
+  IProductItem,
+  IImportBatch,
+  IProductPayload,
+  IProductFormValues,
+  IImportBatchDetail,
+} from 'src/types/product';
 
 export function toProductItem(dto: ApiProduct): IProductItem {
   return {
@@ -13,6 +20,11 @@ export function toProductItem(dto: ApiProduct): IProductItem {
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
   };
+}
+
+/** Batches created before import attribution existed carry no `importedBy`. */
+export function toImportBatch<T extends IImportBatch | IImportBatchDetail>(dto: T): T {
+  return { ...dto, importedBy: dto.importedBy ?? null };
 }
 
 export function toApiPayload(values: IProductFormValues): IProductPayload {

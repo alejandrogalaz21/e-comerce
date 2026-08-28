@@ -1,11 +1,18 @@
 import { Controller, Get, Inject } from '@nestjs/common'
-import { ApiOperation, ApiTags } from '@nestjs/swagger'
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags
+} from '@nestjs/swagger'
 import { InjectDataSource } from '@nestjs/typeorm'
 import { DataSource } from 'typeorm'
 import Redis from 'ioredis'
 import { REDIS_CLIENT } from '@/database/redis/redis.module'
 
 @ApiTags('status')
+@ApiBearerAuth('jwt')
+@ApiResponse({ status: 401, description: 'Missing or invalid access token' })
 @Controller('status')
 export class StatusController {
   constructor(

@@ -63,14 +63,18 @@ export class ImportService {
     private readonly paginationBuilder: PaginationResponseBuilder<ImportBatch>
   ) {}
 
-  async importCsv(file: Express.Multer.File): Promise<ImportResult> {
+  async importCsv(
+    file: Express.Multer.File,
+    importedBy?: string
+  ): Promise<ImportResult> {
     this.validateFile(file)
     const records = this.parseCsv(file.buffer)
 
     const batch = await this.batchRepository.save(
       this.batchRepository.create({
         filename: file.originalname,
-        status: 'processing'
+        status: 'processing',
+        importedBy: importedBy ?? null
       })
     )
 
@@ -108,6 +112,7 @@ export class ImportService {
         'unchanged',
         'rejected',
         'skippedEmpty',
+        'importedBy',
         'createdAt'
       ],
       order: { createdAt: 'DESC' },

@@ -323,7 +323,8 @@ describe('ImportService', () => {
       expect(result.batchId).toBe('generated-batch-id')
       expect(mockBatchRepository.create).toHaveBeenCalledWith({
         filename: 'products.csv',
-        status: 'processing'
+        status: 'processing',
+        importedBy: null
       })
 
       const saveCalls = mockBatchRepository.save.mock.calls
