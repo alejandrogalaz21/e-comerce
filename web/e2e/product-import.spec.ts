@@ -68,9 +68,11 @@ test.describe('product CSV import', () => {
     // Issues table: 5 rows rejected by validation plus the 5 occurrences of the two
     // duplicated skus (lines 2/36 RS-001 and 11/56/89 BS-021). Nothing is updated,
     // because a duplicate sku is rejected instead of overwriting.
+    // Ten rejected plus the two blank rows, which are now listed instead of only counted.
     const issues = page.getByTestId('import-issues');
-    await expect(issues.getByText('Rows with issues (10)')).toBeVisible();
-    await expect(issues.locator('tbody tr')).toHaveCount(10);
+    await expect(issues.getByText('Rows to review (12)')).toBeVisible();
+    await expect(issues.locator('tbody tr')).toHaveCount(12);
+    await expect(issues.locator('tbody tr').filter({ hasText: 'Skipped row' })).toHaveCount(2);
     await expect(issues.locator('tbody tr').filter({ hasText: 'Rejected row' })).toHaveCount(10);
     await expect(issues.locator('tbody tr').filter({ hasText: 'Updated row' })).toHaveCount(0);
 

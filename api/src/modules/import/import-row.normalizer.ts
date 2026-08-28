@@ -5,6 +5,8 @@ export interface NormalizedRow {
   errors: string[]
   isEmpty: boolean
   sku?: string
+  /** Raw name, kept so a rejected row can show what was wrong with it. */
+  name?: string
 }
 
 const CURRENCY_PRICE_REGEX = /^[^0-9.-]*[0-9]/
@@ -20,7 +22,8 @@ export class ImportRowNormalizer {
 
     const isEmpty = Object.values(raw).every(value => value === '')
     const sku = raw.sku || undefined
-    if (isEmpty) return { values: {}, errors: [], isEmpty: true, sku }
+    const name = raw.name || undefined
+    if (isEmpty) return { values: {}, errors: [], isEmpty: true, sku, name }
 
     const errors: string[] = []
     const values: Record<string, unknown> = {
@@ -41,7 +44,7 @@ export class ImportRowNormalizer {
       if (weight !== undefined) values.weightKg = weight
     }
 
-    return { values, errors, isEmpty: false, sku }
+    return { values, errors, isEmpty: false, sku, name }
   }
 
   private parseNumericField(

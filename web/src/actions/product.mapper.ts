@@ -35,6 +35,7 @@ export function toImportReport(report: Partial<IImportReport> | null | undefined
     rejected: report?.rejected ?? [],
     warnings: report?.warnings ?? [],
     created: report?.created ?? [],
+    skipped: report?.skipped ?? [],
   };
 }
 

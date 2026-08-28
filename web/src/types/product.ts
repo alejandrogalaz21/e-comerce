@@ -82,13 +82,20 @@ export type IImportSummary = {
 export type IImportRejectedRow = {
   line: number;
   sku?: string;
+  name?: string;
   errors: string[];
 };
 
 export type IImportWarning = {
   line: number;
   sku: string;
+  name?: string;
   message: string;
+};
+
+/** A fully blank row: there is nothing to report about it beyond where it was. */
+export type IImportSkippedRow = {
+  line: number;
 };
 
 /** Fields beyond line/sku/name are optional: batches stored before they existed lack them. */
@@ -107,6 +114,8 @@ export type IImportReport = {
   rejected: IImportRejectedRow[];
   warnings: IImportWarning[];
   created: IImportCreatedRow[];
+  /** Absent on batches stored before skipped lines were recorded. */
+  skipped?: IImportSkippedRow[];
 };
 
 export type IImportResult = {
@@ -114,11 +123,12 @@ export type IImportResult = {
   summary: IImportSummary;
 } & IImportReport;
 
-export type IImportIssueSeverity = 'rejected' | 'updated';
+export type IImportIssueSeverity = 'rejected' | 'updated' | 'skipped';
 
 export type IImportIssueRow = {
   line: number;
   sku?: string;
+  name?: string;
   severity: IImportIssueSeverity;
   message: string;
 };

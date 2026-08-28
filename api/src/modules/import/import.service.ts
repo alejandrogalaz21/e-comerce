@@ -21,6 +21,7 @@ import {
   ImportCreatedRow,
   ImportRejectedRow,
   ImportResult,
+  ImportSkippedRow,
   ImportSummary,
   ImportWarning
 } from './import-result.interface'
@@ -94,7 +95,8 @@ export class ImportService {
         report: {
           rejected: result.rejected,
           warnings: result.warnings,
-          created: result.created
+          created: result.created,
+          skipped: result.skipped
         }
       })
       await this.batchRepository.save(batch)
@@ -162,7 +164,8 @@ export class ImportService {
     return {
       rejected: report?.rejected ?? [],
       warnings: report?.warnings ?? [],
-      created: report?.created ?? []
+      created: report?.created ?? [],
+      skipped: report?.skipped ?? []
     }
   }
 
@@ -231,8 +234,14 @@ export class ImportService {
     const rejected: ImportRejectedRow[] = []
     const warnings: ImportWarning[] = []
     const created: ImportCreatedRow[] = []
+    const skipped: ImportSkippedRow[] = []
 
-    const candidates = await this.validateRows(records, summary, rejected)
+    const candidates = await this.validateRows(
+      records,
+      summary,
+      rejected,
+      skipped
+    )
     const accepted = this.rejectDuplicateSkus(candidates, rejected)
 
     for (const { line, dto } of accepted) {
@@ -262,6 +271,7 @@ export class ImportService {
           warnings.push({
             line,
             sku: dto.sku,
+            name: dto.name,
             message: 'sku already exists with different data — updated'
           })
         }
@@ -269,6 +279,7 @@ export class ImportService {
         rejected.push({
           line,
           sku: dto.sku,
+          name: dto.name,
           errors: [
             error instanceof Error ? error.message : 'unexpected database error'
           ]
@@ -278,13 +289,14 @@ export class ImportService {
 
     rejected.sort((a, b) => a.line - b.line)
     summary.rejected = rejected.length
-    return { summary, rejected, warnings, created }
+    return { summary, rejected, warnings, created, skipped }
   }
 
   private async validateRows(
     records: Record<string, unknown>[],
     summary: ImportSummary,
-    rejected: ImportRejectedRow[]
+    rejected: ImportRejectedRow[],
+    skipped: ImportSkippedRow[]
   ): Promise<ImportCandidate[]> {
     const candidates: ImportCandidate[] = []
 
@@ -294,11 +306,17 @@ export class ImportService {
 
       if (normalized.isEmpty) {
         summary.skippedEmpty++
+        skipped.push({ line })
         continue
       }
 
       if (normalized.errors.length > 0) {
-        rejected.push({ line, sku: normalized.sku, errors: normalized.errors })
+        rejected.push({
+          line,
+          sku: normalized.sku,
+          name: normalized.name,
+          errors: normalized.errors
+        })
         continue
       }
 
@@ -312,6 +330,7 @@ export class ImportService {
         rejected.push({
           line,
           sku: normalized.sku,
+          name: normalized.name,
           errors: this.extractValidationMessages(error)
         })
         continue

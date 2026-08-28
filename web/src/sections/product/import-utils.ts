@@ -28,7 +28,7 @@ export function importStatusColor(status: IImportBatchStatus): LabelColor {
 
 export const IMPORT_ISSUE_META: Record<
   IImportIssueSeverity,
-  { label: string; color: 'error' | 'warning'; icon: string }
+  { label: string; color: 'error' | 'warning' | 'info'; icon: string }
 > = {
   rejected: {
     label: 'Rejected row',
@@ -40,21 +40,35 @@ export const IMPORT_ISSUE_META: Record<
     color: 'warning',
     icon: 'solar:refresh-circle-bold-duotone',
   },
+  skipped: {
+    label: 'Skipped row',
+    color: 'info',
+    icon: 'solar:minus-circle-bold-duotone',
+  },
 };
 
-export function toImportIssueRows(report: Pick<IImportReport, 'rejected' | 'warnings'>) {
+export function toImportIssueRows(
+  report: Pick<IImportReport, 'rejected' | 'warnings' | 'skipped'>
+) {
   const rows: IImportIssueRow[] = [
     ...report.rejected.map((row) => ({
       line: row.line,
       sku: row.sku,
+      name: row.name,
       severity: 'rejected' as const,
       message: row.errors.join(', '),
     })),
     ...report.warnings.map((row) => ({
       line: row.line,
       sku: row.sku,
+      name: row.name,
       severity: 'updated' as const,
       message: row.message,
+    })),
+    ...(report.skipped ?? []).map((row) => ({
+      line: row.line,
+      severity: 'skipped' as const,
+      message: 'blank row, nothing to import',
     })),
   ];
 

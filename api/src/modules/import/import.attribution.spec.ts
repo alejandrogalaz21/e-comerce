@@ -225,7 +225,12 @@ describe('import attribution', () => {
     const batch = await service.findBatch('legacy-batch')
 
     expect(batch.importedBy).toBeNull()
-    expect(batch.report).toEqual({ rejected: [], warnings: [], created: [] })
+    expect(batch.report).toEqual({
+      rejected: [],
+      warnings: [],
+      created: [],
+      skipped: []
+    })
     expect(() => JSON.stringify(batch)).not.toThrow()
   })
 })

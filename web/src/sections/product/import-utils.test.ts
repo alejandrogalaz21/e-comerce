@@ -47,37 +47,60 @@ describe('importStatusColor', () => {
 describe('toImportIssueRows', () => {
   const report = {
     rejected: [
-      { line: 16, sku: 'DL-007', errors: ['stock must not be less than 0'] },
+      {
+        line: 16,
+        sku: 'DL-007',
+        name: 'Desk Lamp',
+        errors: ['stock must not be less than 0'],
+      },
       { line: 25, errors: ['name should not be empty'] },
     ],
     warnings: [
-      { line: 7, sku: 'RS-001', message: 'sku already exists with different data — updated' },
+      {
+        line: 7,
+        sku: 'RS-001',
+        name: 'Running Shoes',
+        message: 'sku already exists with different data — updated',
+      },
     ],
+    skipped: [{ line: 3 }, { line: 30 }],
   };
 
-  it('merges rejected and warning rows ordered by line', () => {
-    expect(toImportIssueRows(report).map((row) => row.line)).toEqual([7, 16, 25]);
+  it('merges rejected, warning and skipped rows ordered by line', () => {
+    expect(toImportIssueRows(report).map((row) => row.line)).toEqual([3, 7, 16, 25, 30]);
   });
 
   it('tags each row with its severity and joins rejection errors', () => {
     const rows = toImportIssueRows(report);
 
     expect(rows[0]).toEqual({
+      line: 3,
+      severity: 'skipped',
+      message: 'blank row, nothing to import',
+    });
+    expect(rows[1]).toEqual({
       line: 7,
       sku: 'RS-001',
+      name: 'Running Shoes',
       severity: 'updated',
       message: 'sku already exists with different data — updated',
     });
-    expect(rows[1]).toEqual({
+    expect(rows[2]).toEqual({
       line: 16,
       sku: 'DL-007',
+      name: 'Desk Lamp',
       severity: 'rejected',
       message: 'stock must not be less than 0',
     });
-    expect(rows[2].sku).toBeUndefined();
+    expect(rows[3].sku).toBeUndefined();
+    expect(rows[3].name).toBeUndefined();
   });
 
   it('returns an empty list when there is nothing to report', () => {
+    expect(toImportIssueRows({ rejected: [], warnings: [], skipped: [] })).toEqual([]);
+  });
+
+  it('tolerates a batch stored before skipped lines were recorded', () => {
     expect(toImportIssueRows({ rejected: [], warnings: [] })).toEqual([]);
   });
 });

@@ -154,6 +154,7 @@ describe('ImportService', () => {
       expect(result.rejected[0]).toEqual({
         line: 2,
         sku: 'YM-015',
+        name: 'Yoga Mat',
         errors: ["price is not a valid number: 'free'"]
       })
     })
@@ -186,6 +187,19 @@ describe('ImportService', () => {
       )
     })
 
+    it('reports which lines were skipped, not just how many', async () => {
+      const result = await service.importCsv(
+        csvFile([
+          ',,,,,,',
+          'Running Shoes,RS-001,desc,Footwear,89.99,150,0.35',
+          ',,,,,,'
+        ])
+      )
+
+      expect(result.summary.skippedEmpty).toBe(2)
+      expect(result.skipped).toEqual([{ line: 2 }, { line: 4 }])
+    })
+
     it("applies the 'Uncategorized' default when category is empty", async () => {
       const result = await service.importCsv(
         csvFile(['Gift Card,GC-025,desc,,25.00,99999,0'])
@@ -215,9 +229,11 @@ describe('ImportService', () => {
       )
 
       expect(result.summary.inserted).toBe(0)
+      // The offending name travels with the row, so the report shows what was wrong.
       expect(result.rejected[0]).toEqual({
         line: 2,
         sku: 'XS-001',
+        name: "<script>alert('xss')</script>",
         errors: ['name contains invalid content: HTML markup is not allowed']
       })
       expect(mockProductRepository.create).not.toHaveBeenCalled()
@@ -231,6 +247,7 @@ describe('ImportService', () => {
       expect(result.rejected[0]).toEqual({
         line: 2,
         sku: 'DL-007',
+        name: 'Desk Lamp',
         errors: ['stock must not be less than 0']
       })
     })
