@@ -24,6 +24,7 @@ const PUBLIC_SURFACE: [string, ControllerClass, string][] = [
   ['GET /', HealthController, 'root'],
   ['GET /health', HealthController, 'healthCheck'],
   ['GET /products', ProductsController, 'findAll'],
+  ['GET /products/categories', ProductsController, 'findCategories'],
   ['GET /products/:id', ProductsController, 'findOne'],
   ['POST /auth/sign-in', AuthController, 'signin'],
   ['POST /auth/sign-up', AuthController, 'signup']

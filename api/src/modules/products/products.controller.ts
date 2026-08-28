@@ -21,7 +21,12 @@ import {
 import { ProductsService } from './products.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
-import { ProductFiltersDto } from './dto/product-filters.dto'
+import {
+  PRODUCT_SORT_DIRECTIONS,
+  PRODUCT_SORT_FIELDS,
+  ProductFiltersDto
+} from './dto/product-filters.dto'
+import { ProductCategoryDto } from './dto/product-category.dto'
 import { Product } from './entities/product.entity'
 import { Public } from '@/common/decorators/public.decorator'
 
@@ -64,8 +69,42 @@ export class ProductsController {
   @ApiQuery({
     name: 'category',
     required: false,
-    example: 'Footwear',
-    description: 'Exact category filter, case-insensitive'
+    example: 'Electronics,Tools',
+    description:
+      'Category filter, case-insensitive. Accepts several categories separated by commas'
+  })
+  @ApiQuery({
+    name: 'minPrice',
+    required: false,
+    example: '10',
+    description: 'Minimum price, inclusive'
+  })
+  @ApiQuery({
+    name: 'maxPrice',
+    required: false,
+    example: '50',
+    description: 'Maximum price, inclusive. Must not be lower than minPrice'
+  })
+  @ApiQuery({
+    name: 'inStock',
+    required: false,
+    example: 'true',
+    description:
+      'true returns only products with stock, false returns only sold out products. Omit to include both'
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: [...PRODUCT_SORT_FIELDS],
+    example: 'updatedAt',
+    description: 'Sort field. Defaults to createdAt'
+  })
+  @ApiQuery({
+    name: 'sortDir',
+    required: false,
+    enum: [...PRODUCT_SORT_DIRECTIONS],
+    example: 'desc',
+    description: 'Sort direction. Defaults to desc'
   })
   @ApiResponse({
     status: 200,
@@ -78,6 +117,20 @@ export class ProductsController {
   })
   findAll(@Query() filters: ProductFiltersDto) {
     return this.productsService.findAll(filters)
+  }
+
+  @Get('categories')
+  @Public()
+  @ApiOperation({
+    summary: 'List the catalog categories with their product count'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories in alphabetical order, not paginated',
+    type: [ProductCategoryDto]
+  })
+  findCategories() {
+    return this.productsService.findCategories()
   }
 
   @Get(':id')
