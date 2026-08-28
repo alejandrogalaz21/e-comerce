@@ -272,7 +272,7 @@ describe('ImportService (adversarial input hardening)', () => {
       )
 
       expect(result.summary.totalRows).toBe(97)
-      expect(result.summary.rejected).toBe(5)
+      expect(result.summary.rejected).toBe(10)
       expect(result.summary.skippedEmpty).toBe(2)
       expect(result.created).toHaveLength(result.summary.inserted)
     })

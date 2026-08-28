@@ -43,6 +43,11 @@ const ALLOWED_MIME_TYPES = [
   'application/octet-stream'
 ]
 
+interface ImportCandidate {
+  line: number
+  dto: CreateProductDto
+}
+
 @Injectable()
 export class ImportService {
   private readonly logger = new Logger(ImportService.name)
@@ -226,7 +231,62 @@ export class ImportService {
     const rejected: ImportRejectedRow[] = []
     const warnings: ImportWarning[] = []
     const created: ImportCreatedRow[] = []
-    const processedBySku = new Map<string, Product>()
+
+    const candidates = await this.validateRows(records, summary, rejected)
+    const accepted = this.rejectDuplicateSkus(candidates, rejected)
+
+    for (const { line, dto } of accepted) {
+      try {
+        const existing = await this.productRepository.findOne({
+          where: { sku: dto.sku }
+        })
+
+        if (!existing) {
+          const product = await this.productsService.create(dto)
+          summary.inserted++
+          created.push({
+            line,
+            sku: product.sku,
+            name: product.name,
+            description: product.description ?? null,
+            category: product.category,
+            price: product.price,
+            stock: product.stock,
+            weightKg: product.weightKg ?? null
+          })
+        } else if (this.isIdentical(existing, dto)) {
+          summary.unchanged++
+        } else {
+          await this.productRepository.save(this.applyDtoToEntity(existing, dto))
+          summary.updated++
+          warnings.push({
+            line,
+            sku: dto.sku,
+            message: 'sku already exists with different data — updated'
+          })
+        }
+      } catch (error) {
+        rejected.push({
+          line,
+          sku: dto.sku,
+          errors: [
+            error instanceof Error ? error.message : 'unexpected database error'
+          ]
+        })
+      }
+    }
+
+    rejected.sort((a, b) => a.line - b.line)
+    summary.rejected = rejected.length
+    return { summary, rejected, warnings, created }
+  }
+
+  private async validateRows(
+    records: Record<string, unknown>[],
+    summary: ImportSummary,
+    rejected: ImportRejectedRow[]
+  ): Promise<ImportCandidate[]> {
+    const candidates: ImportCandidate[] = []
 
     for (let index = 0; index < records.length; index++) {
       const line = index + 2
@@ -258,54 +318,64 @@ export class ImportService {
       }
 
       dto.category = dto.category?.trim() || 'Uncategorized'
+      candidates.push({ line, dto })
+    }
 
-      try {
-        const existing =
-          processedBySku.get(dto.sku) ??
-          (await this.productRepository.findOne({ where: { sku: dto.sku } }))
+    return candidates
+  }
 
-        if (!existing) {
-          const product = await this.productsService.create(dto)
-          processedBySku.set(dto.sku, product)
-          summary.inserted++
-          created.push({
-            line,
-            sku: product.sku,
-            name: product.name,
-            description: product.description ?? null,
-            category: product.category,
-            price: product.price,
-            stock: product.stock,
-            weightKg: product.weightKg ?? null
-          })
-        } else if (this.isIdentical(existing, dto)) {
-          processedBySku.set(dto.sku, existing)
-          summary.unchanged++
-        } else {
-          const saved = await this.productRepository.save(
-            this.applyDtoToEntity(existing, dto)
-          )
-          processedBySku.set(dto.sku, saved)
-          summary.updated++
-          warnings.push({
-            line,
-            sku: dto.sku,
-            message: 'sku already exists with different data — updated'
-          })
-        }
-      } catch (error) {
+  // A sku is the business key: repeating it within one file makes the file
+  // ambiguous, and picking a winner by row position would make the result
+  // depend on the ordering rather than on the data.
+  private rejectDuplicateSkus(
+    candidates: ImportCandidate[],
+    rejected: ImportRejectedRow[]
+  ): ImportCandidate[] {
+    const occurrencesBySku = new Map<string, ImportCandidate[]>()
+
+    for (const candidate of candidates) {
+      const occurrences = occurrencesBySku.get(candidate.dto.sku) ?? []
+      occurrences.push(candidate)
+      occurrencesBySku.set(candidate.dto.sku, occurrences)
+    }
+
+    const accepted: ImportCandidate[] = []
+
+    for (const [sku, occurrences] of occurrencesBySku) {
+      if (occurrences.length === 1) {
+        accepted.push(occurrences[0])
+        continue
+      }
+
+      const lines = occurrences.map(occurrence => occurrence.line)
+      const versions = new Set(
+        occurrences.map(occurrence => this.dtoSignature(occurrence.dto))
+      )
+      const detail = versions.size > 1 ? 'conflicting data' : 'identical data'
+
+      for (const occurrence of occurrences) {
         rejected.push({
-          line,
-          sku: dto.sku,
+          line: occurrence.line,
+          sku,
           errors: [
-            error instanceof Error ? error.message : 'unexpected database error'
+            `duplicate sku in the file (lines ${lines.join(', ')}) with ${detail} — a sku must appear at most once per import`
           ]
         })
       }
     }
 
-    summary.rejected = rejected.length
-    return { summary, rejected, warnings, created }
+    return accepted.sort((a, b) => a.line - b.line)
+  }
+
+  private dtoSignature(dto: CreateProductDto): string {
+    return JSON.stringify([
+      dto.name,
+      dto.description ?? null,
+      dto.category,
+      dto.price.toFixed(2),
+      dto.stock,
+      dto.weightKg ?? null
+    ])
   }
 
   private extractValidationMessages(error: unknown): string[] {

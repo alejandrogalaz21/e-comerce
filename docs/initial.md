@@ -97,14 +97,39 @@ entrevista. Abajo, cada fila problemática con su número de línea real en el a
 | 3 y 36 | `RS-001` | Mismo SKU, **distinto** precio/descripción/stock (producto "actualizado") |
 | 11, 56 y 89 | `BS-021` | Línea 89 es un duplicado **exacto** de la línea 11. La línea 56 tiene el mismo SKU pero precio/stock distintos. |
 
-**Decisión y por qué**: el SKU es la clave natural de negocio, no el nombre. Trato el import como
-**upsert por SKU**:
-- Si el SKU no existe → `INSERT`.
-- Si el SKU existe y los datos son idénticos → no-op (evita ruido en el log).
-- Si el SKU existe y los datos difieren → `UPDATE` (se asume que el CSV representa el último
-  estado conocido — como una "corrección de catálogo"), pero se **reporta** como advertencia en
-  el resumen del import, no como error fatal. Esto es discutible — está documentado como decisión
-  de diseño, no como la única respuesta correcta.
+**Decisión y por qué** (*actualizada 2026-08-28 — TK-033*): el SKU es la clave natural de negocio,
+no el nombre. Hay que separar **dos situaciones distintas** que la versión inicial de este spec
+trataba igual:
+
+**1. El SKU se repite dentro del mismo archivo → se RECHAZAN todas sus filas.**
+Ninguna de las filas tiene autoridad sobre la otra: el archivo no trae fecha, versión ni origen
+que permita decidir cuál gana. La versión inicial proponía "gana la última" (upsert secuencial),
+y se descartó por dos razones:
+
+- **Dependía del orden, no del dato.** Ordenar el CSV por nombre antes de subirlo —un clic en
+  Excel— cambiaba el catálogo resultante. El mismo archivo producía dos resultados distintos.
+- **Elegía en silencio sobre datos financieros contradictorios.** No hay base de negocio para
+  afirmar que $94.99 es más correcto que $89.99; "aparece más abajo" no es una fuente de verdad.
+
+Precedente de industria: PostgreSQL rechaza exactamente este caso —
+`ON CONFLICT DO UPDATE command cannot affect row a second time` — y el `MERGE` del estándar SQL
+lanza un *cardinality violation*. La regla no se inventa: se alinea con lo que el motor ya hace.
+La implementación es en **dos fases**: se valida el archivo completo (incluida la unicidad de la
+clave) y solo entonces se escribe, de modo que el resultado depende del contenido y nunca del orden.
+
+Si en el futuro se quisiera "gana la más reciente", la vía correcta es **añadir una columna
+`updated_at` al contrato del CSV**: eso convierte la supervivencia en una regla de negocio
+verificable en vez de un accidente de posición.
+
+**2. El SKU ya existe en la base de datos → `UPSERT` (esto no cambia).**
+Aquí el archivo sí tiene autoridad: es una corrección de catálogo.
+- No existe → `INSERT`.
+- Existe con datos idénticos → no-op (`unchanged`, evita ruido).
+- Existe con datos distintos → `UPDATE` + advertencia en el reporte, no error fatal.
+
+**Impacto en el CSV de ejemplo**: RS-001 (líneas 2 y 36) y BS-021 (líneas 11, 56 y 89) quedan
+fuera del catálogo con su motivo en el reporte → 85 insertados, 10 rechazados, 2 vacías. Re-subir
+el mismo archivo da `85 unchanged, 0 updated`: contadores estables, señal de un import determinista.
 
 ### 1.5 Casos límite válidos (no son errores, pero hay que probarlos)
 
