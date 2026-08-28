@@ -24,21 +24,21 @@
 
 ## 4. FE — Sesión funcional
 
-- [ ] 4.1 `lib/axios.ts`: interceptor de request que adjunta `Authorization: Bearer <token>` (reemplaza el uso de `axios.defaults` del template, que no aplica a nuestra instancia)
-- [ ] 4.2 `endpoints.auth` apuntando a las rutas reales `/api/v1/auth/*`
-- [ ] 4.3 Conectar `auth/context/jwt` (provider, `signInWithPassword`, restauración de sesión al arrancar) contra el API real
-- [ ] 4.4 `config-global.ts`: `auth.skip = false`
-- [ ] 4.5 Interceptor de respuesta: ante 401, limpiar sesión y redirigir a sign-in preservando el destino (`returnTo`)
-- [ ] 4.6 Vitest del interceptor y del mapeo de errores de auth
+- [x] 4.1 `lib/axios.ts`: interceptor de request que adjunta `Authorization: Bearer <token>` (reemplaza el uso de `axios.defaults` del template, que no aplica a nuestra instancia)
+- [x] 4.2 `endpoints.auth` apuntando a las rutas reales `/api/v1/auth/*`
+- [x] 4.3 Conectar `auth/context/jwt` (provider, `signInWithPassword`, restauración de sesión al arrancar) contra el API real
+- [x] 4.4 `config-global.ts`: `auth.skip = false`
+- [x] 4.5 Interceptor de respuesta: ante 401, limpiar sesión y redirigir a sign-in preservando el destino (`returnTo`)
+- [x] 4.6 Vitest del interceptor y del mapeo de errores de auth
 
 ## 5. FE — Protección de rutas y UI de sesión
 
-- [ ] 5.1 `AuthGuard` activo sobre todo `/dashboard/*`; tienda, detalle y checkout permanecen fuera del guard
-- [ ] 5.2 `GuestGuard` en las rutas de auth para no mostrar el login a quien ya tiene sesión
-- [ ] 5.3 Sign-in: revisar `jwt-sign-in-view` — mensajes de error del servidor inline, y precargar/documentar las credenciales demo para el evaluador
-- [ ] 5.4 UI de sesión en el layout del dashboard: usuario actual + logout, reutilizando componentes existentes (sin reintroducir el chrome falso eliminado en TK-027)
-- [ ] 5.5 Historial y detalle de imports muestran "Imported by"
-- [ ] 5.6 Build estricto verde (tsc + eslint sin warnings)
+- [x] 5.1 `AuthGuard` activo sobre todo `/dashboard/*`; tienda, detalle y checkout permanecen fuera del guard
+- [x] 5.2 `GuestGuard` en las rutas de auth para no mostrar el login a quien ya tiene sesión
+- [x] 5.3 Sign-in: revisar `jwt-sign-in-view` — mensajes de error del servidor inline, y precargar/documentar las credenciales demo para el evaluador
+- [x] 5.4 UI de sesión en el layout del dashboard: usuario actual + logout, reutilizando componentes existentes (sin reintroducir el chrome falso eliminado en TK-027)
+- [x] 5.5 Historial y detalle de imports muestran "Imported by"
+- [x] 5.6 Build estricto verde (tsc + eslint sin warnings)
 
 ## 6. QA y documentación
 

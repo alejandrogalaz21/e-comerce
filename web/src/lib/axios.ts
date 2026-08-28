@@ -33,7 +33,8 @@ function redirectToSignIn() {
 
   const { pathname, search } = window.location;
 
-  if (pathname.startsWith(paths.auth.jwt.signIn)) {
+  // The public shop must never be pushed to login by a stale token.
+  if (!pathname.startsWith(paths.dashboard.root)) {
     return;
   }
 

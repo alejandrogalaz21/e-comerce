@@ -20,8 +20,8 @@ import { layoutClasses } from '../classes';
 import { NavVertical } from './nav-vertical';
 import { NavHorizontal } from './nav-horizontal';
 import { HeaderBase } from '../core/header-base';
-import { SessionMenu } from '../components/session-menu';
 import { LayoutSection } from '../core/layout-section';
+import { SessionMenu } from '../components/session-menu';
 import { navData as dashboardNavData } from '../config-nav-dashboard';
 
 // ----------------------------------------------------------------------

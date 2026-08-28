@@ -12,8 +12,8 @@ import { useRouter } from 'src/routes/hooks';
 
 import { Iconify } from 'src/components/iconify';
 
-import { useAuthContext } from 'src/auth/hooks';
 import { signOut } from 'src/auth/context/jwt';
+import { useAuthContext } from 'src/auth/hooks';
 
 // ----------------------------------------------------------------------
 
