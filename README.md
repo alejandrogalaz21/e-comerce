@@ -229,6 +229,7 @@ travels in the `POST` response.
 
 | Document | Content |
 |---|---|
+| [docs/processes/](docs/processes/) | One document per system process — flow diagram, every file involved, every validation and where it lives, failure modes, and commands to verify each claim |
 | [docs/initial.md](docs/initial.md) | Full design spec: row-by-row CSV analysis, architecture, data model, import flow, stock concurrency, security, scope |
 | [docs/02-analisis-base.md](docs/02-analisis-base.md) | Analysis of the base templates (api/web): what was reused, adapted and removed |
 | `openspec/` | Spec-driven workflow ([OpenSpec](https://openspec.dev/)): every feature is proposed, specified and archived as a decision record |
