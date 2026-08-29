@@ -10,7 +10,7 @@ there with request/response schemas and examples. This file is a quick reference
 | Method | Route | Description | Errors |
 |---|---|---|---|
 | POST | `/products` | Create product | 400 validation, 409 duplicate sku |
-| GET | `/products?page=1&limit=10` | Paginated list (newest first) | — |
+| GET | `/products?page=1&limit=10&q=&category=` | Paginated list (newest first). `q` (max 100 chars) is a case-insensitive search over name, sku, description and category; `category` (max 100 chars) is an exact case-insensitive filter. Both optional. | 400 validation |
 | GET | `/products/:id` | Get by uuid | 400 invalid uuid, 404 |
 | PATCH | `/products/:id` | Partial update | 400, 404, 409 duplicate sku |
 | DELETE | `/products/:id` | Delete (204, no body) | 404 |

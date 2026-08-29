@@ -3,20 +3,14 @@ import { useMemo, useEffect, useCallback } from 'react';
 import { useSetState } from 'src/hooks/use-set-state';
 
 import axios, { endpoints } from 'src/lib/axios';
+import { getAccessToken, setAccessToken } from 'src/lib/auth-token';
 
-import { STORAGE_KEY } from './constant';
+import { isValidToken } from './utils';
 import { AuthContext } from '../auth-context';
-import { setSession, isValidToken } from './utils';
 
 import type { AuthState } from '../../types';
 
 // ----------------------------------------------------------------------
-
-/**
- * NOTE:
- * We only build demo at basic level.
- * Customer will need to do some extra handling yourself if you want to extend the logic and other features...
- */
 
 type Props = {
   children: React.ReactNode;
@@ -30,21 +24,19 @@ export function AuthProvider({ children }: Props) {
 
   const checkUserSession = useCallback(async () => {
     try {
-      const accessToken = sessionStorage.getItem(STORAGE_KEY);
+      const accessToken = getAccessToken();
 
       if (accessToken && isValidToken(accessToken)) {
-        setSession(accessToken);
-
         const res = await axios.get(endpoints.auth.me);
 
-        const { user } = res.data;
-
-        setState({ user: { ...user, accessToken }, loading: false });
+        setState({ user: { ...res.data, accessToken }, loading: false });
       } else {
+        setAccessToken(null);
         setState({ user: null, loading: false });
       }
     } catch (error) {
       console.error(error);
+      setAccessToken(null);
       setState({ user: null, loading: false });
     }
   }, [setState]);

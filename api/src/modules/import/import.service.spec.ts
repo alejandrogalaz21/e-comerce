@@ -154,6 +154,7 @@ describe('ImportService', () => {
       expect(result.rejected[0]).toEqual({
         line: 2,
         sku: 'YM-015',
+        name: 'Yoga Mat',
         errors: ["price is not a valid number: 'free'"]
       })
     })
@@ -186,6 +187,19 @@ describe('ImportService', () => {
       )
     })
 
+    it('reports which lines were skipped, not just how many', async () => {
+      const result = await service.importCsv(
+        csvFile([
+          ',,,,,,',
+          'Running Shoes,RS-001,desc,Footwear,89.99,150,0.35',
+          ',,,,,,'
+        ])
+      )
+
+      expect(result.summary.skippedEmpty).toBe(2)
+      expect(result.skipped).toEqual([{ line: 2 }, { line: 4 }])
+    })
+
     it("applies the 'Uncategorized' default when category is empty", async () => {
       const result = await service.importCsv(
         csvFile(['Gift Card,GC-025,desc,,25.00,99999,0'])
@@ -215,9 +229,11 @@ describe('ImportService', () => {
       )
 
       expect(result.summary.inserted).toBe(0)
+      // The offending name travels with the row, so the report shows what was wrong.
       expect(result.rejected[0]).toEqual({
         line: 2,
         sku: 'XS-001',
+        name: "<script>alert('xss')</script>",
         errors: ['name contains invalid content: HTML markup is not allowed']
       })
       expect(mockProductRepository.create).not.toHaveBeenCalled()
@@ -231,6 +247,7 @@ describe('ImportService', () => {
       expect(result.rejected[0]).toEqual({
         line: 2,
         sku: 'DL-007',
+        name: 'Desk Lamp',
         errors: ['stock must not be less than 0']
       })
     })
@@ -246,6 +263,15 @@ describe('ImportService', () => {
         expect.objectContaining({ inserted: 1, updated: 0, unchanged: 0 })
       )
       expect(result.warnings).toHaveLength(0)
+      expect(result.created).toEqual([
+        expect.objectContaining({
+          line: 2,
+          sku: 'RS-001',
+          name: 'Running Shoes',
+          category: 'Footwear',
+          stock: 150
+        })
+      ])
     })
 
     it('counts unchanged when all imported fields are identical', async () => {
@@ -261,6 +287,7 @@ describe('ImportService', () => {
         expect.objectContaining({ inserted: 0, updated: 0, unchanged: 1 })
       )
       expect(result.warnings).toHaveLength(0)
+      expect(result.created).toHaveLength(0)
       expect(mockProductRepository.save).not.toHaveBeenCalled()
       expect(mockProductRepository.create).not.toHaveBeenCalled()
     })
@@ -289,7 +316,7 @@ describe('ImportService', () => {
       )
     })
 
-    it('processes in-file duplicates sequentially against the in-memory state', async () => {
+    it('rejects every row of a sku duplicated in the file with conflicting data', async () => {
       const result = await service.importCsv(
         csvFile([
           'Bluetooth Speaker,BS-021,Portable speaker,Electronics,59.99,110,0.8',
@@ -298,16 +325,52 @@ describe('ImportService', () => {
       )
 
       expect(result.summary).toEqual(
-        expect.objectContaining({ inserted: 1, updated: 1, unchanged: 0 })
+        expect.objectContaining({
+          inserted: 0,
+          updated: 0,
+          unchanged: 0,
+          rejected: 2
+        })
       )
-      expect(result.warnings).toEqual([
-        {
-          line: 3,
-          sku: 'BS-021',
-          message: 'sku already exists with different data — updated'
-        }
+      expect(result.rejected.map(row => row.line)).toEqual([2, 3])
+      expect(result.rejected[0].errors[0]).toContain('duplicate sku in the file')
+      expect(result.rejected[0].errors[0]).toContain('conflicting data')
+      expect(result.warnings).toEqual([])
+      expect(mockProductRepository.create).not.toHaveBeenCalled()
+      expect(mockProductRepository.save).not.toHaveBeenCalled()
+    })
+
+    it('rejects a sku duplicated with identical data and says so in the message', async () => {
+      const row = 'Bluetooth Speaker,BS-021,Portable speaker,Electronics,59.99,110,0.8'
+      const result = await service.importCsv(csvFile([row, row]))
+
+      expect(result.summary).toEqual(
+        expect.objectContaining({ inserted: 0, rejected: 2 })
+      )
+      expect(result.rejected[0].errors[0]).toContain('identical data')
+      expect(mockProductRepository.create).not.toHaveBeenCalled()
+    })
+
+    it('keeps importing the rows whose sku is not duplicated', async () => {
+      const result = await service.importCsv(
+        csvFile([
+          'Camping Tent,CT-005,Tent,Outdoors,199.99,25,4.5',
+          'Bluetooth Speaker,BS-021,Portable speaker,Electronics,59.99,110,0.8',
+          'Bluetooth Speaker,BS-021,Same SKU different price,Electronics,49.99,200,0.75'
+        ])
+      )
+
+      expect(result.summary).toEqual(
+        expect.objectContaining({ inserted: 1, rejected: 2 })
+      )
+      expect(result.created).toEqual([
+        expect.objectContaining({
+          line: 2,
+          sku: 'CT-005',
+          name: 'Camping Tent',
+          category: 'Outdoors'
+        })
       ])
-      expect(mockProductRepository.findOne).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -323,7 +386,8 @@ describe('ImportService', () => {
       expect(result.batchId).toBe('generated-batch-id')
       expect(mockBatchRepository.create).toHaveBeenCalledWith({
         filename: 'products.csv',
-        status: 'processing'
+        status: 'processing',
+        importedBy: null
       })
 
       const saveCalls = mockBatchRepository.save.mock.calls
@@ -342,7 +406,17 @@ describe('ImportService', () => {
                 errors: ["price is not a valid number: 'free'"]
               }
             ],
-            warnings: []
+            warnings: [],
+            created: [
+              expect.objectContaining({
+                line: 2,
+                sku: 'RS-001',
+                name: 'Running Shoes',
+                category: 'Footwear',
+                price: '89.99',
+                stock: 150
+              })
+            ]
           }
         })
       )

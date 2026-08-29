@@ -8,13 +8,15 @@ import {
   Delete,
   Query
 } from '@nestjs/common'
-import { ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { UsersService } from './users.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { PaginationUserDTO } from './dto/pagination-user.dto'
 
 @ApiTags('users')
+@ApiBearerAuth('jwt')
+@ApiResponse({ status: 401, description: 'Missing or invalid access token' })
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

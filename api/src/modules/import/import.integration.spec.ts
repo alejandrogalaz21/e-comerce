@@ -15,16 +15,16 @@ import { PaginationResponseBuilder } from '@/common/pagination/pagination-respon
  * (test/fixtures/loanpro-sample.csv: header line 1 + 97 data rows, lines 2-98).
  *
  * Expected numbers derived from the fixture content:
- * - rejected (5): line 7 (price 'free'), 16 (stock -5), 20 (HTML markup in
- *   name), 25 (empty name), 41 (whitespace-only name). Line 29 is ACCEPTED:
- *   its sku 'SQL-001' is valid and the SQLi payload lives in the name, which
- *   is harmless data.
+ * - rejected by validation (5): line 7 (price 'free'), 16 (stock -5), 20 (HTML
+ *   markup in name), 25 (empty name), 41 (whitespace-only name). Line 29 is
+ *   ACCEPTED: its sku 'SQL-001' is valid and the SQLi payload lives in the
+ *   name, which is harmless data.
+ * - rejected as duplicate skus (5): RS-001 on lines 2 and 36, BS-021 on lines
+ *   11, 56 and 89. A sku must appear at most once per file, so every occurrence
+ *   is rejected instead of letting row order decide the winner.
  * - skippedEmpty (2): lines 62 and 63.
- * - updated with warning (3): line 36 (RS-001 differs from line 2), line 56
- *   (BS-021 differs from line 11) and line 89 (BS-021 equals line 11 but the
- *   sequential rule compares it against the state written by line 56, so it
- *   differs and is an update again).
- * - unchanged: 0. inserted: 97 - 5 - 2 - 3 = 87 (87 distinct accepted skus).
+ * - updated: 0 — no accepted sku exists in the database beforehand.
+ * - inserted: 97 - 10 - 2 = 85.
  */
 describe('ImportService (integration with the real fixture)', () => {
   const fixturePath = join(
@@ -96,23 +96,61 @@ describe('ImportService (integration with the real fixture)', () => {
 
     expect(result.summary).toEqual({
       totalRows: 97,
-      inserted: 87,
-      updated: 3,
+      inserted: 85,
+      updated: 0,
       unchanged: 0,
-      rejected: 5,
+      rejected: 10,
       skippedEmpty: 2
     })
   })
 
-  it('rejects exactly lines 7, 16, 20, 25 and 41 with clear messages', async () => {
+  it('lists one created row per inserted product', async () => {
     const result = await importFixture()
 
-    expect(result.rejected.map(row => row.line)).toEqual([7, 16, 20, 25, 41])
+    expect(result.created).toHaveLength(result.summary.inserted)
+    expect(new Set(result.created.map(row => row.sku)).size).toBe(
+      result.summary.inserted
+    )
+    expect(result.created[0]).toEqual({
+      line: 3,
+      sku: 'CB-010',
+      name: 'Organic Coffee Beans',
+      description: 'Single origin, medium roast, 1kg bag',
+      category: 'Food & Beverage',
+      price: '18.75',
+      stock: 500,
+      weightKg: '1'
+    })
+    expect(result.created.map(row => row.sku)).not.toContain('RS-001')
+    expect(result.created.map(row => row.sku)).not.toContain('BS-021')
+    expect(result.created.map(row => row.line)).not.toContain(7)
+  })
+
+  it('rejects the 5 invalid rows and the 5 duplicate-sku rows', async () => {
+    const result = await importFixture()
+
+    expect(result.rejected.map(row => row.line)).toEqual([
+      2, 7, 11, 16, 20, 25, 36, 41, 56, 89
+    ])
     expect(result.rejected).toEqual([
+      {
+        line: 2,
+        sku: 'RS-001',
+        errors: [
+          'duplicate sku in the file (lines 2, 36) with conflicting data — a sku must appear at most once per import'
+        ]
+      },
       {
         line: 7,
         sku: 'YM-015',
         errors: ["price is not a valid number: 'free'"]
+      },
+      {
+        line: 11,
+        sku: 'BS-021',
+        errors: [
+          'duplicate sku in the file (lines 11, 56, 89) with conflicting data — a sku must appear at most once per import'
+        ]
       },
       {
         line: 16,
@@ -130,57 +168,49 @@ describe('ImportService (integration with the real fixture)', () => {
         errors: ['name should not be empty']
       },
       {
+        line: 36,
+        sku: 'RS-001',
+        errors: [
+          'duplicate sku in the file (lines 2, 36) with conflicting data — a sku must appear at most once per import'
+        ]
+      },
+      {
         line: 41,
         sku: 'WS-001',
         errors: ['name should not be empty']
-      }
-    ])
-  })
-
-  it('warns on lines 36, 56 and 89 for duplicate skus with different data', async () => {
-    const result = await importFixture()
-
-    expect(result.warnings).toEqual([
-      {
-        line: 36,
-        sku: 'RS-001',
-        message: 'sku already exists with different data — updated'
       },
       {
         line: 56,
         sku: 'BS-021',
-        message: 'sku already exists with different data — updated'
+        errors: [
+          'duplicate sku in the file (lines 11, 56, 89) with conflicting data — a sku must appear at most once per import'
+        ]
       },
       {
         line: 89,
         sku: 'BS-021',
-        message: 'sku already exists with different data — updated'
+        errors: [
+          'duplicate sku in the file (lines 11, 56, 89) with conflicting data — a sku must appear at most once per import'
+        ]
       }
     ])
   })
 
-  it('applies the in-file duplicate rules to the final product state', async () => {
+  it('produces no update warnings: duplicates are rejected, not merged', async () => {
+    const result = await importFixture()
+
+    expect(result.warnings).toEqual([])
+  })
+
+  it('keeps duplicated skus out of the catalog entirely', async () => {
     await importFixture()
 
-    const runningShoes = productsBySku.get('RS-001')
-    expect(runningShoes).toEqual(
-      expect.objectContaining({
-        name: 'Running Shoes',
-        description: 'Updated lightweight shoes — now with better arch support',
-        price: '94.99',
-        stock: 120
-      })
-    )
+    expect(productsBySku.get('RS-001')).toBeUndefined()
+    expect(productsBySku.get('BS-021')).toBeUndefined()
 
-    const speaker = productsBySku.get('BS-021')
-    expect(speaker).toEqual(
-      expect.objectContaining({
-        description: 'Portable waterproof speaker, 10W, 12hr battery',
-        price: '59.99',
-        stock: 110,
-        weightKg: '0.8'
-      })
-    )
+    // Same name, different sku: these are distinct products and must survive.
+    expect(productsBySku.get('RS-050')).toBeDefined()
+    expect(productsBySku.get('BS-099')).toBeDefined()
   })
 
   it('handles the tricky accepted rows as designed', async () => {
@@ -227,14 +257,15 @@ describe('ImportService (integration with the real fixture)', () => {
       expect.objectContaining({
         status: 'completed',
         totalRows: 97,
-        inserted: 87,
-        updated: 3,
+        inserted: 85,
+        updated: 0,
         unchanged: 0,
-        rejected: 5,
+        rejected: 10,
         skippedEmpty: 2
       })
     )
     expect(finalBatch.report.rejected).toEqual(result.rejected)
     expect(finalBatch.report.warnings).toEqual(result.warnings)
+    expect(finalBatch.report.created).toEqual(result.created)
   })
 })

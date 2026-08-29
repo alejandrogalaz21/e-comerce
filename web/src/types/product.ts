@@ -44,9 +44,30 @@ export type IProductFormValues = {
   weightKg: string;
 };
 
-export type IProductListParams = {
+export const PRODUCT_SORT_FIELDS = ['name', 'price', 'stock', 'createdAt', 'updatedAt'] as const;
+
+export type IProductSortField = (typeof PRODUCT_SORT_FIELDS)[number];
+
+export type IProductSortDirection = 'asc' | 'desc';
+
+export type IProductFilters = {
+  q?: string[];
+  category?: string[];
+  minPrice?: number;
+  maxPrice?: number;
+  inStock?: boolean;
+};
+
+export type IProductListParams = IProductFilters & {
   page: number;
   limit: number;
+  sortBy?: IProductSortField;
+  sortDir?: IProductSortDirection;
+};
+
+export type IProductCategory = {
+  category: string;
+  count: number;
 };
 
 export type IImportSummary = {
@@ -61,20 +82,55 @@ export type IImportSummary = {
 export type IImportRejectedRow = {
   line: number;
   sku?: string;
+  name?: string;
   errors: string[];
 };
 
 export type IImportWarning = {
   line: number;
   sku: string;
+  name?: string;
   message: string;
+};
+
+/** A fully blank row: there is nothing to report about it beyond where it was. */
+export type IImportSkippedRow = {
+  line: number;
+};
+
+/** Fields beyond line/sku/name are optional: batches stored before they existed lack them. */
+export type IImportCreatedRow = {
+  line: number;
+  sku: string;
+  name: string;
+  description?: string | null;
+  category?: string;
+  price?: string;
+  stock?: number;
+  weightKg?: string | null;
+};
+
+export type IImportReport = {
+  rejected: IImportRejectedRow[];
+  warnings: IImportWarning[];
+  created: IImportCreatedRow[];
+  /** Absent on batches stored before skipped lines were recorded. */
+  skipped?: IImportSkippedRow[];
 };
 
 export type IImportResult = {
   batchId: string;
   summary: IImportSummary;
-  rejected: IImportRejectedRow[];
-  warnings: IImportWarning[];
+} & IImportReport;
+
+export type IImportIssueSeverity = 'rejected' | 'updated' | 'skipped';
+
+export type IImportIssueRow = {
+  line: number;
+  sku?: string;
+  name?: string;
+  severity: IImportIssueSeverity;
+  message: string;
 };
 
 export type IImportBatchStatus = 'processing' | 'completed' | 'failed';
@@ -89,17 +145,16 @@ export type IImportBatch = {
   unchanged: number;
   rejected: number;
   skippedEmpty: number;
+  importedBy: string | null;
   createdAt: string;
 };
 
 export type IImportBatchDetail = IImportBatch & {
-  report: {
-    rejected: IImportRejectedRow[];
-    warnings: IImportWarning[];
-  };
+  report: IImportReport;
 };
 
 export type IImportBatchListParams = {
   page: number;
   limit: number;
+  q?: string;
 };

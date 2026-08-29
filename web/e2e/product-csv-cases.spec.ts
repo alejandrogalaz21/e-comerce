@@ -1,8 +1,9 @@
-import { test, expect, request } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 import type { Page, Dialog } from '@playwright/test';
 
-const API_URL = 'http://localhost:4000';
+import { deleteProducts, createAuthenticatedApiContext } from './support/auth';
+
 const runId = Date.now();
 const skuPrefix = `CSV-${runId}`;
 const xssSku = `${skuPrefix}-1`;
@@ -41,12 +42,15 @@ async function submitForm(page: Page) {
 }
 
 test.afterAll(async () => {
-  const api = await request.newContext({ baseURL: API_URL });
+  const api = await createAuthenticatedApiContext();
   const res = await api.get('/api/v1/products', { params: { page: 1, limit: 100 } });
   if (res.ok()) {
     const body = (await res.json()) as { data: Array<{ id: string; sku: string }> };
     const created = body.data.filter((item) => item.sku.startsWith(skuPrefix));
-    await Promise.all(created.map((item) => api.delete(`/api/v1/products/${item.id}`)));
+    await deleteProducts(
+      api,
+      created.map((item) => item.id)
+    );
   }
   await api.dispose();
 });

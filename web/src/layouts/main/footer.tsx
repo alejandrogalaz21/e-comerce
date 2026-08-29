@@ -78,8 +78,8 @@ export function Footer({ layoutQuery, sx }: FooterProps) {
                 [theme.breakpoints.up(layoutQuery)]: { mx: 'unset' },
               }}
             >
-              The starting point for your next project with Minimal UI Kit, built on the newest
-              version of Material-UI ©, ready to be customized to your style.
+              Product catalog with CSV import, search and checkout, built for the LoanPro code
+              challenge.
             </Typography>
 
             <Stack

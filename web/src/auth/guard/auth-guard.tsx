@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 import { paths } from 'src/routes/paths';
 import { useRouter, usePathname, useSearchParams } from 'src/routes/hooks';
+
+import { buildSignInHref } from 'src/lib/auth-token';
 
 import { SplashScreen } from 'src/components/loading-screen';
 
@@ -24,27 +26,17 @@ export function AuthGuard({ children }: Props) {
 
   const [isChecking, setIsChecking] = useState<boolean>(true);
 
-  const createQueryString = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set(name, value);
-
-      return params.toString();
-    },
-    [searchParams]
-  );
-
   const checkPermissions = async (): Promise<void> => {
     if (loading) {
       return;
     }
 
     if (!authenticated) {
-      const signInPath = paths.auth.jwt.signIn;
+      const search = searchParams.toString();
 
-      const href = `${signInPath}?${createQueryString('returnTo', pathname)}`;
+      const returnTo = search ? `${pathname}?${search}` : pathname;
 
-      router.replace(href);
+      router.replace(buildSignInHref(paths.auth.jwt.signIn, returnTo));
       return;
     }
 

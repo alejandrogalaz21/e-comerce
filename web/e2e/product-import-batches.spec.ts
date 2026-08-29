@@ -1,8 +1,9 @@
-import { test, expect, request } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 import type { Page } from '@playwright/test';
 
-const API_URL = 'http://localhost:4000';
+import { deleteAllProducts, createAuthenticatedApiContext } from './support/auth';
+
 const CSV_FIXTURE = 'e2e/fixtures/loanpro-sample.csv';
 
 test.describe.configure({ mode: 'serial' });
@@ -20,7 +21,10 @@ let importSummary: ImportSummaryShape;
 let importBatchId: string;
 
 function statCard(page: Page, label: string) {
-  return page.locator('.MuiCard-root').filter({ has: page.getByText(label, { exact: true }) });
+  return page
+    .getByTestId('import-summary')
+    .locator('.MuiCard-root')
+    .filter({ has: page.getByText(label, { exact: true }) });
 }
 
 async function expectStat(page: Page, label: string, value: number) {
@@ -28,19 +32,9 @@ async function expectStat(page: Page, label: string, value: number) {
 }
 
 test.beforeAll(async () => {
-  const api = await request.newContext({ baseURL: API_URL });
+  const api = await createAuthenticatedApiContext();
 
-  for (let guard = 0; guard < 50; guard += 1) {
-    const res = await api.get('/api/v1/products', { params: { page: 1, limit: 100 } });
-    expect(res.ok()).toBeTruthy();
-
-    const body = (await res.json()) as { data: Array<{ id: string }> };
-    if (!body.data.length) {
-      break;
-    }
-
-    await Promise.all(body.data.map((item) => api.delete(`/api/v1/products/${item.id}`)));
-  }
+  await deleteAllProducts(api);
 
   await api.dispose();
 });
@@ -122,13 +116,22 @@ test.describe('product import batch history', () => {
     await expectStat(page, 'Rejected', importSummary.rejected);
     await expectStat(page, 'Skipped empty', importSummary.skippedEmpty);
 
-    const table = page.locator('.MuiCard-root').filter({ hasText: 'Rejected rows' });
-    await expect(table.getByText(`Rejected rows (${importSummary.rejected})`)).toBeVisible();
+    const issues = page.getByTestId('import-issues');
+    await expect(
+      issues.getByText(`Rows with issues (${importSummary.rejected + importSummary.updated})`)
+    ).toBeVisible();
+    await expect(issues.locator('tbody tr').filter({ hasText: 'Rejected row' })).toHaveCount(
+      importSummary.rejected
+    );
 
-    const line7 = table
+    const line7 = issues
       .locator('tbody tr')
       .filter({ has: page.getByRole('cell', { name: '7', exact: true }) });
     await expect(line7).toContainText("price is not a valid number: 'free'");
+
+    const created = page.getByTestId('import-created');
+    await expect(created.getByText(`Created rows (${importSummary.inserted})`)).toBeVisible();
+    await expect(created.locator('tbody tr')).toHaveCount(importSummary.inserted);
 
     await page.getByRole('link', { name: 'Back to history' }).click();
     await expect(page).toHaveURL(/\/dashboard\/product\/import\/batches$/);

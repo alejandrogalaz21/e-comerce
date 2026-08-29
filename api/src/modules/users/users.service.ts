@@ -15,8 +15,8 @@ import { instanceToPlain } from 'class-transformer'
 import * as bcrypt from 'bcryptjs'
 
 import { Logger } from '@nestjs/common'
-import { PaginationResponseBuilder } from 'src/common/pagination/pagination-response.builder'
-import { PaginationHelper } from 'src/common/pagination/pagination.helper'
+import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
+import { PaginationHelper } from '@/common/pagination/pagination.helper'
 
 @Injectable()
 export class UsersService {

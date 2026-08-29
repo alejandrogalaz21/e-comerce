@@ -155,6 +155,7 @@ describe('ImportService (adversarial input hardening)', () => {
         skippedEmpty: 0
       })
       expect(result.batchId).toBe('generated-batch-id')
+      expect(result.created).toEqual([])
     })
 
     it('rejects a completely empty file (0 bytes) with a 400', async () => {
@@ -271,8 +272,9 @@ describe('ImportService (adversarial input hardening)', () => {
       )
 
       expect(result.summary.totalRows).toBe(97)
-      expect(result.summary.rejected).toBe(5)
+      expect(result.summary.rejected).toBe(10)
       expect(result.summary.skippedEmpty).toBe(2)
+      expect(result.created).toHaveLength(result.summary.inserted)
     })
   })
 })

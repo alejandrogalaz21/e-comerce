@@ -10,10 +10,23 @@ import { CreateProductDto } from './dto/create-product.dto'
 describe('ProductsService', () => {
   let service: ProductsService
 
+  const mockQueryBuilder = {
+    orderBy: jest.fn().mockReturnThis(),
+    addOrderBy: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    addSelect: jest.fn().mockReturnThis(),
+    groupBy: jest.fn().mockReturnThis(),
+    getManyAndCount: jest.fn(),
+    getRawMany: jest.fn()
+  }
+
   const mockRepository = {
     create: jest.fn(),
     save: jest.fn(),
-    findAndCount: jest.fn(),
+    createQueryBuilder: jest.fn(() => mockQueryBuilder),
     findOneBy: jest.fn(),
     merge: jest.fn(),
     remove: jest.fn()
@@ -100,16 +113,23 @@ describe('ProductsService', () => {
   })
 
   describe('findAll', () => {
-    it('returns the pagination builder envelope ordered by createdAt DESC', async () => {
-      mockRepository.findAndCount.mockResolvedValue([[productEntity], 1])
+    const searchWhere = (index = 0) =>
+      `((product.name ILIKE :term${index} OR product.sku ILIKE :term${index} OR product.description ILIKE :term${index} OR product.category ILIKE :term${index}))`
 
+    beforeEach(() => {
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[productEntity], 1])
+    })
+
+    it('returns the pagination builder envelope ordered by createdAt DESC', async () => {
       const result = await service.findAll({ page: '1', limit: '10' })
 
-      expect(mockRepository.findAndCount).toHaveBeenCalledWith({
-        take: 10,
-        skip: 0,
-        order: { createdAt: 'DESC' }
-      })
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('product')
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'product.createdAt',
+        'DESC'
+      )
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0)
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(10)
       expect(result).toEqual({
         data: [productEntity],
         pagination: {
@@ -121,6 +141,237 @@ describe('ProductsService', () => {
           to: 1
         }
       })
+    })
+
+    it('applies no filters when q and category are absent', async () => {
+      await service.findAll({ page: '1', limit: '10' })
+
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled()
+    })
+
+    it('matches q across name, sku, description and category as a bound parameter', async () => {
+      await service.findAll({ q: ['camping'] })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(searchWhere(), {
+        term0: '%camping%'
+      })
+    })
+
+    it('passes a SQL injection payload as a bound parameter instead of inlining it', async () => {
+      const payload = "Robert'); DROP TABLE products;--"
+
+      const result = await service.findAll({ q: [payload] })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(searchWhere(), {
+        term0: `%${payload}%`
+      })
+
+      const [sql] = mockQueryBuilder.andWhere.mock.calls[0]
+      expect(sql).not.toContain('DROP TABLE')
+      expect(sql).toContain(':term0')
+      expect(result.data).toEqual([productEntity])
+    })
+
+    it('escapes LIKE wildcards so they are matched literally', async () => {
+      await service.findAll({ q: ['100%_off\\'] })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(searchWhere(), {
+        term0: '%100\\%\\_off\\\\%'
+      })
+    })
+
+    it('unions several search terms so any of them matches', async () => {
+      await service.findAll({ q: ['PST-017', 'PRJ-001'] })
+
+      const [sql, parameters] = mockQueryBuilder.andWhere.mock.calls[0]
+
+      expect(sql).toContain(':term0')
+      expect(sql).toContain(':term1')
+      expect(sql.split(' OR ').length).toBeGreaterThan(4)
+      expect(parameters).toEqual({
+        term0: '%PST-017%',
+        term1: '%PRJ-001%'
+      })
+    })
+
+    it('keeps several terms as a single conjunctive clause', async () => {
+      await service.findAll({ q: ['a', 'b', 'c'], category: ['Electronics'] })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(2)
+    })
+
+    it('ignores blank terms', async () => {
+      await service.findAll({ q: ['  ', ''] })
+
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled()
+    })
+
+    it('escapes every term, not just the first', async () => {
+      await service.findAll({ q: ['safe', '100%_off'] })
+
+      const [, parameters] = mockQueryBuilder.andWhere.mock.calls[0]
+
+      expect(parameters.term1).toBe('%100\\%\\_off%')
+    })
+
+    it('filters by category case-insensitively', async () => {
+      await service.findAll({ category: ['Footwear'] })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'LOWER(product.category) IN (:...categories)',
+        { categories: ['footwear'] }
+      )
+    })
+
+    it('filters by several categories at once', async () => {
+      await service.findAll({ category: ['Electronics', 'Tools'] })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'LOWER(product.category) IN (:...categories)',
+        { categories: ['electronics', 'tools'] }
+      )
+    })
+
+    it('ignores an empty category list', async () => {
+      await service.findAll({ category: [] })
+
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled()
+    })
+
+    it('filters by minimum price', async () => {
+      await service.findAll({ minPrice: 20 })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'product.price >= :minPrice',
+        { minPrice: 20 }
+      )
+    })
+
+    it('filters by maximum price', async () => {
+      await service.findAll({ maxPrice: 50 })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'product.price <= :maxPrice',
+        { maxPrice: 50 }
+      )
+    })
+
+    it('applies both price bounds when a range is given', async () => {
+      await service.findAll({ minPrice: 10, maxPrice: 30 })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps a zero minimum price as an active filter', async () => {
+      await service.findAll({ minPrice: 0 })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'product.price >= :minPrice',
+        { minPrice: 0 }
+      )
+    })
+
+    it('filters products with stock when inStock is true', async () => {
+      await service.findAll({ inStock: true })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'product.stock > 0'
+      )
+    })
+
+    it('filters sold out products when inStock is false', async () => {
+      await service.findAll({ inStock: false })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'product.stock = 0'
+      )
+    })
+
+    it('does not filter by availability when inStock is absent', async () => {
+      await service.findAll({ q: ['shoes'] })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(1)
+    })
+
+    it('combines every filter conjunctively', async () => {
+      await service.findAll({
+        q: ['stand'],
+        category: ['Electronics'],
+        minPrice: 10,
+        maxPrice: 30,
+        inStock: true
+      })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(5)
+    })
+
+    it('sorts by a whitelisted field in the requested direction', async () => {
+      await service.findAll({ sortBy: 'price', sortDir: 'asc' })
+
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'product.price',
+        'ASC'
+      )
+    })
+
+    it('sorts by updatedAt so upserted rows surface first', async () => {
+      await service.findAll({ sortBy: 'updatedAt', sortDir: 'desc' })
+
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'product.updatedAt',
+        'DESC'
+      )
+    })
+
+    it('falls back to the default order when sortBy is not whitelisted', async () => {
+      await service.findAll({
+        sortBy: 'password' as never,
+        sortDir: 'asc'
+      })
+
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'product.createdAt',
+        'ASC'
+      )
+
+      const [column] = mockQueryBuilder.orderBy.mock.calls[0]
+      expect(column).not.toContain('password')
+    })
+
+    it('adds a deterministic tie breaker so pages do not overlap', async () => {
+      await service.findAll({ sortBy: 'stock', sortDir: 'desc' })
+
+      expect(mockQueryBuilder.addOrderBy).toHaveBeenCalledWith(
+        'product.id',
+        'ASC'
+      )
+    })
+  })
+
+  describe('findCategories', () => {
+    it('returns categories with a numeric count', async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        { category: 'Accessories', count: '2' },
+        { category: 'Electronics', count: '7' }
+      ])
+
+      const result = await service.findCategories()
+
+      expect(mockQueryBuilder.groupBy).toHaveBeenCalledWith('product.category')
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'product.category',
+        'ASC'
+      )
+      expect(result).toEqual([
+        { category: 'Accessories', count: 2 },
+        { category: 'Electronics', count: 7 }
+      ])
+    })
+
+    it('returns an empty list for an empty catalog', async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([])
+
+      await expect(service.findCategories()).resolves.toEqual([])
     })
   })
 

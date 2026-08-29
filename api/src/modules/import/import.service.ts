@@ -15,15 +15,19 @@ import { Product } from '@/modules/products/entities/product.entity'
 import { ProductsService } from '@/modules/products/products.service'
 import { ImportBatch } from './import-batch.entity'
 import { ImportRowNormalizer } from './import-row.normalizer'
+import { ImportBatchFiltersDto } from './import-batch-filters.dto'
 import {
+  ImportBatchReport,
+  ImportCreatedRow,
   ImportRejectedRow,
   ImportResult,
+  ImportSkippedRow,
   ImportSummary,
   ImportWarning
 } from './import-result.interface'
-import { PaginationDTO } from '@/common/dto/pagination.dto'
 import { PaginationHelper } from '@/common/pagination/pagination.helper'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
+import { escapeLikeWildcards } from '@/common/transformers/sanitize.transformer'
 
 const EXPECTED_HEADERS = [
   'name',
@@ -39,6 +43,11 @@ const ALLOWED_MIME_TYPES = [
   'application/vnd.ms-excel',
   'application/octet-stream'
 ]
+
+interface ImportCandidate {
+  line: number
+  dto: CreateProductDto
+}
 
 @Injectable()
 export class ImportService {
@@ -63,14 +72,18 @@ export class ImportService {
     private readonly paginationBuilder: PaginationResponseBuilder<ImportBatch>
   ) {}
 
-  async importCsv(file: Express.Multer.File): Promise<ImportResult> {
+  async importCsv(
+    file: Express.Multer.File,
+    importedBy?: string
+  ): Promise<ImportResult> {
     this.validateFile(file)
     const records = this.parseCsv(file.buffer)
 
     const batch = await this.batchRepository.save(
       this.batchRepository.create({
         filename: file.originalname,
-        status: 'processing'
+        status: 'processing',
+        importedBy: importedBy ?? null
       })
     )
 
@@ -79,7 +92,12 @@ export class ImportService {
 
       Object.assign(batch, result.summary, {
         status: 'completed',
-        report: { rejected: result.rejected, warnings: result.warnings }
+        report: {
+          rejected: result.rejected,
+          warnings: result.warnings,
+          created: result.created,
+          skipped: result.skipped
+        }
       })
       await this.batchRepository.save(batch)
 
@@ -94,26 +112,37 @@ export class ImportService {
     }
   }
 
-  async findAllBatches(paginationDto: PaginationDTO) {
-    const { page, limit, offset } = PaginationHelper.parse(paginationDto)
+  async findAllBatches(filters: ImportBatchFiltersDto) {
+    const { page, limit, offset } = PaginationHelper.parse(filters)
 
-    const [batches, total] = await this.batchRepository.findAndCount({
-      select: [
-        'id',
-        'filename',
-        'status',
-        'totalRows',
-        'inserted',
-        'updated',
-        'unchanged',
-        'rejected',
-        'skippedEmpty',
-        'createdAt'
-      ],
-      order: { createdAt: 'DESC' },
-      take: limit,
-      skip: offset
-    })
+    const query = this.batchRepository
+      .createQueryBuilder('batch')
+      .select([
+        'batch.id',
+        'batch.filename',
+        'batch.status',
+        'batch.totalRows',
+        'batch.inserted',
+        'batch.updated',
+        'batch.unchanged',
+        'batch.rejected',
+        'batch.skippedEmpty',
+        'batch.importedBy',
+        'batch.createdAt'
+      ])
+      .orderBy('batch.createdAt', 'DESC')
+      .addOrderBy('batch.id', 'ASC')
+      .skip(offset)
+      .take(limit)
+
+    const term = filters.q?.trim()
+    if (term) {
+      query.andWhere('batch.filename ILIKE :term', {
+        term: `%${escapeLikeWildcards(term)}%`
+      })
+    }
+
+    const [batches, total] = await query.getManyAndCount()
 
     return this.paginationBuilder.build(batches, total, page, limit)
   }
@@ -124,7 +153,20 @@ export class ImportService {
     if (!batch)
       throw new NotFoundException(`Import batch with id '${id}' not found`)
 
+    batch.report = this.normalizeReport(batch.report)
+
     return batch
+  }
+
+  private normalizeReport(
+    report: Partial<ImportBatchReport> | null
+  ): ImportBatchReport {
+    return {
+      rejected: report?.rejected ?? [],
+      warnings: report?.warnings ?? [],
+      created: report?.created ?? [],
+      skipped: report?.skipped ?? []
+    }
   }
 
   private validateFile(file: Express.Multer.File | undefined): void {
@@ -191,7 +233,72 @@ export class ImportService {
     }
     const rejected: ImportRejectedRow[] = []
     const warnings: ImportWarning[] = []
-    const processedBySku = new Map<string, Product>()
+    const created: ImportCreatedRow[] = []
+    const skipped: ImportSkippedRow[] = []
+
+    const candidates = await this.validateRows(
+      records,
+      summary,
+      rejected,
+      skipped
+    )
+    const accepted = this.rejectDuplicateSkus(candidates, rejected)
+
+    for (const { line, dto } of accepted) {
+      try {
+        const existing = await this.productRepository.findOne({
+          where: { sku: dto.sku }
+        })
+
+        if (!existing) {
+          const product = await this.productsService.create(dto)
+          summary.inserted++
+          created.push({
+            line,
+            sku: product.sku,
+            name: product.name,
+            description: product.description ?? null,
+            category: product.category,
+            price: product.price,
+            stock: product.stock,
+            weightKg: product.weightKg ?? null
+          })
+        } else if (this.isIdentical(existing, dto)) {
+          summary.unchanged++
+        } else {
+          await this.productRepository.save(this.applyDtoToEntity(existing, dto))
+          summary.updated++
+          warnings.push({
+            line,
+            sku: dto.sku,
+            name: dto.name,
+            message: 'sku already exists with different data — updated'
+          })
+        }
+      } catch (error) {
+        rejected.push({
+          line,
+          sku: dto.sku,
+          name: dto.name,
+          errors: [
+            error instanceof Error ? error.message : 'unexpected database error'
+          ]
+        })
+      }
+    }
+
+    rejected.sort((a, b) => a.line - b.line)
+    summary.rejected = rejected.length
+    return { summary, rejected, warnings, created, skipped }
+  }
+
+  private async validateRows(
+    records: Record<string, unknown>[],
+    summary: ImportSummary,
+    rejected: ImportRejectedRow[],
+    skipped: ImportSkippedRow[]
+  ): Promise<ImportCandidate[]> {
+    const candidates: ImportCandidate[] = []
 
     for (let index = 0; index < records.length; index++) {
       const line = index + 2
@@ -199,11 +306,17 @@ export class ImportService {
 
       if (normalized.isEmpty) {
         summary.skippedEmpty++
+        skipped.push({ line })
         continue
       }
 
       if (normalized.errors.length > 0) {
-        rejected.push({ line, sku: normalized.sku, errors: normalized.errors })
+        rejected.push({
+          line,
+          sku: normalized.sku,
+          name: normalized.name,
+          errors: normalized.errors
+        })
         continue
       }
 
@@ -217,50 +330,71 @@ export class ImportService {
         rejected.push({
           line,
           sku: normalized.sku,
+          name: normalized.name,
           errors: this.extractValidationMessages(error)
         })
         continue
       }
 
       dto.category = dto.category?.trim() || 'Uncategorized'
+      candidates.push({ line, dto })
+    }
 
-      try {
-        const existing =
-          processedBySku.get(dto.sku) ??
-          (await this.productRepository.findOne({ where: { sku: dto.sku } }))
+    return candidates
+  }
 
-        if (!existing) {
-          const created = await this.productsService.create(dto)
-          processedBySku.set(dto.sku, created)
-          summary.inserted++
-        } else if (this.isIdentical(existing, dto)) {
-          processedBySku.set(dto.sku, existing)
-          summary.unchanged++
-        } else {
-          const saved = await this.productRepository.save(
-            this.applyDtoToEntity(existing, dto)
-          )
-          processedBySku.set(dto.sku, saved)
-          summary.updated++
-          warnings.push({
-            line,
-            sku: dto.sku,
-            message: 'sku already exists with different data — updated'
-          })
-        }
-      } catch (error) {
+  // A sku is the business key: repeating it within one file makes the file
+  // ambiguous, and picking a winner by row position would make the result
+  // depend on the ordering rather than on the data.
+  private rejectDuplicateSkus(
+    candidates: ImportCandidate[],
+    rejected: ImportRejectedRow[]
+  ): ImportCandidate[] {
+    const occurrencesBySku = new Map<string, ImportCandidate[]>()
+
+    for (const candidate of candidates) {
+      const occurrences = occurrencesBySku.get(candidate.dto.sku) ?? []
+      occurrences.push(candidate)
+      occurrencesBySku.set(candidate.dto.sku, occurrences)
+    }
+
+    const accepted: ImportCandidate[] = []
+
+    for (const [sku, occurrences] of occurrencesBySku) {
+      if (occurrences.length === 1) {
+        accepted.push(occurrences[0])
+        continue
+      }
+
+      const lines = occurrences.map(occurrence => occurrence.line)
+      const versions = new Set(
+        occurrences.map(occurrence => this.dtoSignature(occurrence.dto))
+      )
+      const detail = versions.size > 1 ? 'conflicting data' : 'identical data'
+
+      for (const occurrence of occurrences) {
         rejected.push({
-          line,
-          sku: dto.sku,
+          line: occurrence.line,
+          sku,
           errors: [
-            error instanceof Error ? error.message : 'unexpected database error'
+            `duplicate sku in the file (lines ${lines.join(', ')}) with ${detail} — a sku must appear at most once per import`
           ]
         })
       }
     }
 
-    summary.rejected = rejected.length
-    return { summary, rejected, warnings }
+    return accepted.sort((a, b) => a.line - b.line)
+  }
+
+  private dtoSignature(dto: CreateProductDto): string {
+    return JSON.stringify([
+      dto.name,
+      dto.description ?? null,
+      dto.category,
+      dto.price.toFixed(2),
+      dto.stock,
+      dto.weightKg ?? null
+    ])
   }
 
   private extractValidationMessages(error: unknown): string[] {

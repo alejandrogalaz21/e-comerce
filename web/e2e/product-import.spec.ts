@@ -1,40 +1,30 @@
-import { test, expect, request } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 import type { Page } from '@playwright/test';
 
-const API_URL = 'http://localhost:4000';
+import { deleteAllProducts, createAuthenticatedApiContext } from './support/auth';
+
 const CSV_FIXTURE = 'e2e/fixtures/loanpro-sample.csv';
 const TXT_FIXTURE = 'e2e/fixtures/not-a-csv.txt';
 
 test.describe.configure({ mode: 'serial' });
 
 function statCard(page: Page, label: string) {
-  return page.locator('.MuiCard-root').filter({ has: page.getByText(label, { exact: true }) });
+  return page
+    .getByTestId('import-summary')
+    .locator('.MuiCard-root')
+    .filter({ has: page.getByText(label, { exact: true }) });
 }
 
 async function expectStat(page: Page, label: string, value: number) {
   await expect(statCard(page, label).getByRole('heading')).toHaveText(String(value));
 }
 
-function rejectedTable(page: Page) {
-  return page.locator('.MuiCard-root').filter({ hasText: 'Rejected rows' });
-}
-
 test.beforeAll(async () => {
   // Wipe all products so the import numbers are deterministic regardless of prior runs.
-  const api = await request.newContext({ baseURL: API_URL });
+  const api = await createAuthenticatedApiContext();
 
-  for (let guard = 0; guard < 50; guard += 1) {
-    const res = await api.get('/api/v1/products', { params: { page: 1, limit: 100 } });
-    expect(res.ok()).toBeTruthy();
-
-    const body = (await res.json()) as { data: Array<{ id: string }> };
-    if (!body.data.length) {
-      break;
-    }
-
-    await Promise.all(body.data.map((item) => api.delete(`/api/v1/products/${item.id}`)));
-  }
+  await deleteAllProducts(api);
 
   const check = await api.get('/api/v1/products', { params: { page: 1, limit: 1 } });
   const checkBody = (await check.json()) as { data: unknown[] };
@@ -69,36 +59,57 @@ test.describe('product CSV import', () => {
     await expect(page.getByText('Total rows')).toBeVisible({ timeout: 30_000 });
 
     await expectStat(page, 'Total rows', 97);
-    await expectStat(page, 'Created', 87);
-    await expectStat(page, 'Updated', 3);
+    await expectStat(page, 'Created', 85);
+    await expectStat(page, 'Updated', 0);
     await expectStat(page, 'Unchanged', 0);
-    await expectStat(page, 'Rejected', 5);
+    await expectStat(page, 'Rejected', 10);
     await expectStat(page, 'Skipped empty', 2);
 
-    // Rejected rows table: 5 rows with line, sku and errors.
-    const table = rejectedTable(page);
-    await expect(table.getByText('Rejected rows (5)')).toBeVisible();
-    await expect(table.locator('tbody tr')).toHaveCount(5);
+    // Issues table: 5 rows rejected by validation plus the 5 occurrences of the two
+    // duplicated skus (lines 2/36 RS-001 and 11/56/89 BS-021). Nothing is updated,
+    // because a duplicate sku is rejected instead of overwriting.
+    // Ten rejected plus the two blank rows, which are now listed instead of only counted.
+    const issues = page.getByTestId('import-issues');
+    await expect(issues.getByText('Rows to review (12)')).toBeVisible();
+    await expect(issues.locator('tbody tr')).toHaveCount(12);
+    await expect(issues.locator('tbody tr').filter({ hasText: 'Skipped row' })).toHaveCount(2);
+    await expect(issues.locator('tbody tr').filter({ hasText: 'Rejected row' })).toHaveCount(10);
+    await expect(issues.locator('tbody tr').filter({ hasText: 'Updated row' })).toHaveCount(0);
 
-    const line7 = table
+    const line7 = issues
       .locator('tbody tr')
       .filter({ has: page.getByRole('cell', { name: '7', exact: true }) });
     await expect(line7).toContainText("price is not a valid number: 'free'");
+    await expect(line7).toContainText('Rejected row');
 
-    const line16 = table
+    const line16 = issues
       .locator('tbody tr')
       .filter({ has: page.getByRole('cell', { name: '16', exact: true }) });
     await expect(line16).toContainText('stock must not be less than 0');
 
-    const line20 = table
+    const line20 = issues
       .locator('tbody tr')
       .filter({ has: page.getByRole('cell', { name: '20', exact: true }) });
     await expect(line20).toContainText('name contains invalid content: HTML markup is not allowed');
 
-    // Duplicate-sku warnings surface in an Alert (lines 36 RS-001, 56/89 BS-021).
-    const warningAlert = page.locator('.MuiAlert-standardWarning');
-    await expect(warningAlert).toBeVisible();
-    await expect(warningAlert).toContainText(/RS-001|BS-021/);
+    const line36 = issues
+      .locator('tbody tr')
+      .filter({ has: page.getByRole('cell', { name: '36', exact: true }) });
+    await expect(line36).toContainText('RS-001');
+    await expect(line36).toContainText('Rejected row');
+    await expect(line36).toContainText('duplicate sku in the file');
+
+    // Created rows table: one row per inserted product.
+    const created = page.getByTestId('import-created');
+    await expect(created.getByText('Created rows (85)')).toBeVisible();
+    await expect(created.locator('tbody tr')).toHaveCount(85);
+    // RS-001 heads the file but is rejected as a duplicate, so the first created
+    // row is line 3. Its cells carry the stored, normalized values.
+    const firstCreated = created.locator('tbody tr').first();
+    await expect(firstCreated).toContainText('CB-010');
+    await expect(firstCreated).toContainText('Organic Coffee Beans');
+    await expect(firstCreated).toContainText('Food & Beverage');
+    await expect(created.locator('tbody tr').filter({ hasText: 'RS-001' })).toHaveCount(0);
 
     await expect(page.getByRole('button', { name: 'Import another file' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Go to products' })).toBeVisible();
@@ -120,13 +131,13 @@ test.describe('product CSV import', () => {
     const grid = page.getByRole('grid');
     await expect(grid).toBeVisible();
 
-    // 87 products imported into an empty catalog.
-    await expect(page.getByText(/of 87/)).toBeVisible({ timeout: 15_000 });
+    // 85 products imported into an empty catalog.
+    await expect(page.getByText(/of 85/)).toBeVisible({ timeout: 15_000 });
 
     // Page through the grid (25 rows per page) until both names have been seen.
     await page.getByRole('combobox', { name: /rows per page/i }).click();
     await page.getByRole('option', { name: '25' }).click();
-    await expect(page.getByText(/1–25 of 87/)).toBeVisible();
+    await expect(page.getByText(/1–25 of 85/)).toBeVisible();
 
     const wanted = new Set(['Running Shoes', 'Organic Coffee Beans']);
     const nextPage = page.getByRole('button', { name: 'Go to next page' });

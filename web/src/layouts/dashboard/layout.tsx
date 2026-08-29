@@ -21,6 +21,7 @@ import { NavVertical } from './nav-vertical';
 import { NavHorizontal } from './nav-horizontal';
 import { HeaderBase } from '../core/header-base';
 import { LayoutSection } from '../core/layout-section';
+import { SessionMenu } from '../components/session-menu';
 import { navData as dashboardNavData } from '../config-nav-dashboard';
 
 // ----------------------------------------------------------------------
@@ -74,6 +75,7 @@ export function DashboardLayout({ sx, children, data }: DashboardLayoutProps) {
               helpLink: false,
             }}
             slots={{
+              rightAreaEnd: <SessionMenu />,
               bottomArea: isNavHorizontal ? (
                 <NavHorizontal
                   data={navData}

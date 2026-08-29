@@ -3,6 +3,7 @@ import type { GridCellParams } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 
 import { fCurrency } from 'src/utils/format-number';
 import { fTime, fDate } from 'src/utils/format-time';
@@ -19,14 +20,56 @@ export function RenderCellPrice({ params }: ParamsProps) {
   return fCurrency(params.row.price);
 }
 
-export function RenderCellCreatedAt({ params }: ParamsProps) {
+function RenderCellDate({ value }: { value: string }) {
   return (
-    <Stack spacing={0.5}>
-      <Box component="span">{fDate(params.row.createdAt)}</Box>
-      <Box component="span" sx={{ typography: 'caption', color: 'text.secondary' }}>
-        {fTime(params.row.createdAt)}
+    <Stack direction="row" spacing={0.75} alignItems="baseline" sx={{ minWidth: 0 }}>
+      <Box component="span" sx={{ whiteSpace: 'nowrap' }}>
+        {fDate(value)}
+      </Box>
+      <Box
+        component="span"
+        sx={{ typography: 'caption', color: 'text.secondary', whiteSpace: 'nowrap' }}
+      >
+        {fTime(value)}
       </Box>
     </Stack>
+  );
+}
+
+export function RenderCellCreatedAt({ params }: ParamsProps) {
+  return <RenderCellDate value={params.row.createdAt} />;
+}
+
+export function RenderCellUpdatedAt({ params }: ParamsProps) {
+  return <RenderCellDate value={params.row.updatedAt} />;
+}
+
+export function RenderCellDescription({ params }: ParamsProps) {
+  const { description } = params.row;
+
+  if (!description) {
+    return (
+      <Box component="span" sx={{ color: 'text.disabled' }}>
+        —
+      </Box>
+    );
+  }
+
+  return (
+    <Tooltip title={description} placement="top-start">
+      <Box
+        component="span"
+        sx={{
+          minWidth: 0,
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
+          color: 'text.secondary',
+        }}
+      >
+        {description}
+      </Box>
+    </Tooltip>
   );
 }
 

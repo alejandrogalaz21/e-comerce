@@ -32,6 +32,8 @@ export const navData = [
         children: [
           { title: 'List', path: paths.dashboard.product.root },
           { title: 'Create', path: paths.dashboard.product.new },
+          { title: 'Import CSV', path: paths.dashboard.product.import },
+          { title: 'Import history', path: paths.dashboard.product.importBatches },
         ],
       },
       {

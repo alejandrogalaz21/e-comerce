@@ -9,6 +9,7 @@ import {
   updateProduct,
   deleteProduct,
   importProductsCsv,
+  getProductCategories,
 } from 'src/actions/product';
 
 import { toast } from 'src/components/snackbar';
@@ -22,6 +23,7 @@ export const productKeys = {
   lists: () => [...productKeys.all, 'list'] as const,
   list: (params: IProductListParams) => [...productKeys.lists(), params] as const,
   detail: (id: string) => [...productKeys.all, 'detail', id] as const,
+  categories: () => [...productKeys.all, 'categories'] as const,
 };
 
 // ----------------------------------------------------------------------
@@ -56,6 +58,20 @@ export function useGetProducts(params: IProductListParams) {
   };
 }
 
+export function useGetProductCategories() {
+  const query = useQuery({
+    queryKey: productKeys.categories(),
+    queryFn: getProductCategories,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  return {
+    categories: query.data ?? [],
+    categoriesLoading: query.isLoading,
+    categoriesError: query.error,
+  };
+}
+
 export function useGetProduct(productId: string) {
   const query = useQuery({
     queryKey: productKeys.detail(productId),
@@ -80,6 +96,7 @@ export function useCreateProduct() {
     mutationFn: (payload: IProductPayload) => createProduct(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: productKeys.categories() });
       toast.success('Product created');
     },
     onError: (error) => toast.error(getErrorMessage(error)),
@@ -94,6 +111,7 @@ export function useUpdateProduct() {
       updateProduct(id, payload),
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: productKeys.categories() });
       queryClient.invalidateQueries({ queryKey: productKeys.detail(id) });
       toast.success('Product updated');
     },
@@ -108,6 +126,7 @@ export function useImportProducts() {
     mutationFn: (file: File) => importProductsCsv(file),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: productKeys.categories() });
       toast.success(formatImportSummary(result.summary));
     },
     onError: (error) => toast.error(getErrorMessage(error)),
@@ -121,6 +140,7 @@ export function useDeleteProduct() {
     mutationFn: (id: string) => deleteProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: productKeys.categories() });
       toast.success('Product deleted');
     },
     onError: (error) => toast.error(getErrorMessage(error)),

@@ -3,6 +3,7 @@ import { Controller, Get } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger'
 import { PgHealthService } from '@/database/postgres/pg-health.service'
+import { Public } from '@/common/decorators/public.decorator'
 import { performance } from 'perf_hooks'
 import * as os from 'os'
 
@@ -14,6 +15,7 @@ export class HealthController {
     private pgHealth: PgHealthService
   ) {}
 
+  @Public()
   @ApiExcludeEndpoint()
   @Get('/')
   root() {
@@ -25,6 +27,7 @@ export class HealthController {
     }
   }
 
+  @Public()
   @Get('health')
   async healthCheck() {
     // Calculate uptime
