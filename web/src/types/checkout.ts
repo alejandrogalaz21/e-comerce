@@ -1,4 +1,5 @@
 import type { IAddressItem } from './common';
+import type { IPurchase } from './purchase';
 
 // ----------------------------------------------------------------------
 
@@ -37,6 +38,13 @@ export type ICheckoutState = {
   totalItems: number;
   items: ICheckoutItem[];
   billing: IAddressItem | null;
+  /**
+   * Generated when the checkout starts, not when Confirm is pressed: a key born
+   * on the click would be a new key per click, which is what it exists to prevent.
+   */
+  idempotencyKey: string;
+  /** The order the API confirmed, kept so the completion step can show it. */
+  purchase: IPurchase | null;
 };
 
 export type CheckoutContextValue = ICheckoutState & {
@@ -65,4 +73,8 @@ export type CheckoutContextValue = ICheckoutState & {
   onCreateBilling: (billing: IAddressItem) => void;
   onApplyDiscount: (discount: number) => void;
   onApplyShipping: (discount: number) => void;
+  //
+  onPurchasePlaced: (purchase: IPurchase) => void;
+  /** A declined attempt closes that key. Retrying means a new attempt. */
+  onRenewIdempotencyKey: () => void;
 };

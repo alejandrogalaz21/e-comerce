@@ -16,6 +16,8 @@ import { UsersModule } from '@/modules/users/users.module'
 import { AuthModule } from '@/modules/auth/auth.module'
 import { ProductsModule } from '@/modules/products/products.module'
 import { ImportModule } from '@/modules/import/import.module'
+import { OrdersModule } from '@/modules/orders/orders.module'
+import { PaymentModule } from '@/modules/payment/payment.module'
 import { HealthModule } from '@/modules/health/health.module'
 import { StatusModule } from '@/modules/status/status.module'
 
@@ -31,6 +33,8 @@ import { StatusModule } from '@/modules/status/status.module'
     UsersModule,
     ImportModule,
     ProductsModule,
+    PaymentModule,
+    OrdersModule,
     AuthModule,
     HealthModule,
     StatusModule

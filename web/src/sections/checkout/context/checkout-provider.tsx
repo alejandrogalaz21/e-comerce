@@ -1,3 +1,4 @@
+import type { IPurchase } from 'src/types/purchase';
 import type { IAddressItem } from 'src/types/common';
 import type { ICheckoutItem, ICheckoutState, CheckoutContextValue } from 'src/types/checkout';
 
@@ -8,8 +9,11 @@ import { useRouter, useSearchParams } from 'src/routes/hooks';
 
 import { getStorage, useLocalStorage } from 'src/hooks/use-local-storage';
 
+import { uuidv4 } from 'src/utils/uuidv4';
+
 import { SplashScreen } from 'src/components/loading-screen';
 
+import { keepOrMintKey } from '../idempotency-key';
 import { CHECKOUT_STEPS } from '../checkout-steps';
 
 // ----------------------------------------------------------------------
@@ -28,6 +32,8 @@ const initialState: ICheckoutState = {
   shipping: 0,
   billing: null,
   totalItems: 0,
+  idempotencyKey: '',
+  purchase: null,
 };
 
 // ----------------------------------------------------------------------
@@ -84,11 +90,25 @@ function Container({ children }: Props) {
   }, [updateTotalField]);
 
   const initialStep = useCallback(() => {
+    // The key is minted on entry so every click of Confirm carries the same one.
+    setField('idempotencyKey', keepOrMintKey(state.idempotencyKey));
+
     if (!activeStep) {
       const href = createUrl('go', 0);
       router.push(href);
     }
-  }, [activeStep, router]);
+  }, [activeStep, router, setField, state.idempotencyKey]);
+
+  const onPurchasePlaced = useCallback(
+    (purchase: IPurchase) => {
+      setField('purchase', purchase);
+    },
+    [setField]
+  );
+
+  const onRenewIdempotencyKey = useCallback(() => {
+    setField('idempotencyKey', uuidv4());
+  }, [setField]);
 
   const onBackStep = useCallback(() => {
     const href = createUrl('back', activeStep);
@@ -214,6 +234,9 @@ function Container({ children }: Props) {
       onApplyDiscount,
       onApplyShipping,
       //
+      onPurchasePlaced,
+      onRenewIdempotencyKey,
+      //
       activeStep,
       initialStep,
       onBackStep,
@@ -222,6 +245,8 @@ function Container({ children }: Props) {
     }),
     [
       state,
+      onPurchasePlaced,
+      onRenewIdempotencyKey,
       onReset,
       canReset,
       setField,
