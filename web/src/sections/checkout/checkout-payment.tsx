@@ -1,3 +1,4 @@
+import type { PlacePurchaseError } from 'src/actions/purchase';
 import type {
   ICheckoutCardOption,
   ICheckoutPaymentOption,
@@ -5,15 +6,20 @@ import type {
 } from 'src/types/checkout';
 
 import { z as zod } from 'zod';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Unstable_Grid2';
+import AlertTitle from '@mui/material/AlertTitle';
 import LoadingButton from '@mui/lab/LoadingButton';
 
 import { Form } from 'src/components/hook-form';
 import { Iconify } from 'src/components/iconify';
+
+import { usePlacePurchase } from 'src/sections/purchase/hooks/use-purchase';
 
 import { useCheckoutContext } from './context';
 import { CheckoutSummary } from './checkout-summary';
@@ -64,6 +70,10 @@ export const PaymentSchema = zod.object({
 export function CheckoutPayment() {
   const checkout = useCheckoutContext();
 
+  const placePurchase = usePlacePurchase();
+
+  const [failure, setFailure] = useState<PlacePurchaseError | null>(null);
+
   const defaultValues = { delivery: checkout.shipping, payment: '' };
 
   const methods = useForm<PaymentSchemaType>({
@@ -76,13 +86,29 @@ export function CheckoutPayment() {
     formState: { isSubmitting },
   } = methods;
 
-  const onSubmit = handleSubmit(async (data) => {
+  const onSubmit = handleSubmit(async () => {
+    setFailure(null);
+
     try {
+      const purchase = await placePurchase.mutateAsync({
+        items: checkout.items.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+        })),
+        idempotencyKey: checkout.idempotencyKey,
+      });
+
+      checkout.onPurchasePlaced(purchase);
       checkout.onNextStep();
-      checkout.onReset();
-      console.info('DATA', data);
     } catch (error) {
-      console.error(error);
+      const placeError = error as PlacePurchaseError;
+      setFailure(placeError);
+
+      // A declined charge closes that key: the API replays the same decline for
+      // it, so a retry has to be a new attempt.
+      if (placeError.kind === 'payment') {
+        checkout.onRenewIdempotencyKey();
+      }
     }
   });
 
@@ -90,6 +116,8 @@ export function CheckoutPayment() {
     <Form methods={methods} onSubmit={onSubmit}>
       <Grid container spacing={3}>
         <Grid xs={12} md={8}>
+          {failure && <PurchaseFailure failure={failure} onEditCart={() => checkout.onGotoStep(0)} />}
+
           <CheckoutDelivery onApplyShipping={checkout.onApplyShipping} options={DELIVERY_OPTIONS} />
 
           <CheckoutPaymentMethods
@@ -126,12 +154,63 @@ export function CheckoutPayment() {
             size="large"
             type="submit"
             variant="contained"
-            loading={isSubmitting}
+            loading={isSubmitting || placePurchase.isPending}
+            disabled={isSubmitting || placePurchase.isPending || !checkout.items.length}
           >
             Complete order
           </LoadingButton>
         </Grid>
       </Grid>
     </Form>
+  );
+}
+
+// ----------------------------------------------------------------------
+
+type FailureProps = {
+  failure: PlacePurchaseError;
+  onEditCart: () => void;
+};
+
+/**
+ * Three outcomes that need three answers: fix the cart, try the charge again,
+ * or try the request again. A single generic error would hide which one applies.
+ */
+function PurchaseFailure({ failure, onEditCart }: FailureProps) {
+  if (failure.kind === 'stock') {
+    const { conflict } = failure;
+
+    return (
+      <Alert
+        severity="warning"
+        sx={{ mb: 3 }}
+        action={
+          <Button color="inherit" size="small" onClick={onEditCart}>
+            Edit cart
+          </Button>
+        }
+      >
+        <AlertTitle>Not enough stock</AlertTitle>
+        {conflict?.sku
+          ? `${conflict.sku}: you asked for ${conflict.requested} and only ${conflict.available} are left. Adjust the quantity to continue.`
+          : failure.message}
+      </Alert>
+    );
+  }
+
+  if (failure.kind === 'payment') {
+    return (
+      <Alert severity="error" sx={{ mb: 3 }}>
+        <AlertTitle>Payment declined</AlertTitle>
+        {failure.message}. Nothing was charged and your cart is untouched — you can try again.
+      </Alert>
+    );
+  }
+
+  return (
+    <Alert severity="error" sx={{ mb: 3 }}>
+      <AlertTitle>The order could not be placed</AlertTitle>
+      {failure.message}
+    </Alert>
   );
 }

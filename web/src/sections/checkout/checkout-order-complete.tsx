@@ -1,11 +1,14 @@
+import type { IPurchase } from 'src/types/purchase';
 import type { DialogProps } from '@mui/material/Dialog';
 
 import Box from '@mui/material/Box';
-import Link from '@mui/material/Link';
+import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
+
+import { fCurrency } from 'src/utils/format-number';
 
 import { OrderCompleteIllustration } from 'src/assets/illustrations';
 
@@ -16,9 +19,10 @@ import { Iconify } from 'src/components/iconify';
 type Props = DialogProps & {
   onReset: () => void;
   onDownloadPDF: () => void;
+  purchase?: IPurchase | null;
 };
 
-export function CheckoutOrderComplete({ open, onReset, onDownloadPDF }: Props) {
+export function CheckoutOrderComplete({ open, onReset, onDownloadPDF, purchase }: Props) {
   return (
     <Dialog
       fullWidth
@@ -49,16 +53,49 @@ export function CheckoutOrderComplete({ open, onReset, onDownloadPDF }: Props) {
         <OrderCompleteIllustration />
 
         <Typography>
-          Thanks for placing order
+          Thanks for placing your order
           <br />
           <br />
-          <Link>01dc1370-3df6-11eb-b378-0242ac130002</Link>
+          <Box component="span" sx={{ typography: 'subtitle2' }}>
+            {purchase?.id ?? ''}
+          </Box>
           <br />
           <br />
           We will send you a notification within 5 days when it ships.
-          <br /> If you have any question or queries then fell to get in contact us. <br />
+          <br /> If you have any question or queries then feel free to contact us. <br />
           All the best,
         </Typography>
+
+        {purchase && (
+          <>
+            <Divider sx={{ width: 1, borderStyle: 'dashed' }} />
+
+            <Stack spacing={1} sx={{ width: 1, textAlign: 'left' }}>
+              {purchase.items.map((item) => (
+                <Box
+                  key={item.id}
+                  sx={{ gap: 2, display: 'flex', typography: 'body2' }}
+                >
+                  <Box sx={{ flexGrow: 1 }}>
+                    {item.name}
+                    <Box component="span" sx={{ color: 'text.secondary' }}>
+                      {` · ${item.sku} · x${item.quantity}`}
+                    </Box>
+                  </Box>
+
+                  <Box>{fCurrency(item.subtotal)}</Box>
+                </Box>
+              ))}
+
+              <Divider sx={{ borderStyle: 'dashed' }} />
+
+              <Box sx={{ gap: 2, display: 'flex', typography: 'subtitle1' }}>
+                <Box sx={{ flexGrow: 1 }}>Total</Box>
+                <Box>{fCurrency(purchase.total)}</Box>
+              </Box>
+            </Stack>
+          </>
+        )}
 
         <Divider sx={{ width: 1, borderStyle: 'dashed' }} />
 
