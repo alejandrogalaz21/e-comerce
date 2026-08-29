@@ -1,7 +1,9 @@
 # product-admin-listing Specification
 
 ## Purpose
-TBD - created by archiving change dashboard-product-filters. Update Purpose after archive.
+
+Define cómo se lee y se opera la lista de productos del dashboard: que el orden abarque el catálogo completo y no la página visible, qué filtros ofrece y cómo se revierten, cuántas filas muestra de entrada, dónde viven sus controles, y que el estado de la vista sobreviva a la navegación.
+
 ## Requirements
 ### Requirement: El orden abarca el catálogo completo
 

@@ -1,8 +1,7 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
-  InternalServerErrorException
+  BadRequestException
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 
@@ -10,6 +9,7 @@ import { Repository } from 'typeorm'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { User } from './entities/user.entity'
+import { translateDatabaseError } from '@/common/filters/database-error.translator'
 import { PaginationUserDTO } from './dto/pagination-user.dto'
 import { instanceToPlain } from 'class-transformer'
 import * as bcrypt from 'bcryptjs'
@@ -61,7 +61,7 @@ export class UsersService {
       const savedUser = await this.userRepository.save(user)
       return instanceToPlain(savedUser)
     } catch (error) {
-      this.handleDBExceptions(error)
+      translateDatabaseError(error, { resource: 'User' })
     }
   }
 
@@ -158,12 +158,4 @@ export class UsersService {
    * @throws {BadRequestException} If the error code is '23505'.
    * @throws {InternalServerErrorException} For all other errors.
    */
-  private handleDBExceptions(error: any) {
-    if (error.code === '23505') throw new BadRequestException(error.detail)
-
-    this.logger.error(error)
-    throw new InternalServerErrorException(
-      'Unexpected error, check server logs'
-    )
-  }
 }

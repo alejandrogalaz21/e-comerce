@@ -1,7 +1,9 @@
 # product-filters Specification
 
 ## Purpose
-TBD - created by archiving change product-filters-api. Update Purpose after archive.
+
+Define cómo se acota el catálogo desde el API: rango de precio, disponibilidad y categorías, con qué orden explícito, y la garantía de que los filtros se componen entre sí y la paginación los respeta.
+
 ## Requirements
 ### Requirement: Filtro por rango de precio
 

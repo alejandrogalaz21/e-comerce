@@ -1,3 +1,10 @@
+> **SUPERADO por `auth-login-and-route-protection` (TK-031).**
+> Ese change absorbió el alcance de TK-030 y lo entregó completo: usuario demo sembrado por
+> migración, columna `imported_by` en `import_batches`, `POST /products/import` protegido por el
+> guard JWT, y "Imported by" visible en el historial y el detalle de imports. Este documento se
+> conserva como registro de la propuesta original; su plan de tareas no llegó a ejecutarse porque
+> el trabajo se hizo desde el otro change.
+
 # Proposal: user-seed-import-attribution (TK-030)
 
 ## Why

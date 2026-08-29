@@ -1,7 +1,9 @@
 # import-batch-search Specification
 
 ## Purpose
-TBD - created by archiving change dashboard-product-filters. Update Purpose after archive.
+
+Define cómo se localiza un import concreto dentro del historial a partir del nombre del archivo que se subió.
+
 ## Requirements
 ### Requirement: Localizar un import por el nombre del archivo
 
