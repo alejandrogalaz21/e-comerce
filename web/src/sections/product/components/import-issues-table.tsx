@@ -13,13 +13,10 @@ import MenuItem from '@mui/material/MenuItem';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
-import TextField from '@mui/material/TextField';
 import InputLabel from '@mui/material/InputLabel';
 import CardHeader from '@mui/material/CardHeader';
-import IconButton from '@mui/material/IconButton';
 import FormControl from '@mui/material/FormControl';
 import TableContainer from '@mui/material/TableContainer';
-import InputAdornment from '@mui/material/InputAdornment';
 
 import { varAlpha } from 'src/theme/styles';
 
@@ -27,7 +24,8 @@ import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 
-import { IMPORT_ISSUE_META } from '../import-utils';
+import { TableFilterBar } from './table-filter-bar';
+import { IMPORT_STATUS_META, IMPORT_ISSUE_STATUSES } from '../import-utils';
 
 // ----------------------------------------------------------------------
 
@@ -72,41 +70,16 @@ export function ImportIssuesTable({ rows }: Props) {
 
   return (
     <Card data-testid="import-issues">
-      <CardHeader
-        title={`Rows to review (${rows.length})`}
-        subheader={summary}
-        sx={{ mb: 2 }}
-      />
+      <CardHeader title={`Rows to review (${rows.length})`} subheader={summary} sx={{ mb: 2 }} />
 
-      <Stack
-        spacing={1.5}
-        direction={{ xs: 'column', sm: 'row' }}
-        alignItems={{ sm: 'center' }}
-        sx={{ px: 3, pb: 2 }}
+      <TableFilterBar
+        value={search}
+        onChange={setSearch}
+        placeholder="Filter by line, SKU, name or reason..."
+        label="Filter rows to review"
+        visibleCount={visibleRows.length}
+        totalCount={rows.length}
       >
-        <TextField
-          size="small"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Filter by line, SKU, name or reason..."
-          inputProps={{ 'aria-label': 'Filter rows to review' }}
-          sx={{ width: { xs: 1, sm: 320 } }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Iconify icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
-              </InputAdornment>
-            ),
-            endAdornment: search ? (
-              <InputAdornment position="end">
-                <IconButton size="small" aria-label="Clear filter" onClick={() => setSearch('')}>
-                  <Iconify icon="mingcute:close-line" width={18} />
-                </IconButton>
-              </InputAdornment>
-            ) : null,
-          }}
-        />
-
         <FormControl size="small" sx={{ width: { xs: 1, sm: 180 } }}>
           <InputLabel id="import-issue-status">Status</InputLabel>
           <Select
@@ -121,11 +94,7 @@ export function ImportIssuesTable({ rows }: Props) {
             <MenuItem value="skipped">{`Skipped (${skippedCount})`}</MenuItem>
           </Select>
         </FormControl>
-
-        <Box sx={{ typography: 'body2', color: 'text.secondary' }}>
-          {`Showing ${visibleRows.length} of ${rows.length}`}
-        </Box>
-      </Stack>
+      </TableFilterBar>
 
       <Divider />
 
@@ -136,15 +105,15 @@ export function ImportIssuesTable({ rows }: Props) {
               <TableRow>
                 <TableCell sx={{ width: 160 }}>Status</TableCell>
                 <TableCell sx={{ width: 80 }}>Line</TableCell>
-                <TableCell sx={{ minWidth: 200 }}>Name</TableCell>
                 <TableCell sx={{ width: 140 }}>SKU</TableCell>
+                <TableCell sx={{ minWidth: 200 }}>Name</TableCell>
                 <TableCell>Reason</TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
               {visibleRows.map((row) => {
-                const meta = IMPORT_ISSUE_META[row.severity];
+                const meta = IMPORT_STATUS_META[row.severity];
 
                 return (
                   <TableRow
@@ -163,11 +132,11 @@ export function ImportIssuesTable({ rows }: Props) {
                       </Label>
                     </TableCell>
                     <TableCell>{row.line}</TableCell>
-                    <TableCell sx={{ color: row.name ? 'text.primary' : 'text.disabled' }}>
-                      {row.name || EMPTY}
-                    </TableCell>
                     <TableCell sx={{ color: row.sku ? 'text.primary' : 'text.disabled' }}>
                       {row.sku || EMPTY}
+                    </TableCell>
+                    <TableCell sx={{ color: row.name ? 'text.primary' : 'text.disabled' }}>
+                      {row.name || EMPTY}
                     </TableCell>
                     <TableCell>{row.message}</TableCell>
                   </TableRow>
@@ -189,10 +158,21 @@ export function ImportIssuesTable({ rows }: Props) {
       </Scrollbar>
 
       <Box sx={{ p: 2, typography: 'caption', color: 'text.secondary' }}>
-        <Stack direction="row" spacing={2} flexWrap="wrap">
-          <span>Rejected: failed validation, nothing was saved</span>
-          <span>Updated: the SKU already existed and its data was overwritten</span>
-          <span>Skipped: the row was entirely blank</span>
+        <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+          {IMPORT_ISSUE_STATUSES.map((severity) => {
+            const meta = IMPORT_STATUS_META[severity];
+
+            return (
+              <Stack key={severity} direction="row" spacing={0.75} alignItems="center">
+                <Iconify
+                  icon={meta.icon}
+                  width={16}
+                  sx={{ color: `${meta.color}.main`, flexShrink: 0 }}
+                />
+                <span>{`${meta.label}: ${meta.hint.toLowerCase()}`}</span>
+              </Stack>
+            );
+          })}
         </Stack>
       </Box>
     </Card>
