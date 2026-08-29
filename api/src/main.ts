@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
+import { AllExceptionsFilter } from '@/common/filters/http-exception.filter'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { AppModule } from './app.module'
 
@@ -22,6 +23,8 @@ async function main() {
       }
     })
   )
+
+  app.useGlobalFilters(new AllExceptionsFilter())
 
   app.enableCors({
     origin: '*',

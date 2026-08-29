@@ -1,10 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException
-} from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DeepPartial, Repository } from 'typeorm'
 
@@ -20,13 +14,12 @@ import { ProductCategoryDto } from './dto/product-category.dto'
 import { PaginationHelper } from '@/common/pagination/pagination.helper'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 import { escapeLikeWildcards } from '@/common/transformers/sanitize.transformer'
+import { translateDatabaseError } from '@/common/filters/database-error.translator'
 
 import { Product } from './entities/product.entity'
 
 @Injectable()
 export class ProductsService {
-  private readonly logger = new Logger(ProductsService.name)
-
   private static readonly SORT_COLUMNS: Record<ProductSortField, string> = {
     name: 'product.name',
     price: 'product.price',
@@ -48,7 +41,11 @@ export class ProductsService {
       )
       return await this.productRepository.save(product)
     } catch (error) {
-      this.handleDBExceptions(error, createProductDto.sku)
+      translateDatabaseError(error, {
+        resource: 'Product',
+        field: 'sku',
+        identifier: createProductDto.sku
+      })
     }
   }
 
@@ -153,13 +150,28 @@ export class ProductsService {
     try {
       return await this.productRepository.save(product)
     } catch (error) {
-      this.handleDBExceptions(error, updateProductDto.sku)
+      translateDatabaseError(error, {
+        resource: 'Product',
+        field: 'sku',
+        identifier: updateProductDto.sku
+      })
     }
   }
 
   async remove(id: string): Promise<void> {
     const product = await this.findOne(id)
-    await this.productRepository.remove(product)
+
+    try {
+      await this.productRepository.remove(product)
+    } catch (error) {
+      // A product that appears in an order is protected by a RESTRICT foreign
+      // key. That refusal is a conflict, not an internal failure.
+      translateDatabaseError(error, {
+        resource: 'Product',
+        field: 'sku',
+        identifier: product.sku
+      })
+    }
   }
 
   private toEntityData(
@@ -174,15 +186,5 @@ export class ProductsService {
       data.category = category.trim() || 'Uncategorized'
 
     return data
-  }
-
-  private handleDBExceptions(error: unknown, sku?: string): never {
-    if ((error as { code?: string })?.code === '23505')
-      throw new ConflictException(`Product with sku '${sku}' already exists`)
-
-    this.logger.error(error)
-    throw new InternalServerErrorException(
-      'Unexpected error, check server logs'
-    )
   }
 }

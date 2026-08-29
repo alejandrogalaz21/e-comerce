@@ -42,11 +42,12 @@ export class ProductsController {
   @ApiResponse({ status: 401, description: 'Missing or invalid access token' })
   @ApiResponse({
     status: 400,
-    description: 'Validation error: { statusCode, message: string[], error }'
+    description:
+      'Validation error. VALIDATION_ERROR, with message as the list of failures'
   })
   @ApiResponse({
     status: 409,
-    description: 'Duplicate SKU: { statusCode, message, error }'
+    description: 'Duplicate SKU: DUPLICATE_RESOURCE'
   })
   create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto)
@@ -113,7 +114,8 @@ export class ProductsController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Validation error: { statusCode, message: string[], error }'
+    description:
+      'Validation error. VALIDATION_ERROR, with message as the list of failures'
   })
   findAll(@Query() filters: ProductFiltersDto) {
     return this.productsService.findAll(filters)
@@ -140,7 +142,7 @@ export class ProductsController {
   @ApiResponse({ status: 400, description: 'Invalid UUID' })
   @ApiResponse({
     status: 404,
-    description: 'Product not found: { statusCode, message, error }'
+    description: 'Product not found: NOT_FOUND'
   })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.productsService.findOne(id)
@@ -156,7 +158,10 @@ export class ProductsController {
   })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token' })
   @ApiResponse({ status: 404, description: 'Product not found' })
-  @ApiResponse({ status: 409, description: 'Duplicate SKU' })
+  @ApiResponse({
+    status: 409,
+    description: 'Duplicate SKU: DUPLICATE_RESOURCE'
+  })
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProductDto: UpdateProductDto
@@ -172,6 +177,11 @@ export class ProductsController {
   @ApiResponse({ status: 400, description: 'Invalid UUID' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token' })
   @ApiResponse({ status: 404, description: 'Product not found' })
+  @ApiResponse({
+    status: 409,
+    description:
+      'The product appears in an order and cannot be removed: RESOURCE_IN_USE'
+  })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.productsService.remove(id)
   }

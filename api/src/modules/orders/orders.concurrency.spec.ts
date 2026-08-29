@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm'
 
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
+import { ProductsService } from '@/modules/products/products.service'
 import { Product } from '@/modules/products/entities/product.entity'
 import { ChargeResult } from '@/modules/payment/payment.interface'
 
@@ -26,7 +27,12 @@ const SKU_PREFIX = 'CONCURRENCY-TEST-'
 
 let dataSource: DataSource | null = null
 
-const approving = { charge: async (): Promise<ChargeResult> => ({ status: 'approved', reference: 'fake_ch_test' }) }
+const approving = {
+  charge: async (): Promise<ChargeResult> => ({
+    status: 'approved',
+    reference: 'fake_ch_test'
+  })
+}
 
 async function connect(): Promise<DataSource | null> {
   const candidate = new DataSource({
@@ -81,13 +87,19 @@ async function stockOf(source: DataSource, productId: string): Promise<number> {
 }
 
 const maybe = (name: string, fn: () => Promise<void>) =>
-  it(name, async () => {
-    if (!dataSource) {
-      console.warn(`skipped (no database at ${CONNECTION.host}:${CONNECTION.port})`)
-      return
-    }
-    await fn()
-  }, 30000)
+  it(
+    name,
+    async () => {
+      if (!dataSource) {
+        console.warn(
+          `skipped (no database at ${CONNECTION.host}:${CONNECTION.port})`
+        )
+        return
+      }
+      await fn()
+    },
+    30000
+  )
 
 describe('OrdersService against a real database', () => {
   beforeAll(async () => {
@@ -96,10 +108,9 @@ describe('OrdersService against a real database', () => {
 
   afterEach(async () => {
     if (!dataSource) return
-    await dataSource.query(
-      `DELETE FROM "order_items" WHERE "sku" LIKE $1`,
-      [`${SKU_PREFIX}%`]
-    )
+    await dataSource.query(`DELETE FROM "order_items" WHERE "sku" LIKE $1`, [
+      `${SKU_PREFIX}%`
+    ])
     await dataSource.query(
       `DELETE FROM "orders" WHERE "idempotency_key" LIKE $1`,
       [`${SKU_PREFIX}%`]
@@ -113,80 +124,91 @@ describe('OrdersService against a real database', () => {
     if (dataSource) await dataSource.destroy()
   })
 
-  maybe('sells the last unit exactly once under simultaneous purchases', async () => {
-    const source = dataSource!
-    const productId = await seedProduct(source, 'LAST-ONE', 1)
-    const service = serviceFor(source)
+  maybe(
+    'sells the last unit exactly once under simultaneous purchases',
+    async () => {
+      const source = dataSource!
+      const productId = await seedProduct(source, 'LAST-ONE', 1)
+      const service = serviceFor(source)
 
-    const results = await Promise.allSettled([
-      service.create({
-        items: [{ productId, quantity: 1 }],
-        idempotencyKey: `${SKU_PREFIX}buyer-a`
-      }),
-      service.create({
-        items: [{ productId, quantity: 1 }],
-        idempotencyKey: `${SKU_PREFIX}buyer-b`
-      })
-    ])
-
-    const fulfilled = results.filter(result => result.status === 'fulfilled')
-    const rejected = results.filter(result => result.status === 'rejected')
-
-    expect(fulfilled).toHaveLength(1)
-    expect(rejected).toHaveLength(1)
-    expect((rejected[0] as PromiseRejectedResult).reason.response.error).toBe(
-      'INSUFFICIENT_STOCK'
-    )
-    expect(await stockOf(source, productId)).toBe(0)
-  })
-
-  maybe('never drives stock negative under many simultaneous buyers', async () => {
-    const source = dataSource!
-    const productId = await seedProduct(source, 'RUSH', 5)
-    const service = serviceFor(source)
-
-    const results = await Promise.allSettled(
-      Array.from({ length: 10 }, (_, index) =>
+      const results = await Promise.allSettled([
         service.create({
           items: [{ productId, quantity: 1 }],
-          idempotencyKey: `${SKU_PREFIX}rush-${index}`
+          idempotencyKey: `${SKU_PREFIX}buyer-a`
+        }),
+        service.create({
+          items: [{ productId, quantity: 1 }],
+          idempotencyKey: `${SKU_PREFIX}buyer-b`
         })
+      ])
+
+      const fulfilled = results.filter(result => result.status === 'fulfilled')
+      const rejected = results.filter(result => result.status === 'rejected')
+
+      expect(fulfilled).toHaveLength(1)
+      expect(rejected).toHaveLength(1)
+      expect((rejected[0] as PromiseRejectedResult).reason.response.error).toBe(
+        'INSUFFICIENT_STOCK'
       )
-    )
+      expect(await stockOf(source, productId)).toBe(0)
+    }
+  )
 
-    const sold = results.filter(result => result.status === 'fulfilled').length
+  maybe(
+    'never drives stock negative under many simultaneous buyers',
+    async () => {
+      const source = dataSource!
+      const productId = await seedProduct(source, 'RUSH', 5)
+      const service = serviceFor(source)
 
-    expect(sold).toBe(5)
-    expect(await stockOf(source, productId)).toBe(0)
-  })
+      const results = await Promise.allSettled(
+        Array.from({ length: 10 }, (_, index) =>
+          service.create({
+            items: [{ productId, quantity: 1 }],
+            idempotencyKey: `${SKU_PREFIX}rush-${index}`
+          })
+        )
+      )
 
-  maybe('resolves two orders that list the same products in opposite order', async () => {
-    const source = dataSource!
-    const first = await seedProduct(source, 'DEADLOCK-A', 10)
-    const second = await seedProduct(source, 'DEADLOCK-B', 10)
-    const service = serviceFor(source)
+      const sold = results.filter(
+        result => result.status === 'fulfilled'
+      ).length
 
-    const results = await Promise.allSettled([
-      service.create({
-        items: [
-          { productId: first, quantity: 1 },
-          { productId: second, quantity: 1 }
-        ],
-        idempotencyKey: `${SKU_PREFIX}forward`
-      }),
-      service.create({
-        items: [
-          { productId: second, quantity: 1 },
-          { productId: first, quantity: 1 }
-        ],
-        idempotencyKey: `${SKU_PREFIX}reverse`
-      })
-    ])
+      expect(sold).toBe(5)
+      expect(await stockOf(source, productId)).toBe(0)
+    }
+  )
 
-    expect(results.every(result => result.status === 'fulfilled')).toBe(true)
-    expect(await stockOf(source, first)).toBe(8)
-    expect(await stockOf(source, second)).toBe(8)
-  })
+  maybe(
+    'resolves two orders that list the same products in opposite order',
+    async () => {
+      const source = dataSource!
+      const first = await seedProduct(source, 'DEADLOCK-A', 10)
+      const second = await seedProduct(source, 'DEADLOCK-B', 10)
+      const service = serviceFor(source)
+
+      const results = await Promise.allSettled([
+        service.create({
+          items: [
+            { productId: first, quantity: 1 },
+            { productId: second, quantity: 1 }
+          ],
+          idempotencyKey: `${SKU_PREFIX}forward`
+        }),
+        service.create({
+          items: [
+            { productId: second, quantity: 1 },
+            { productId: first, quantity: 1 }
+          ],
+          idempotencyKey: `${SKU_PREFIX}reverse`
+        })
+      ])
+
+      expect(results.every(result => result.status === 'fulfilled')).toBe(true)
+      expect(await stockOf(source, first)).toBe(8)
+      expect(await stockOf(source, second)).toBe(8)
+    }
+  )
 
   maybe('replaying one key charges and discounts only once', async () => {
     const source = dataSource!
@@ -231,23 +253,52 @@ describe('OrdersService against a real database', () => {
     expect(failed.status).toBe('FAILED')
   })
 
-  maybe('keeps the purchased price after the catalog price changes', async () => {
+  maybe('refuses to delete a product that appears in an order', async () => {
     const source = dataSource!
-    const productId = await seedProduct(source, 'SNAPSHOT', 10, '49.99')
+    const productId = await seedProduct(source, 'SOLD', 5)
     const service = serviceFor(source)
 
-    const { order } = await service.create({
+    await service.create({
       items: [{ productId, quantity: 1 }],
-      idempotencyKey: `${SKU_PREFIX}snapshot`
+      idempotencyKey: `${SKU_PREFIX}sold-one`
     })
 
-    await source.query(`UPDATE "products" SET "price" = '59.99' WHERE "id" = $1`, [
-      productId
-    ])
+    const products = new ProductsService(
+      source.getRepository(Product),
+      new PaginationResponseBuilder<Product>()
+    )
 
-    const reloaded = await service.findOne(order.id)
+    // The RESTRICT foreign key is what refuses this; it must surface as a
+    // conflict rather than escaping as an internal failure.
+    await expect(products.remove(productId)).rejects.toMatchObject({
+      status: 409,
+      response: { error: 'RESOURCE_IN_USE' }
+    })
 
-    expect(reloaded.items[0].unitPriceSnapshot).toBe('49.99')
-    expect(reloaded.totalAmount).toBe('49.99')
+    expect(await stockOf(source, productId)).toBe(4)
   })
+
+  maybe(
+    'keeps the purchased price after the catalog price changes',
+    async () => {
+      const source = dataSource!
+      const productId = await seedProduct(source, 'SNAPSHOT', 10, '49.99')
+      const service = serviceFor(source)
+
+      const { order } = await service.create({
+        items: [{ productId, quantity: 1 }],
+        idempotencyKey: `${SKU_PREFIX}snapshot`
+      })
+
+      await source.query(
+        `UPDATE "products" SET "price" = '59.99' WHERE "id" = $1`,
+        [productId]
+      )
+
+      const reloaded = await service.findOne(order.id)
+
+      expect(reloaded.items[0].unitPriceSnapshot).toBe('49.99')
+      expect(reloaded.totalAmount).toBe('49.99')
+    }
+  )
 })

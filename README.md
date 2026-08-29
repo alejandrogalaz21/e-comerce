@@ -203,13 +203,13 @@ check-then-insert is a race condition by another name.
 
 **Failures say which one they are**, because only one of them is worth retrying:
 
-| Outcome | Status | What the UI offers |
-|---|---|---|
-| Insufficient stock | `409` | The SKU, how many were asked for, how many are left, and a link back to the cart |
-| Payment declined | `402` | Retry — nothing was charged and the cart is intact |
-| Product not found | `404` | Review the cart |
-| Invalid quantity | `400` | Fix the input |
-| Key already used | `200` | The existing order, not a second one |
+| Outcome | Status | `error` code | What the UI offers |
+|---|---|---|---|
+| Insufficient stock | `409` | `INSUFFICIENT_STOCK` | The SKU, how many were asked for, how many are left, and a link back to the cart |
+| Payment declined | `402` | `PAYMENT_DECLINED` | Retry — nothing was charged and the cart is intact |
+| Product not found | `404` | `NOT_FOUND` | Review the cart |
+| Invalid quantity | `400` | `VALIDATION_ERROR` | Fix the input |
+| Key already used | `200` | — | The existing order, not a second one |
 
 **The fake payment declines ~10% of charges on purpose**, so the rollback is observable by using
 the app rather than only in tests. Retry and it will go through. The randomness is **injected**
