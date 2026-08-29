@@ -32,6 +32,7 @@ is TypeORM's schema history.
 |---|---|---|---|
 | [TC-01](TC-01-initial-import.md) | Initial import into an empty catalog | create · reject · skip · duplicate SKU rule | ✅ Passed |
 | [TC-02](TC-02-upsert-existing-product.md) | Re-import with one modified product | update · unchanged · `updatedAt` ordering | ✅ Passed |
+| [TC-03](TC-03-unchanged-does-not-write.md) | `Unchanged` does not write, `Updated` does | absence of writes · timestamp integrity | ✅ Passed |
 
 ## The five outcomes
 
