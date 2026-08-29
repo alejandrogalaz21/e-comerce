@@ -134,29 +134,19 @@ test.describe('product CSV import', () => {
     // 85 products imported into an empty catalog.
     await expect(page.getByText(/of 85/)).toBeVisible({ timeout: 15_000 });
 
-    // Page through the grid (25 rows per page) until both names have been seen.
-    await page.getByRole('combobox', { name: /rows per page/i }).click();
-    await page.getByRole('option', { name: '25' }).click();
-    await expect(page.getByText(/1–25 of 85/)).toBeVisible();
-
-    const wanted = new Set(['Running Shoes', 'Organic Coffee Beans']);
-    const nextPage = page.getByRole('button', { name: 'Go to next page' });
-
-    for (let i = 0; i < 4 && wanted.size > 0; i += 1) {
-      for (const name of [...wanted]) {
-        const cell = grid.getByText(name, { exact: true }).first();
-        if (await cell.isVisible().catch(() => false)) {
-          wanted.delete(name);
-        }
-      }
-      if (wanted.size > 0 && (await nextPage.isEnabled())) {
-        await nextPage.click();
-        await expect(grid.locator('[role="row"]').first()).toBeVisible();
-        await page.waitForTimeout(500);
-      }
+    // The grid virtualizes its rows, so paging through 85 of them only proves what
+    // happens to fit the viewport. Ask the server for each sku instead: the list
+    // state lives in the URL, so a query param is the same code path as typing.
+    // RS-001 is rejected as a duplicate sku, so the only 'Running Shoes' in the
+    // catalog is RS-050 — the row the import created from line 55.
+    for (const [sku, name] of [
+      ['RS-050', 'Running Shoes'],
+      ['CB-010', 'Organic Coffee Beans'],
+    ]) {
+      await page.goto(`/dashboard/product?q=${sku}`);
+      await expect(page.getByTestId('filters-result-total')).toHaveText('1');
+      await expect(grid.getByText(name, { exact: true }).first()).toBeVisible();
     }
-
-    expect([...wanted], 'product names not found in the grid').toHaveLength(0);
   });
 
   test('rejects a non-CSV file', async ({ page }) => {
