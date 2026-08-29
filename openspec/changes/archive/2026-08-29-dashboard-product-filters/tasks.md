@@ -41,5 +41,5 @@
 
 ## QA / cierre
 - [x] `npm run build` (tsc estricto + eslint) y `npm test` verdes en `web/`; `npm test` verde en `api/`
-- [ ] Verificación manual contra los 87 productos del fixture
-- [ ] Backlog: TK-036 a `closed` con enlace al change (al archivar)
+- [x] Verificación manual contra el fixture del challenge: TC-01, TC-02 y TC-03 en [`docs/testing/`](../../../docs/testing/README.md) (85 productos creados, orden por `Updated at` verificado contra la base)
+- [x] Backlog: TK-036 a `closed` con enlace al change (al archivar)
