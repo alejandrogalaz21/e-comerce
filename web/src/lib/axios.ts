@@ -99,4 +99,9 @@ export const endpoints = {
     update: (id: string) => `/api/v1/products/${id}`,
     delete: (id: string) => `/api/v1/products/${id}`,
   },
+  purchase: {
+    create: '/api/v1/orders',
+    list: '/api/v1/orders',
+    details: (id: string) => `/api/v1/orders/${id}`,
+  },
 };

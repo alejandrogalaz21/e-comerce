@@ -1,4 +1,4 @@
-# Manual test log — CSV import
+# Manual test log
 
 Evidence of the CSV import pipeline exercised end to end against the Docker stack.
 Each case records what was expected **before** running it, what actually happened, and a
@@ -47,6 +47,7 @@ because of that edit and nothing else.
 | [TC-02](TC-02-upsert-existing-product.md) | Re-import with one modified product | update · unchanged · `updatedAt` ordering | ✅ Passed |
 | [TC-03](TC-03-unchanged-does-not-write.md) | `Unchanged` does not write, `Updated` does | absence of writes · timestamp integrity | ✅ Passed |
 | [TC-04](TC-04-report-consistency-and-layout.md) | Report consistency, column order, filters and dashboard layout | status icons · SKU before Name · table filters · grid layout · `name` contract | ⬜ To run |
+| [TC-05](TC-05-purchase-flow.md) | Purchase flow: stock, idempotency and the fake payment | atomic order · no overselling · frozen price · idempotency · declined payment | ⬜ To run |
 
 ## The five outcomes
 
