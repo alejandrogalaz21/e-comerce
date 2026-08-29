@@ -308,6 +308,7 @@ describe('ImportService', () => {
         {
           line: 2,
           sku: 'RS-001',
+          name: 'Running Shoes',
           message: 'sku already exists with different data — updated'
         }
       ])
@@ -403,10 +404,12 @@ describe('ImportService', () => {
               {
                 line: 3,
                 sku: 'YM-015',
+                name: 'Yoga Mat',
                 errors: ["price is not a valid number: 'free'"]
               }
             ],
             warnings: [],
+            skipped: [],
             created: [
               expect.objectContaining({
                 line: 2,

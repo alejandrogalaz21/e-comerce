@@ -143,6 +143,7 @@ describe('ImportService (integration with the real fixture)', () => {
       {
         line: 7,
         sku: 'YM-015',
+        name: 'Yoga Mat',
         errors: ["price is not a valid number: 'free'"]
       },
       {
@@ -155,11 +156,13 @@ describe('ImportService (integration with the real fixture)', () => {
       {
         line: 16,
         sku: 'DL-007',
+        name: 'Desk Lamp',
         errors: ['stock must not be less than 0']
       },
       {
         line: 20,
         sku: 'XS-001',
+        name: "<script>alert('xss')</script>",
         errors: ['name contains invalid content: HTML markup is not allowed']
       },
       {
