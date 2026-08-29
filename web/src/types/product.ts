@@ -79,6 +79,11 @@ export type IImportSummary = {
   skippedEmpty: number;
 };
 
+/**
+ * The API always sends sku and name, using an empty string for a blank cell.
+ * They stay optional here on purpose: batches stored before that contract
+ * existed omit them, and their detail must keep opening.
+ */
 export type IImportRejectedRow = {
   line: number;
   sku?: string;

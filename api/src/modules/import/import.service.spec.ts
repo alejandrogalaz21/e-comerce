@@ -334,7 +334,9 @@ describe('ImportService', () => {
         })
       )
       expect(result.rejected.map(row => row.line)).toEqual([2, 3])
-      expect(result.rejected[0].errors[0]).toContain('duplicate sku in the file')
+      expect(result.rejected[0].errors[0]).toContain(
+        'duplicate sku in the file'
+      )
       expect(result.rejected[0].errors[0]).toContain('conflicting data')
       expect(result.warnings).toEqual([])
       expect(mockProductRepository.create).not.toHaveBeenCalled()
@@ -342,7 +344,8 @@ describe('ImportService', () => {
     })
 
     it('rejects a sku duplicated with identical data and says so in the message', async () => {
-      const row = 'Bluetooth Speaker,BS-021,Portable speaker,Electronics,59.99,110,0.8'
+      const row =
+        'Bluetooth Speaker,BS-021,Portable speaker,Electronics,59.99,110,0.8'
       const result = await service.importCsv(csvFile([row, row]))
 
       expect(result.summary).toEqual(
@@ -370,6 +373,87 @@ describe('ImportService', () => {
           sku: 'CT-005',
           name: 'Camping Tent',
           category: 'Outdoors'
+        })
+      ])
+    })
+  })
+
+  describe('report contract', () => {
+    it('reports the name of a row rejected for a duplicate sku', async () => {
+      const result = await service.importCsv(
+        csvFile([
+          'Bluetooth Speaker,BS-021,Portable speaker,Electronics,59.99,110,0.8',
+          'Bluetooth Speaker Pro,BS-021,Same SKU different price,Electronics,49.99,200,0.75'
+        ])
+      )
+
+      expect(result.rejected).toEqual([
+        expect.objectContaining({
+          line: 2,
+          sku: 'BS-021',
+          name: 'Bluetooth Speaker'
+        }),
+        expect.objectContaining({
+          line: 3,
+          sku: 'BS-021',
+          name: 'Bluetooth Speaker Pro'
+        })
+      ])
+    })
+
+    it('reports an empty name as an empty string, never as an absent field', async () => {
+      const result = await service.importCsv(
+        csvFile([',NN-001,No name at all,Electronics,19.99,5,0.4'])
+      )
+
+      expect(result.rejected).toHaveLength(1)
+      expect(result.rejected[0]).toHaveProperty('name', '')
+      expect(result.rejected[0]).toHaveProperty('sku', 'NN-001')
+    })
+
+    it('never omits name or sku from a rejected row, whatever the rule', async () => {
+      const result = await service.importCsv(
+        csvFile([
+          'Broken Price,BP-001,Bad price,Electronics,free,10,0.5',
+          'Negative Stock,NS-001,Bad stock,Electronics,19.99,-5,0.5',
+          'Dup One,DP-001,First,Electronics,10.00,1,0.5',
+          'Dup Two,DP-001,Second,Electronics,20.00,2,0.5'
+        ])
+      )
+
+      expect(result.rejected).toHaveLength(4)
+      for (const row of result.rejected) {
+        expect(Object.keys(row)).toEqual(
+          expect.arrayContaining(['line', 'sku', 'name', 'errors'])
+        )
+        expect(typeof row.name).toBe('string')
+        expect(typeof row.sku).toBe('string')
+      }
+    })
+
+    it('reports name and sku on the warning of an updated row', async () => {
+      mockProductRepository.findOne.mockResolvedValue({
+        id: 'existing-id',
+        sku: 'BS-021',
+        name: 'Old Speaker',
+        description: 'Old description',
+        category: 'Electronics',
+        price: '39.99',
+        stock: 10,
+        weightKg: '0.8'
+      })
+
+      const result = await service.importCsv(
+        csvFile([
+          'Bluetooth Speaker,BS-021,Portable speaker,Electronics,59.99,110,0.8'
+        ])
+      )
+
+      expect(result.warnings).toEqual([
+        expect.objectContaining({
+          line: 2,
+          sku: 'BS-021',
+          name: 'Bluetooth Speaker'
         })
       ])
     })

@@ -4,9 +4,10 @@ export interface NormalizedRow {
   values: Record<string, unknown>
   errors: string[]
   isEmpty: boolean
-  sku?: string
+  /** Raw sku, empty string when the cell was blank. */
+  sku: string
   /** Raw name, kept so a rejected row can show what was wrong with it. */
-  name?: string
+  name: string
 }
 
 const CURRENCY_PRICE_REGEX = /^[^0-9.-]*[0-9]/
@@ -21,8 +22,8 @@ export class ImportRowNormalizer {
     }
 
     const isEmpty = Object.values(raw).every(value => value === '')
-    const sku = raw.sku || undefined
-    const name = raw.name || undefined
+    const sku = raw.sku ?? ''
+    const name = raw.name ?? ''
     if (isEmpty) return { values: {}, errors: [], isEmpty: true, sku, name }
 
     const errors: string[] = []

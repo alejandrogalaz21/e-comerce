@@ -136,6 +136,7 @@ describe('ImportService (integration with the real fixture)', () => {
       {
         line: 2,
         sku: 'RS-001',
+        name: 'Running Shoes',
         errors: [
           'duplicate sku in the file (lines 2, 36) with conflicting data — a sku must appear at most once per import'
         ]
@@ -149,6 +150,7 @@ describe('ImportService (integration with the real fixture)', () => {
       {
         line: 11,
         sku: 'BS-021',
+        name: 'Bluetooth Speaker',
         errors: [
           'duplicate sku in the file (lines 11, 56, 89) with conflicting data — a sku must appear at most once per import'
         ]
@@ -168,11 +170,13 @@ describe('ImportService (integration with the real fixture)', () => {
       {
         line: 25,
         sku: 'HD-099',
+        name: '',
         errors: ['name should not be empty']
       },
       {
         line: 36,
         sku: 'RS-001',
+        name: 'Running Shoes',
         errors: [
           'duplicate sku in the file (lines 2, 36) with conflicting data — a sku must appear at most once per import'
         ]
@@ -180,11 +184,13 @@ describe('ImportService (integration with the real fixture)', () => {
       {
         line: 41,
         sku: 'WS-001',
+        name: '',
         errors: ['name should not be empty']
       },
       {
         line: 56,
         sku: 'BS-021',
+        name: 'Bluetooth Speaker',
         errors: [
           'duplicate sku in the file (lines 11, 56, 89) with conflicting data — a sku must appear at most once per import'
         ]
@@ -192,6 +198,7 @@ describe('ImportService (integration with the real fixture)', () => {
       {
         line: 89,
         sku: 'BS-021',
+        name: 'Bluetooth Speaker',
         errors: [
           'duplicate sku in the file (lines 11, 56, 89) with conflicting data — a sku must appear at most once per import'
         ]
