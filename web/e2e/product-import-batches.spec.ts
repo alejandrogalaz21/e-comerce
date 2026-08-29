@@ -118,7 +118,9 @@ test.describe('product import batch history', () => {
 
     const issues = page.getByTestId('import-issues');
     await expect(
-      issues.getByText(`Rows with issues (${importSummary.rejected + importSummary.updated})`)
+      issues.getByText(
+        `Rows to review (${importSummary.rejected + importSummary.updated + importSummary.skippedEmpty})`
+      )
     ).toBeVisible();
     await expect(issues.locator('tbody tr').filter({ hasText: 'Rejected row' })).toHaveCount(
       importSummary.rejected
