@@ -22,14 +22,14 @@ backbone of this process.
 ## Flow
 
 ```mermaid
-flowchart TD
+graph TD
     U[Administrator uploads .csv] --> G{JWT valid?}
     G -- no --> E401[401]
     G -- yes --> F[validateFile]
-    F -- missing / not .csv / bad MIME / empty --> E400[400 · nothing saved]
+    F -- missing / not .csv / bad MIME / empty --> E400[400 - nothing saved]
     F -- ok --> H[parseCsv + validateHeaders]
     H -- missing or unexpected columns --> E400
-    H -- ok --> B[(INSERT import_batch · status=processing)]
+    H -- ok --> B[(INSERT import_batch - status=processing)]
     B --> V[validateRows: one pass per row]
 
     V --> R1{Row entirely blank?}
@@ -44,16 +44,16 @@ flowchart TD
     D -- sku appears more than once --> RJ
     D -- unique --> UP{SKU exists in DB?}
 
-    UP -- no --> INS[INSERT · summary.inserted++ · created row]
-    UP -- yes, same data --> UNC[no write · summary.unchanged++]
-    UP -- yes, different --> UPD[UPDATE · summary.updated++ · warning]
+    UP -- no --> INS[INSERT - summary.inserted++ - created row]
+    UP -- yes, same data --> UNC[no write - summary.unchanged++]
+    UP -- yes, different --> UPD[UPDATE - summary.updated++ - warning]
 
-    INS --> FIN[(UPDATE batch · status=completed · report JSONB)]
+    INS --> FIN[(UPDATE batch - status=completed - report JSONB)]
     UNC --> FIN
     UPD --> FIN
     SK --> FIN
     RJ --> FIN
-    FIN --> RES[201 · summary + per-row report]
+    FIN --> RES[201 - summary + per-row report]
 ```
 
 ## Files

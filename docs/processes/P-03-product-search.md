@@ -17,7 +17,7 @@ once** and unions them.
 ## Flow
 
 ```mermaid
-flowchart TD
+graph TD
     Q[GET /products?q=&category=&minPrice=&maxPrice=&inStock=&sortBy=&sortDir=&page=&limit=] --> P[ValidationPipe + ProductFiltersDto]
     P -- unknown param --> E400[400]
     P -- maxPrice below minPrice --> E400
@@ -42,7 +42,7 @@ flowchart TD
     C4b --> S
     S --> PG[skip/take = offset/limit]
     PG --> R[getManyAndCount]
-    R --> OUT["200 · { data, pagination }"]
+    R --> OUT["200 - { data, pagination }"]
 ```
 
 ## Files

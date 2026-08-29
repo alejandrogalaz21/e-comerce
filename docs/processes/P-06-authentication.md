@@ -21,8 +21,8 @@ exist.
 ## The boundary
 
 ```mermaid
-flowchart LR
-    subgraph Public [Public · no token]
+graph LR
+    subgraph Public["Public - no token"]
         A1[GET /products]
         A2[GET /products/categories]
         A3[GET /products/:id]
@@ -32,13 +32,13 @@ flowchart LR
         A7[GET /health]
     end
 
-    subgraph Protected [Protected · JWT required]
+    subgraph Protected["Protected - JWT required"]
         B1[POST/PATCH/DELETE /products]
         B2[POST /products/import]
         B3[GET /products/import/batches]
         B4[GET /orders and /orders/:id]
         B5[GET /status/db and /status/redis]
-        B6[/users/*]
+        B6["/users/*"]
         B7[GET /auth/me]
     end
 ```

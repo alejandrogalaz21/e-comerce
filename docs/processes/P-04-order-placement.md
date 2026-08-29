@@ -28,14 +28,14 @@ sequenceDiagram
     API->>DB: SELECT order WHERE idempotency_key = ?
     alt key already used
         DB-->>API: existing order
-        API-->>C: 200 (PAID) · 402 (FAILED, same decline)
+        API-->>C: 200 (PAID) - 402 (FAILED, same decline)
     else new attempt
         API->>DB: BEGIN
         API->>DB: SELECT ... FROM products WHERE id = ANY($1) ORDER BY id FOR UPDATE
         DB-->>API: locked rows with price and stock
         alt a line exceeds stock
             API->>DB: ROLLBACK
-            API-->>C: 409 · sku, requested, available
+            API-->>C: 409 - sku, requested, available
         else stock ok
             API->>API: total = SUM(price × qty) in integer cents
             API->>DB: INSERT order (PENDING) + order_items (unit_price_snapshot)
@@ -44,13 +44,13 @@ sequenceDiagram
                 PAY-->>API: {status: declined, reason}
                 API->>DB: ROLLBACK
                 API->>DB: INSERT order (FAILED, declineReason) — own transaction
-                API-->>C: 402 · PAYMENT_DECLINED
+                API-->>C: 402 - PAYMENT_DECLINED
             else approved
                 PAY-->>API: {status: approved, reference}
                 API->>DB: UPDATE products SET stock = stock - qty
                 API->>DB: UPDATE order SET status = PAID, payment_reference
                 API->>DB: COMMIT
-                API-->>C: 201 · order with lines and total
+                API-->>C: 201 - order with lines and total
             end
         end
     end

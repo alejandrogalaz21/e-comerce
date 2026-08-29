@@ -21,7 +21,7 @@ fails — so any step can be checked against the code rather than taken on trust
 ## How the processes relate
 
 ```mermaid
-flowchart TD
+graph TD
     A[Anonymous visitor] --> P03[P-03 Search and filters]
     P03 --> P04[P-04 Order placement]
     P04 --> P05[P-05 Payment processing]

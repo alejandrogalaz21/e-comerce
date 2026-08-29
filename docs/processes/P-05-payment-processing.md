@@ -24,11 +24,11 @@ gateway should then be implementing one interface, not rewriting the purchase.
 classDiagram
     class PaymentProvider {
         <<interface>>
-        +charge(ChargeRequest) Promise~ChargeResult~
+        +charge(ChargeRequest) ChargeResult
     }
     class FakePaymentProvider {
         -random: RandomSource
-        +charge(ChargeRequest) Promise~ChargeResult~
+        +charge(ChargeRequest) ChargeResult
     }
     class RandomSource {
         <<interface>>
@@ -53,7 +53,7 @@ registering another class against `PAYMENT_PROVIDER`.
 ## Flow inside the purchase
 
 ```mermaid
-flowchart TD
+graph TD
     A[OrdersService has the order and the total] --> B["charge({amountInCents, idempotencyKey})"]
     B --> C[FakePaymentProvider]
     C --> D[random.next]
@@ -66,7 +66,7 @@ flowchart TD
     I --> J[402 PAYMENT_DECLINED]
 
     G --> K[Discount stock, mark PAID, store the reference]
-    K --> L[COMMIT · 201]
+    K --> L[COMMIT - 201]
 ```
 
 ## Files

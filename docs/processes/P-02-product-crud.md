@@ -17,8 +17,8 @@ drift apart.
 ## Flow
 
 ```mermaid
-flowchart TD
-    subgraph Write [Create / Update · JWT required]
+graph TD
+    subgraph Write["Create / Update - JWT required"]
         W1[Request body] --> W2{JwtAuthGuard}
         W2 -- no token --> E401[401]
         W2 -- ok --> W3[ValidationPipe: whitelist + forbidNonWhitelisted + transform]
@@ -28,23 +28,23 @@ flowchart TD
         W4 --> W5[toEntityData: price and weight to string, category default]
         W5 --> W6[(INSERT / UPDATE)]
         W6 -- Postgres 23505 --> E409[409 duplicate SKU]
-        W6 -- CHECK violated --> E500g[500 · logged]
-        W6 -- ok --> OK2[201 / 200 · product]
+        W6 -- CHECK violated --> E500g[500 - logged]
+        W6 -- ok --> OK2[201 / 200 - product]
     end
 
-    subgraph Read [Read · public]
+    subgraph Read["Read - public"]
         R1[GET /products/:id] --> R2[ParseUUIDPipe]
         R2 -- not a UUID --> E400
         R2 -- ok --> R3[findOneBy id]
         R3 -- none --> E404[404]
-        R3 -- found --> OK1[200 · product]
+        R3 -- found --> OK1[200 - product]
     end
 
-    subgraph Delete [Delete · JWT required]
+    subgraph Delete["Delete - JWT required"]
         D1[DELETE /products/:id] --> D2[findOne]
         D2 -- none --> E404
         D2 -- found --> D3[(DELETE)]
-        D3 -- referenced by an order line --> E500r[FK RESTRICT · deletion refused]
+        D3 -- referenced by an order line --> E500r[FK RESTRICT - deletion refused]
         D3 -- ok --> OK3[200]
     end
 ```
