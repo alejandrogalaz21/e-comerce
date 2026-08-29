@@ -80,6 +80,7 @@ short.
 | `RESOURCE_IN_USE` | `409` | Referenced by other records and cannot be removed |
 | `PAYLOAD_TOO_LARGE` | `413` | Upload over the limit |
 | `UNSUPPORTED_MEDIA_TYPE` | `415` | Wrong content type |
+| `TOO_MANY_REQUESTS` | `429` | Rate limit exceeded — the CSV import allows 5/min |
 | `INTERNAL_ERROR` | `500` | Anything unforeseen |
 
 `error` is a **code**, not the HTTP status spelled out. Nest fills it with `"Not Found"` by
@@ -139,5 +140,5 @@ That last one used to be a `500`.
 
 **Automated coverage:** `http-exception.filter.spec.ts` (14 tests: envelope per status, code
 resolution, detail preservation, no leakage, logging) and `database-error.translator.spec.ts`
-(10 tests). The foreign-key case is verified against a **real database** in
+(8 tests). The foreign-key case is verified against a **real database** in
 `orders.concurrency.spec.ts` — "refuses to delete a product that appears in an order".

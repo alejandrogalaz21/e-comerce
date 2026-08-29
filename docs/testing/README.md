@@ -41,6 +41,8 @@ because of that edit and nothing else.
 
 ## Cases
 
+See [STRATEGY.md](STRATEGY.md) for what is covered automatically, at which level, and what is deliberately left to these manual cases.
+
 | # | Case | Covers | Status |
 |---|---|---|---|
 | [TC-01](TC-01-initial-import.md) | Initial import into an empty catalog | create · reject · skip · duplicate SKU rule | ✅ Passed |

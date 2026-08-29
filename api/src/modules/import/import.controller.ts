@@ -9,6 +9,7 @@ import {
   UseInterceptors
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
+import { Throttle } from '@nestjs/throttler'
 import {
   ApiBearerAuth,
   ApiBody,
@@ -34,6 +35,9 @@ export class ImportController {
   constructor(private readonly importService: ImportService) {}
 
   @Post()
+  // A bulk upsert of the whole catalog is the most expensive operation the API
+  // exposes. Five per minute is generous for a human and useless for a script.
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } })
   )
