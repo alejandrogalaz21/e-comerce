@@ -3,7 +3,7 @@
 What is tested, at which level, and — more usefully — **what is deliberately not**.
 
 The backlog entry for this (TK-016) was written when coverage was 0%. It is now **222 API unit
-tests, 103 web unit tests, 40 Playwright browser tests and 5 API e2e tests**, plus five manual
+tests, 108 web unit tests, 48 Playwright browser tests and 5 API e2e tests**, plus five manual
 cases. This document explains the shape they took.
 
 Every case is enumerated in [MATRIX.md](MATRIX.md): purpose, steps and expected result, one row per
@@ -26,8 +26,8 @@ That single decision explains most of the structure below.
 | **Integration (real fixture)** | The actual 97-row challenge CSV, mocked repositories | `npm test` | 7 |
 | **Integration (real database)** | Postgres on `:5432`, skipped when absent | `npm test` | 7 |
 | **API e2e** | The real HTTP stack via supertest, skipped without a database | `npm run test:e2e` in `api/` | 5 |
-| **Frontend unit** | Pure functions, no jsdom | `npm test` in `web/` | 103 |
-| **Browser e2e** | The full Docker stack, driven by Playwright | `npm run test:e2e` in `web/` | 40 |
+| **Frontend unit** | Pure functions, no jsdom | `npm test` in `web/` | 108 |
+| **Browser e2e** | The full Docker stack, driven by Playwright | `npm run test:e2e` in `web/` | 48 |
 | **Manual** | The full Docker stack | [docs/testing/](.) | 5 cases |
 
 `npm test` passes with or without Docker running. The database-backed specs detect the absence of a
@@ -57,7 +57,7 @@ still gets a green run.
 | `products.controller.spec.ts` | 4 | Wiring and status codes |
 | `route-protection.spec.ts` | 3 | Which endpoints are public and which are not |
 
-### Web — 103 tests
+### Web unit — 108 tests
 
 Pure functions only: URL state round-trips, mappers, schemas, token handling, the idempotency-key
 rule. There is no React Testing Library or jsdom in this project, so components are not rendered in
@@ -75,7 +75,7 @@ tests — see **Gaps** below.
 | `server-errors.test.ts` | 5 | Server validation mapped onto form fields |
 | `idempotency-key.test.ts` | 4 | Mint on entry, keep thereafter |
 
-### Browser end to end — 40 Playwright tests
+### Browser end to end — 48 Playwright tests
 
 Driven against the running stack, one worker (the specs share a database and the import spec resets
 the products table).
@@ -90,6 +90,7 @@ the products table).
 | `product-import.spec.ts` | 4 | Uploading the real challenge CSV and seeing the report |
 | `product-import-batches.spec.ts` | 3 | History list and batch detail |
 | `product-search.spec.ts` | 2 | Server-side search and its empty state |
+| `purchase.spec.ts` | 8 | The full checkout: purchase, forced decline, stock conflict, in-flight double click, anonymous buyer |
 
 `product-csv-cases.spec.ts` is the interesting one: it takes the genuinely hostile rows from the
 challenge file — the `<script>` payload, the SQL-injection sku, the whitespace-only name — and
@@ -127,7 +128,7 @@ Stating this is the point of a strategy document; a list of what exists is just 
 | Not tested | Why |
 |---|---|
 | **React components in isolation** | No jsdom or Testing Library in the project. Component behaviour is covered where it actually matters — in a real browser, by the 40 Playwright specs — rather than in a simulated DOM. |
-| **The checkout in a browser** | The one real gap. Purchase logic has 15 unit tests and 7 against a real database, but no Playwright spec drives the checkout. Covered manually by [TC-05](TC-05-purchase-flow.md). First thing to add if this continues. |
+| **The real ~10% decline rate in a browser** | `purchase.spec.ts` forces a decline by intercepting the response, which keeps it deterministic. The rate itself is asserted over a uniform sweep in `fake-payment.provider.spec.ts`, and observing it in the running app stays manual ([TC-05](TC-05-purchase-flow.md)). |
 | **Rate limiting under real load** | The configuration is asserted; firing 300 requests in a test would be slow and prove little. |
 | **Helmet's individual headers** | Asserting a library sets its own headers tests the library. |
 | **The Redis cache** | Not built (TK-038). |
@@ -163,7 +164,7 @@ cd web && npm run test:e2e
 cd api && npm run test:cov
 ```
 
-Last full run, 2026-08-29: **222 + 5 + 103 + 40 = 370 automated tests, all passing.**
+Last full run, 2026-08-29: **222 + 5 + 108 + 48 = 383 automated tests, all passing.**
 
 ## Manual cases
 

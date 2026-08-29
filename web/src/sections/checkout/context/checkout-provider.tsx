@@ -13,8 +13,8 @@ import { uuidv4 } from 'src/utils/uuidv4';
 
 import { SplashScreen } from 'src/components/loading-screen';
 
-import { keepOrMintKey } from '../idempotency-key';
 import { CHECKOUT_STEPS } from '../checkout-steps';
+import { keepOrMintKey, shouldMintKey } from '../idempotency-key';
 
 // ----------------------------------------------------------------------
 
@@ -90,14 +90,23 @@ function Container({ children }: Props) {
   }, [updateTotalField]);
 
   const initialStep = useCallback(() => {
-    // The key is minted on entry so every click of Confirm carries the same one.
-    setField('idempotencyKey', keepOrMintKey(state.idempotencyKey));
-
     if (!activeStep) {
       const href = createUrl('go', 0);
       router.push(href);
     }
-  }, [activeStep, router, setField, state.idempotencyKey]);
+  }, [activeStep, router]);
+
+  /**
+   * The key is minted once the cart has contents, not on mount. Writing on mount
+   * raced the hydration above: this provider's children run their effects first,
+   * so the write landed on the empty initial state and wiped the stored cart.
+   * Gating on items means the write only happens after hydration produced them.
+   */
+  useEffect(() => {
+    if (shouldMintKey(state.items.length, state.idempotencyKey)) {
+      setField('idempotencyKey', keepOrMintKey(state.idempotencyKey));
+    }
+  }, [setField, state.items.length, state.idempotencyKey]);
 
   const onPurchasePlaced = useCallback(
     (purchase: IPurchase) => {

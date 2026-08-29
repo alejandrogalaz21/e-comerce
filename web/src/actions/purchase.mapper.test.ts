@@ -58,14 +58,22 @@ describe('toPurchase', () => {
 });
 
 describe('toPlacePurchaseError', () => {
-  const axiosError = (status: number, data: unknown) => ({
-    isAxiosError: true,
-    response: { status, data },
+  /**
+   * The axios response interceptor rejects with `error.response.data`, so this is
+   * the shape that actually reaches the caller. The previous version of this test
+   * built an AxiosError, which never occurs at runtime — it passed while the code
+   * classified every failure as generic.
+   */
+  const rejected = (statusCode: number, extra: Record<string, unknown> = {}) => ({
+    statusCode,
+    error: 'X',
+    message: 'something happened',
+    ...extra,
   });
 
   it('reads a stock conflict out of a 409, with the line that caused it', () => {
     const error = toPlacePurchaseError(
-      axiosError(409, {
+      rejected(409, {
         message: 'Not enough stock for RS-001: 10 requested, 3 left',
         sku: 'RS-001',
         requested: 10,
@@ -79,7 +87,7 @@ describe('toPlacePurchaseError', () => {
 
   it('reads a declined payment out of a 402', () => {
     const error = toPlacePurchaseError(
-      axiosError(402, { message: 'Payment was declined: card declined by the issuer' })
+      rejected(402, { message: 'Payment was declined: card declined by the issuer' })
     );
 
     expect(error.kind).toBe('payment');
@@ -87,21 +95,29 @@ describe('toPlacePurchaseError', () => {
   });
 
   it('separates stock from payment, since only one of them is worth retrying', () => {
-    const stock = toPlacePurchaseError(axiosError(409, { sku: 'RS-001' }));
-    const payment = toPlacePurchaseError(axiosError(402, {}));
+    const stock = toPlacePurchaseError(
+      rejected(409, { sku: 'RS-001', message: 'Not enough stock for RS-001' })
+    );
+    const payment = toPlacePurchaseError(rejected(402, { message: 'Payment was declined' }));
 
-    expect(stock.kind).not.toBe(payment.kind);
-    expect(stock.message).not.toBe(payment.message);
+    expect(stock.kind).toBe('stock');
+    expect(payment.kind).toBe('payment');
+    expect(stock.conflict).toBeDefined();
+    expect(payment.conflict).toBeUndefined();
   });
 
-  it('falls back to a connection message when there is no response', () => {
-    const error = toPlacePurchaseError(new Error('network down'));
+  it('falls back to a connection message when the rejection is not an API body', () => {
+    const error = toPlacePurchaseError('Something went wrong!');
 
     expect(error.kind).toBe('unknown');
     expect(error.message).toContain('connection');
   });
 
   it('is a real Error, so rejection handling and stacks behave', () => {
-    expect(toPlacePurchaseError(axiosError(402, {}))).toBeInstanceOf(Error);
+    expect(toPlacePurchaseError(rejected(402))).toBeInstanceOf(Error);
+  });
+
+  it('treats an unmapped status as generic rather than guessing', () => {
+    expect(toPlacePurchaseError(rejected(500)).kind).toBe('unknown');
   });
 });

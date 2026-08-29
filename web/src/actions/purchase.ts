@@ -7,13 +7,21 @@ import type {
   IPlacePurchasePayload,
 } from 'src/types/purchase';
 
-import axios from 'axios';
-
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { toPurchase } from './purchase.mapper';
 
 // ----------------------------------------------------------------------
+
+/** The error envelope every API failure carries. See docs/processes/P-07-error-contract.md */
+type ApiError = {
+  statusCode: number;
+  error: string;
+  message: string;
+  sku?: string;
+  requested?: number;
+  available?: number;
+};
 
 /** A real Error so it survives rejection handling and shows a useful stack. */
 export class PlacePurchaseError extends Error {
@@ -59,31 +67,35 @@ export async function getPurchase(id: string): Promise<IPurchase> {
  * apart without parsing prose.
  */
 export function toPlacePurchaseError(error: unknown): PlacePurchaseError {
-  if (!axios.isAxiosError(error) || !error.response) {
+  // The axios response interceptor rejects with `error.response.data`, not with
+  // the AxiosError, so the error body arrives here already unwrapped. Testing
+  // for an AxiosError would never match and would flatten every failure into the
+  // generic one, which is exactly what the two distinct messages exist to avoid.
+  const body = error as Partial<ApiError> | string | undefined;
+
+  if (!body || typeof body !== 'object' || typeof body.statusCode !== 'number') {
     return new PlacePurchaseError(
       'unknown',
       'The order could not be sent. Check your connection.'
     );
   }
 
-  const { status, data } = error.response;
-
-  if (status === 409) {
+  if (body.statusCode === 409) {
     return new PlacePurchaseError(
       'stock',
-      data?.message ?? 'Not enough stock for one of the products',
+      body.message ?? 'Not enough stock for one of the products',
       {
-        sku: data?.sku,
-        requested: data?.requested,
-        available: data?.available,
-        message: data?.message,
+        sku: body.sku as string,
+        requested: body.requested as number,
+        available: body.available as number,
+        message: body.message as string,
       }
     );
   }
 
-  if (status === 402) {
-    return new PlacePurchaseError('payment', data?.message ?? 'The payment was declined');
+  if (body.statusCode === 402) {
+    return new PlacePurchaseError('payment', body.message ?? 'The payment was declined');
   }
 
-  return new PlacePurchaseError('unknown', data?.message ?? 'The order could not be placed');
+  return new PlacePurchaseError('unknown', body.message ?? 'The order could not be placed');
 }

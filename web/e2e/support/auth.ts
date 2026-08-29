@@ -62,16 +62,30 @@ const DELETE_BATCH_SIZE = 10;
 export async function deleteProducts(
   api: APIRequestContext,
   ids: readonly string[]
-): Promise<void> {
+): Promise<string[]> {
+  const refused: string[] = [];
+
   for (let start = 0; start < ids.length; start += DELETE_BATCH_SIZE) {
     const batch = ids.slice(start, start + DELETE_BATCH_SIZE);
 
     // eslint-disable-next-line no-await-in-loop
-    await Promise.all(batch.map((id) => api.delete(`/api/v1/products/${id}`)));
+    const results = await Promise.all(
+      batch.map(async (id) => ({ id, res: await api.delete(`/api/v1/products/${id}`) }))
+    );
+
+    // A product that appears in an order is protected by a RESTRICT foreign key.
+    // That refusal is correct behaviour, so it is collected rather than thrown.
+    results.forEach(({ id, res }) => {
+      if (res.status() === 409) refused.push(id);
+    });
   }
+
+  return refused;
 }
 
-export async function deleteAllProducts(api: APIRequestContext): Promise<void> {
+export async function deleteAllProducts(api: APIRequestContext): Promise<string[]> {
+  const undeletable = new Set<string>();
+
   for (let guard = 0; guard < 50; guard += 1) {
     // eslint-disable-next-line no-await-in-loop
     const res = await api.get('/api/v1/products', { params: { page: 1, limit: 100 } });
@@ -82,15 +96,16 @@ export async function deleteAllProducts(api: APIRequestContext): Promise<void> {
 
     // eslint-disable-next-line no-await-in-loop
     const body = (await res.json()) as { data: Array<{ id: string }> };
+    const pending = body.data.map((item) => item.id).filter((id) => !undeletable.has(id));
 
-    if (!body.data.length) {
-      return;
+    if (!pending.length) {
+      return [...undeletable];
     }
 
     // eslint-disable-next-line no-await-in-loop
-    await deleteProducts(
-      api,
-      body.data.map((item) => item.id)
-    );
+    const refused = await deleteProducts(api, pending);
+    refused.forEach((id) => undeletable.add(id));
   }
+
+  return [...undeletable];
 }

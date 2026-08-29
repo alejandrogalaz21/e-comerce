@@ -116,7 +116,9 @@ worth running slowly.
 | P-04.8 | Insufficient stock is told usefully, because retrying unchanged cannot work | Add 5 of a product with stock 2, complete the order | `409` naming the SKU, requested and available, with a link back to the cart | ✅ `orders.service.spec.ts` |
 | P-04.9 | Buying is public; managing is not | `POST /orders` with no token, then `GET /orders` with no token | `201` and `401`. A customer buys without an account | ✅ `orders.service.spec.ts` · `route-protection.spec.ts` |
 | P-04.10 | The whole purchase is atomic | Force a decline (see `P-05.2`) | No paid order, no stock movement, nothing half-applied | ✅ `orders.concurrency.spec.ts` *(real database)* |
-| P-04.11 | The purchase flow works end to end in a browser | Full checkout through the UI | Order confirmed on screen | 🔶 manual — [TC-05](TC-05-purchase-flow.md). **No Playwright spec covers checkout yet** |
+| P-04.11 | The purchase flow works end to end in a browser | Full checkout through the UI | Order confirmed on screen with its lines and total | ✅ e2e `purchase.spec.ts` |
+| P-04.12 | A double click cannot buy twice | Press **Complete order**, then press it again while in flight | The button is disabled until the request settles | ✅ e2e `purchase.spec.ts` |
+| P-04.13 | An anonymous visitor can complete a purchase in a browser | Full checkout with no session | Order confirmed | ✅ e2e `purchase.spec.ts` |
 
 ---
 
@@ -132,7 +134,7 @@ Full process: [P-05](../processes/P-05-payment-processing.md)
 | P-05.4 | Tests never depend on luck | Inject a fixed random source | Charge approves or declines deterministically | ✅ `fake-payment.provider.spec.ts` |
 | P-05.5 | A declined attempt still leaves an audit trail | Query `orders` after a decline | A `FAILED` order with its reason and **no stock movement** | ✅ `orders.service.spec.ts` |
 | P-05.6 | One key, one outcome — replaying a declined key must not charge twice | Retry with the same idempotency key | Declines again. Retrying means a **new** attempt with a new key | ✅ `orders.service.spec.ts` |
-| P-05.7 | A decline is a legitimate outcome, not a system failure | Read the UI message | "Payment declined", presented as retryable and visibly different from a stock conflict | ✅ `purchase.mapper.test.ts` |
+| P-05.7 | A decline is a legitimate outcome, not a system failure | Read the UI message | "Payment declined", presented as retryable and visibly different from a stock conflict | ✅ `purchase.mapper.test.ts` · e2e `purchase.spec.ts` |
 
 ---
 
@@ -193,28 +195,38 @@ Full process: [P-08](../processes/P-08-security-hardening.md)
 | P-01 CSV import | 11 | 10 | 1 |
 | P-02 Product CRUD | 11 | 11 | 0 |
 | P-03 Search and filters | 11 | 11 | 0 |
-| P-04 Order placement | 11 | 10 | 1 |
-| P-05 Payment processing | 7 | 5 | 2 |
+| P-04 Order placement | 13 | 13 | 0 |
+| P-05 Payment processing | 7 | 6 | 1 |
 | P-06 Authentication | 9 | 9 | 0 |
 | P-07 Error contract | 8 | 8 | 0 |
 | P-08 Security hardening | 6 | 4 | 2 |
-| **Total** | **74** | **68** | **6** |
+| **Total** | **76** | **72** | **4** |
 
-## The gap worth naming
+## What is still only manual
 
-**No Playwright spec covers the checkout.** The purchase flow is the newest part of the system and
-the one with the most at stake, and it is the only process whose browser path is verified by hand
-([TC-05](TC-05-purchase-flow.md)) rather than by a spec. Its *logic* is covered thoroughly — 15 unit
-tests plus 7 against a real database — so the gap is the browser journey, not the behaviour.
+Four cases, and each for a stated reason rather than by omission.
 
-That is the first thing to add if this project continues.
+| Case | Why it stays manual |
+|---|---|
+| P-01.11 oversized upload | Needs a file over 5 MB in the repo to automate |
+| P-05.3 the ~10% decline rate | The browser spec forces a decline deterministically; the *rate* itself is asserted in `fake-payment.provider.spec.ts` over a uniform sweep, and observing it in the running app is the manual part |
+| P-08.3 security headers | Asserting that helmet sets its own headers tests the library |
+| P-08.4 rate-limit behaviour | The configuration is asserted; firing hundreds of requests in a suite is slow and proves little |
+
+The checkout gap named in earlier versions of this document is closed: `purchase.spec.ts` drives the
+full browser journey, including a forced decline, a stock conflict, the in-flight double click and
+an anonymous purchase.
 
 ## Running everything
 
 ```bash
-cd api && npm test          # 222 unit + fixture + real-database tests
-cd web && npm test          # 103 unit tests
-cd web && npm run test:e2e  # Playwright, needs the stack running
+cd api && npm test              # 222 unit + fixture + real-database tests
+cd api && npm run test:e2e      # 5 through the real HTTP stack
+cd web && npm test              # 108 unit tests
+cd web && npm run test:e2e      # 48 Playwright tests, needs the stack running
 ```
+
+`purchase.spec.ts` is named to sort last on purpose: buying leaves permanent residue, since a
+product that appears in an order cannot be deleted, so specs that count the catalog run first.
 
 See [STRATEGY.md](STRATEGY.md) for what each level covers and what is deliberately left out.

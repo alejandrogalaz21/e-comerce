@@ -24,11 +24,14 @@ test.beforeAll(async () => {
   // Wipe all products so the import numbers are deterministic regardless of prior runs.
   const api = await createAuthenticatedApiContext();
 
-  await deleteAllProducts(api);
+  // Products that appear in an order cannot be deleted — the RESTRICT foreign key
+  // refuses, which is correct. What matters for the import numbers is that no SKU
+  // from the fixture survives, and those are never bought by the suite.
+  const undeletable = await deleteAllProducts(api);
 
-  const check = await api.get('/api/v1/products', { params: { page: 1, limit: 1 } });
+  const check = await api.get('/api/v1/products', { params: { page: 1, limit: 100 } });
   const checkBody = (await check.json()) as { data: unknown[] };
-  expect(checkBody.data).toHaveLength(0);
+  expect(checkBody.data).toHaveLength(undeletable.length);
 
   await api.dispose();
 });
