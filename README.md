@@ -1,9 +1,14 @@
 # LoanPro Code Challenge — E-Commerce
 
-Enterprise-grade e-commerce: product CRUD, CSV import, search, and purchase flow (fake payment).
+Enterprise-grade e-commerce: a public storefront, product CRUD, CSV import, search, and a purchase
+flow with a faked payment.
 
 - **Sample CSV download date: 2026-08-26**
-- Stack: NestJS 10 + TypeORM + PostgreSQL 16 · React 18 + Vite + MUI · Docker Compose
+- Stack: NestJS 10 + TypeORM + PostgreSQL 16 + Redis · React 18 + Vite + MUI · Docker Compose
+- **438 automated tests** across four levels, plus five manual cases with their evidence
+
+**Start here:** `docker compose up --build`, then http://localhost:3000. The shop is the front
+door and needs no account; sign in with `demo@demo.com` / `demo` to manage the catalog.
 
 ## How to run
 
@@ -59,31 +64,43 @@ cd web && cp .env.example .env && npm install && npm run dev
 
 ## How to run the tests
 
-**Backend — unit (Jest)** · 28 tests: products service logic and DTO validations executed through
-the real production `ValidationPipe`. Each case is labeled with the sample-CSV line it covers
-(XSS, SQL injection, invalid price/stock, missing fields, Unicode). No database or docker needed.
+**438 automated tests.** Every level runs green; the browser suite needs the stack up.
+
+| Suite | What it covers | Count | Command |
+|---|---|---|---|
+| API unit + fixture + real database | Domain logic, the real 97-row CSV, and locking against Postgres | 247 | `cd api && npm test` |
+| API end to end | The real HTTP stack: global pipe and exception filter on a live request | 5 | `cd api && npm run test:e2e` |
+| Web unit | URL state, mappers, schemas, token handling | 124 | `cd web && npm test` |
+| Browser end to end | The whole app driven by Playwright | 62 | `cd web && npm run test:e2e` |
 
 ```bash
-cd api && npm test
+docker compose up -d --build     # the browser suite needs the stack
+cd api && npm test && npm run test:e2e
+cd web && npm test && npm run test:e2e
 ```
 
-**Frontend — unit (Vitest)** · 28 tests: form zod schema (mirror of the BE validations), API⇄UI
-mapper (decimal conversion, NULL vs 0 semantics) and server-error-to-field mapping. Pure logic,
-no browser or backend required.
+First Playwright run only: `npx playwright install chromium`.
 
-```bash
-cd web && npm run test
-```
+`npm test` passes with or without Docker. The database-backed specs detect the absence of a
+database and skip with a message rather than failing.
 
-**End-to-end (Playwright)** · 11 tests against the real app running in docker: full CRUD flow
-through the UI (create → list → edit → delete) plus the CSV cases (XSS sanitized without firing
-an alert, SQL-injection SKU rejected —and the table survives—, free product, duplicate SKU with
-inline error). **Requires the stack up** (`docker compose up -d`). First time only, install the
-browser with `npx playwright install chromium`.
+**What is worth reading**, if you read four:
 
-```bash
-cd web && npm run test:e2e
-```
+- `orders.concurrency.spec.ts` — two simultaneous buyers, one unit left, against a real Postgres.
+  Exactly one wins and stock lands on zero, never `-1`.
+- `import.integration.spec.ts` — the real challenge CSV, asserting the bucket every one of the 97
+  rows lands in.
+- `orders.service.spec.ts` — the total summed in integer cents, with prices that break in binary
+  floating point.
+- `product-csv-cases.spec.ts` — the hostile rows of the sample file (`<script>`, SQL-injection SKU)
+  driven through the actual form, where a user would meet them.
+
+Two documents make this navigable rather than a wall of names:
+
+| Document | What it gives you |
+|---|---|
+| [docs/testing/MATRIX.md](docs/testing/MATRIX.md) | **76 use cases**, each with its purpose, steps, expected result and the test that guards it |
+| [docs/testing/STRATEGY.md](docs/testing/STRATEGY.md) | What is tested at which level, and — more usefully — what is deliberately **not**, with the reasoning |
 
 **Storybook** — interactive catalog of the reusable components (not a test suite, but useful for
 visual review):
@@ -230,6 +247,8 @@ travels in the `POST` response.
 | Document | Content |
 |---|---|
 | [docs/processes/](docs/processes/) | One document per system process — flow diagram, every file involved, every validation and where it lives, failure modes, and commands to verify each claim |
+| [docs/testing/MATRIX.md](docs/testing/MATRIX.md) | Every use case with purpose, steps and expected result |
+| [docs/testing/](docs/testing/) | Manual test cases run against the stack, with their evidence |
 | [docs/initial.md](docs/initial.md) | Full design spec: row-by-row CSV analysis, architecture, data model, import flow, stock concurrency, security, scope |
 | [docs/02-analisis-base.md](docs/02-analisis-base.md) | Analysis of the base templates (api/web): what was reused, adapted and removed |
 | `openspec/` | Spec-driven workflow ([OpenSpec](https://openspec.dev/)): every feature is proposed, specified and archived as a decision record |
@@ -237,10 +256,52 @@ travels in the `POST` response.
 ## Key decisions (summary)
 
 - **PostgreSQL** for referential integrity and ACID transactions (stock + order must be atomic).
-- **Price as `DECIMAL`**, never float — fintech mindset.
+- **Price as `DECIMAL`**, never float, and totals summed as **integer cents** — `numeric` crosses
+  the wire as a string, and converting it to a number to add it up is where money breaks.
 - **Partial CSV import** (not all-or-nothing) with a per-row report; **upsert by SKU**.
-- **Pessimistic locking** (`SELECT ... FOR UPDATE`) for stock + `idempotency_key` on orders.
+- **Pessimistic locking** (`SELECT ... FOR UPDATE`, ordered by `id`) for stock, plus an
+  `idempotency_key` resolved by catching the unique violation rather than checking first.
 - **Auth scoped to what justifies it**: catalog, search and **checkout are public** (you buy without
   an account); product management, CSV import and diagnostics require a JWT.
+- **One error contract** for every response, with a machine-readable code the client branches on.
 - **AI**: used as a spec-guided tool (OpenSpec) — decisions and their rationale are documented in
   `docs/` and `openspec/`.
+
+## Alternatives considered
+
+The challenge asks for the alternatives, not just the choices. These are the ones where the
+rejected option was genuinely defensible.
+
+| Decision | Alternative rejected | Why |
+|---|---|---|
+| Pessimistic locking for stock | **Optimistic locking** (`version` column, retry on conflict) | Contention here is low, and a pessimistic lock is simpler to reason about correctly. Documented as a conscious trade in [docs/initial.md](docs/initial.md) §5, not as ignorance of the alternative |
+| Charge **inside** the order transaction | Charge after committing, compensate on failure | With a local synchronous provider the transaction is enough. With a real gateway it stops being enough — a `ROLLBACK` cannot undo a remote charge — and the answer becomes a saga. Named as a known limit rather than left to be discovered |
+| Idempotency by **insert-and-catch** | Check whether the key exists, then insert | Check-then-insert is a race condition with a longer name: two concurrent replays both read "absent" and both insert |
+| Invalidate the **whole** cache prefix | Invalidate only the affected entries | Working out which cached queries a new product belongs to joins every search matching its text and every price range containing it. Getting it wrong serves stale data silently, which is the worst failure a cache has |
+| **Reject** HTML in product text | Strip the tags | Stripping guesses at intent and leaves the caller believing their input was accepted. The sample file's `<script>` payload is reported back verbatim as the reason for rejection |
+| Reject **every** occurrence of a duplicate SKU | Keep the first, or the last | Picking a winner by row position makes the result depend on ordering rather than on data |
+| Category **icons** on cards | Product images | The catalog has no images. One placeholder repeated on every card says nothing; an icon per category says something, with a mandatory fallback because the field is free text |
+| Repeated `q` parameter for search | Comma-separated, like `category` | A free-text search term may legitimately contain a comma |
+| Fake payment declining **~10%** | Always approve | If it never declined, the rollback path would exist only in tests and no reviewer could see it. The randomness is injected so tests stay deterministic |
+
+## What is not built, and why
+
+Stating this is more useful than letting a reviewer wonder whether it was forgotten.
+
+| Not built | Reason |
+|---|---|
+| Real payment gateway | The challenge says to fake it. The provider sits behind an interface, so connecting one is implementing that interface |
+| Customer accounts and order history | Buying is deliberately anonymous ([docs/initial.md](docs/initial.md) §10.2). Registration exists in the code but is hidden |
+| Roles and permissions | Not asked for; any authenticated user manages the catalog. The guard is the extension point |
+| Shipping, taxes, refunds | Out of scope, documented in [docs/initial.md](docs/initial.md) §9 |
+| Product images | No image data in the source CSV |
+| Content Security Policy | Traded for a working Swagger page; see [P-08](docs/processes/P-08-security-hardening.md) |
+| Rate limiting on sign-in | Would matter in production; the project has one seeded user |
+
+## A note on comments
+
+The challenge asks for AI-generated comments to be removed. The comments that remain were written
+deliberately and state **why**, not what: why the row lock is ordered by `id`, why idempotency
+inserts and catches instead of checking first, why a declined charge is a return value rather than
+an exception. Deleting them would satisfy the letter of the request and throw away the context that
+makes the code reviewable. They are few, and every one of them earns its place.
