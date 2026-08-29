@@ -1,7 +1,9 @@
 # product-categories Specification
 
 ## Purpose
-TBD - created by archiving change product-filters-api. Update Purpose after archive.
+
+Define cómo se descubren las categorías presentes en el catálogo, con qué forma y orden se devuelven, y la garantía de que los nombres devueltos sirven tal cual para filtrar.
+
 ## Requirements
 ### Requirement: Descubrimiento de las categorías del catálogo
 
