@@ -112,6 +112,26 @@ describe('serializeProductListState', () => {
   });
 });
 
+describe('DEFAULT_LIMIT', () => {
+  it('shows at least 20 rows, so the table is worth the space it takes', () => {
+    expect(DEFAULT_LIMIT).toBeGreaterThanOrEqual(20);
+  });
+
+  it('is what a URL without an explicit limit resolves to', () => {
+    expect(parse('page=2')).toMatchObject({ limit: DEFAULT_LIMIT });
+  });
+
+  it('is left out of the URL, so the link means "whatever the default is"', () => {
+    expect(serializeProductListState(defaultProductListState).get('limit')).toBeNull();
+  });
+
+  it('is kept in the URL when explicitly different from the default', () => {
+    expect(
+      serializeProductListState({ ...defaultProductListState, limit: 50 }).get('limit')
+    ).toBe('50');
+  });
+});
+
 describe('toProductListParams', () => {
   it('omits absent filters and always sends pagination and sorting', () => {
     expect(toProductListParams(defaultProductListState)).toEqual({

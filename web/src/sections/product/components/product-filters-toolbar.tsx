@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { IProductCategory } from 'src/types/product';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -34,6 +35,11 @@ type Props = {
   onSearchChange: (value: string) => void;
   onApply: (changes: Partial<IProductListState>) => void;
   onReset: () => void;
+  /**
+   * Controls that act on the grid itself. They live here rather than in a band of
+   * their own, and they must render inside the grid toolbar slot to reach its apiRef.
+   */
+  gridControls?: ReactNode;
 };
 
 export function ProductFiltersToolbar({
@@ -44,6 +50,7 @@ export function ProductFiltersToolbar({
   onSearchChange,
   onApply,
   onReset,
+  gridControls,
 }: Props) {
   const hasFilters =
     !!state.q.length ||
@@ -173,6 +180,12 @@ export function ProductFiltersToolbar({
         {renderCategory}
         <PriceRangeFilter state={state} onApply={onApply} />
         {renderStock}
+
+        {gridControls && (
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { sm: 'auto' } }}>
+            {gridControls}
+          </Stack>
+        )}
       </Stack>
 
       {hasFilters && (
