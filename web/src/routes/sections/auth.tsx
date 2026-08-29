@@ -1,7 +1,9 @@
 import { lazy, Suspense } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 
-import { AuthSplitLayout } from 'src/layouts/auth-split';
+import { paths } from 'src/routes/paths';
+
+import { AuthCenteredLayout } from 'src/layouts/auth-centered';
 
 import { SplashScreen } from 'src/components/loading-screen';
 
@@ -14,7 +16,6 @@ import { GuestGuard } from 'src/auth/guard';
  *************************************** */
 const Jwt = {
   SignInPage: lazy(() => import('src/pages/auth/jwt/sign-in')),
-  SignUpPage: lazy(() => import('src/pages/auth/jwt/sign-up')),
 };
 
 const authJwt = {
@@ -24,22 +25,16 @@ const authJwt = {
       path: 'sign-in',
       element: (
         <GuestGuard>
-          <AuthSplitLayout section={{ title: 'Hi, Welcome back' }}>
+          <AuthCenteredLayout>
             <Jwt.SignInPage />
-          </AuthSplitLayout>
+          </AuthCenteredLayout>
         </GuestGuard>
       ),
     },
-    {
-      path: 'sign-up',
-      element: (
-        <GuestGuard>
-          <AuthSplitLayout>
-            <Jwt.SignUpPage />
-          </AuthSplitLayout>
-        </GuestGuard>
-      ),
-    },
+    // Sign-up is hidden, not deleted: the project runs on one seeded user, so
+    // offering registration invites a path that leads nowhere useful. The view,
+    // the declared path and the API endpoint all remain.
+    { path: 'sign-up', element: <Navigate to={paths.auth.jwt.signIn} replace /> },
   ],
 };
 

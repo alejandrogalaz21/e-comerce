@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 
 import { MainLayout } from 'src/layouts/main';
 
@@ -33,11 +33,14 @@ export const mainRoutes = [
           </MainLayout>
         ),
         children: [
+          // The shop is the front door: landing on a redirect said nothing about
+          // what this project does.
+          { path: '/', element: <ProductListPage />, index: true },
           {
             path: 'product',
             children: [
-              { element: <ProductListPage />, index: true },
-              { path: 'list', element: <ProductListPage /> },
+              { element: <Navigate to="/" replace />, index: true },
+              { path: 'list', element: <Navigate to="/" replace /> },
               { path: ':id', element: <ProductDetailsPage /> },
               { path: 'checkout', element: <ProductCheckoutPage /> },
             ],

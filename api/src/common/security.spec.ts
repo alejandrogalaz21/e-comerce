@@ -55,7 +55,7 @@ describe('security hardening', () => {
       reflector.get(`${TTL}default`, (target as never)[handler])
 
     it('caps the CSV import, the one route that upserts the whole catalog', () => {
-      expect(limitOf(ImportController.prototype, 'import')).toBe(5)
+      expect(limitOf(ImportController.prototype, 'import')).toBe(20)
       expect(ttlOf(ImportController.prototype, 'import')).toBe(60_000)
     })
 

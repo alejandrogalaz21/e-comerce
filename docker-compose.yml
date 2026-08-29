@@ -44,6 +44,7 @@ services:
       DB_NAME: ${DB_NAME:-ecommerce}
       JWT_SECRET: ${JWT_SECRET:-changeme}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      IMPORT_RATE_LIMIT: ${IMPORT_RATE_LIMIT:-20}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:

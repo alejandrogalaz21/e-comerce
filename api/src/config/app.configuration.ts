@@ -12,6 +12,14 @@ export default registerAs('app', () => ({
    * Comma-separated list of origins allowed to call the API. Defaults to the
    * web container's origin: an "enterprise-grade" API does not answer '*'.
    */
+  /**
+   * Imports allowed per minute. Generous for a person, useless for a script.
+   * Configurable because an end-to-end suite legitimately imports far faster
+   * than a human ever would.
+   */
+  importRateLimit: process.env.IMPORT_RATE_LIMIT
+    ? parseInt(process.env.IMPORT_RATE_LIMIT, 10)
+    : 20,
   corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:3000')
     .split(',')
     .map(origin => origin.trim())

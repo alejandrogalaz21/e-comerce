@@ -8,11 +8,6 @@ import { dashboardRoutes } from './dashboard';
 
 export function Router() {
   return useRoutes([
-    {
-      path: '/',
-      element: <Navigate to="/product" replace />,
-    },
-
     // Auth
     ...authRoutes,
 

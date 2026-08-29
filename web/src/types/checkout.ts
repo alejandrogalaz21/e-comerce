@@ -1,5 +1,5 @@
-import type { IAddressItem } from './common';
 import type { IPurchase } from './purchase';
+import type { IAddressItem } from './common';
 
 // ----------------------------------------------------------------------
 
@@ -17,6 +17,8 @@ export type ICheckoutDeliveryOption = {
   value: number;
   label: string;
   description: string;
+  /** Part of the option: choosing it by comparing the label ties behaviour to UI copy. */
+  icon: string;
 };
 
 export type ICheckoutPaymentOption = {

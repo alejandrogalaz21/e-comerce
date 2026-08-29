@@ -30,9 +30,9 @@ import { CheckoutPaymentMethods } from './checkout-payment-methods';
 // ----------------------------------------------------------------------
 
 const DELIVERY_OPTIONS: ICheckoutDeliveryOption[] = [
-  { value: 0, label: 'Free', description: '5-7 days delivery' },
-  { value: 10, label: 'Standard', description: '3-5 days delivery' },
-  { value: 20, label: 'Express', description: '2-3 days delivery' },
+  { value: 0, label: 'Free', description: '5-7 days delivery', icon: 'carbon:delivery-truck' },
+  { value: 10, label: 'Standard', description: '3-5 days delivery', icon: 'carbon:delivery' },
+  { value: 20, label: 'Express', description: '2-3 days delivery', icon: 'carbon:rocket' },
 ];
 
 const PAYMENT_OPTIONS: ICheckoutPaymentOption[] = [

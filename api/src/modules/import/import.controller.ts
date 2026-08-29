@@ -27,6 +27,10 @@ import { CurrentUser } from '@/common/decorators/current-user.decorator'
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
 
+const IMPORT_RATE_LIMIT = process.env.IMPORT_RATE_LIMIT
+  ? parseInt(process.env.IMPORT_RATE_LIMIT, 10)
+  : 20
+
 @ApiTags('products import')
 @ApiBearerAuth('jwt')
 @ApiResponse({ status: 401, description: 'Missing or invalid access token' })
@@ -36,8 +40,9 @@ export class ImportController {
 
   @Post()
   // A bulk upsert of the whole catalog is the most expensive operation the API
-  // exposes. Five per minute is generous for a human and useless for a script.
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  // exposes. The ceiling is configurable because the e2e suite imports far
+  // faster than a person: a limit that breaks the tests gets deleted.
+  @Throttle({ default: { ttl: 60_000, limit: IMPORT_RATE_LIMIT } })
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } })
   )

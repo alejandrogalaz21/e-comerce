@@ -33,6 +33,7 @@ export function AuthCenteredLayout({ sx, children }: AuthCenteredLayoutProps) {
           onOpenNav={mobileNavOpen.onTrue}
           slotsDisplay={{
             menuButton: false,
+            helpLink: false,
           }}
           slotProps={{ container: { maxWidth: false } }}
           sx={{ position: { [layoutQuery]: 'fixed' } }}

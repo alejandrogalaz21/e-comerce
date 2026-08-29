@@ -64,7 +64,7 @@ type OptionItemProps = PaperProps & {
 };
 
 function OptionItem({ option, selected, ...other }: OptionItemProps) {
-  const { value, label, description } = option;
+  const { value, label, description, icon } = option;
 
   return (
     <Paper
@@ -78,9 +78,7 @@ function OptionItem({ option, selected, ...other }: OptionItemProps) {
       }}
       {...other}
     >
-      {label === 'Free' && <Iconify icon="carbon:bicycle" width={32} />}
-      {label === 'Standard' && <Iconify icon="carbon:delivery" width={32} />}
-      {label === 'Express' && <Iconify icon="carbon:rocket" width={32} />}
+      <Iconify icon={icon} width={32} />
 
       <ListItemText
         sx={{ ml: 2 }}
