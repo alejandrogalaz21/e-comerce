@@ -80,7 +80,6 @@ decidió estandarizar en React Query** (alineado con el spec §10.4 original). R
 
 ## 7. Riesgos / notas para la entrevista
 
-- **Licencia Minimals**: el template FE es comercial de pago. Si el repo del challenge será público, revisar los términos de la licencia (o mencionarlo en el README).
 - `synchronize: true` se tolera solo durante el arranque del proyecto; se sustituye por migraciones antes de la entrega.
 - Tests: cobertura efectiva actual **0%** en ambos repos — el plan de testing se define por feature en cada OpenSpec change.
 

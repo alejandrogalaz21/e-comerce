@@ -96,6 +96,18 @@ describe('AllExceptionsFilter', () => {
       expect(body.error).toBe(ERROR_CODES.INSUFFICIENT_STOCK)
     })
 
+    it('maps 429 to a rate-limit code, not to an internal error', () => {
+      filter.catch(
+        new HttpException(
+          'ThrottlerException: Too Many Requests',
+          HttpStatus.TOO_MANY_REQUESTS
+        ),
+        host()
+      )
+
+      expect(body.error).toBe(ERROR_CODES.TOO_MANY_REQUESTS)
+    })
+
     it('maps 402 to a declined payment', () => {
       filter.catch(
         new HttpException({ message: 'declined' }, HttpStatus.PAYMENT_REQUIRED),

@@ -2,6 +2,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { APP_GUARD } from '@nestjs/core'
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 // Config
 import { PgConfig, AppConfig, RedisConfig } from '@/config'
 // Database
@@ -27,6 +28,10 @@ import { StatusModule } from '@/modules/status/status.module'
       isGlobal: true,
       load: [AppConfig, PgConfig, RedisConfig]
     }),
+    // The default ceiling is deliberately loose: the status page alone polls
+    // three endpoints every five seconds, so a tight global limit would throttle
+    // the app itself. Routes that need a real limit declare it with @Throttle.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
     PgModule,
     RedisModule,
     CommonModule,
@@ -40,7 +45,10 @@ import { StatusModule } from '@/modules/status/status.module'
     StatusModule
   ],
   controllers: [],
-  providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard }
+  ],
   exports: []
 })
 export class AppModule implements NestModule {

@@ -1,5 +1,7 @@
 import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import helmet from 'helmet'
 import { AllExceptionsFilter } from '@/common/filters/http-exception.filter'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import { AppModule } from './app.module'
@@ -11,7 +13,13 @@ async function main() {
   const appName = process.env.APP_NAME || 'E-commerce API'
   const apiVersion = process.env.APP_VERSION ?? '1.0.0'
 
+  const config = app.get(ConfigService)
+
   app.setGlobalPrefix(prefix)
+
+  // Swagger serves its own inline scripts and styles, so the default CSP would
+  // break the docs page. Everything else stays on.
+  app.use(helmet({ contentSecurityPolicy: false }))
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -27,7 +35,7 @@ async function main() {
   app.useGlobalFilters(new AllExceptionsFilter())
 
   app.enableCors({
-    origin: '*',
+    origin: config.get<string[]>('app.corsOrigins'),
     credentials: false
   })
 

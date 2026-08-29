@@ -18,6 +18,7 @@ fails — so any step can be checked against the code rather than taken on trust
 | [P-05](P-05-payment-processing.md) | **Payment processing** | The provider contract, the fake implementation, decline handling, rollback | inside P-04 |
 | [P-06](P-06-authentication.md) | **Authentication** | Login, JWT, the public/protected boundary, fail-closed guard | `/auth` |
 | [P-07](P-07-error-contract.md) | **Error contract** | The response shape every failure shares, the code catalogue, database error translation | every endpoint |
+| [P-08](P-08-security-hardening.md) | **Security hardening** | Security headers, explicit CORS, rate limiting, input rejection, and the known gaps | every request |
 
 ## How the processes relate
 
