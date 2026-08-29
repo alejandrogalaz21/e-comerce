@@ -2,8 +2,12 @@
 
 What is tested, at which level, and — more usefully — **what is deliberately not**.
 
-The backlog entry for this (TK-016) was written when coverage was 0%. It is now 221 tests in the
-API and 103 in the web app, plus five manual cases. This document explains the shape they took.
+The backlog entry for this (TK-016) was written when coverage was 0%. It is now **222 API unit
+tests, 103 web unit tests, 40 Playwright browser tests and 5 API e2e tests**, plus five manual
+cases. This document explains the shape they took.
+
+Every case is enumerated in [MATRIX.md](MATRIX.md): purpose, steps and expected result, one row per
+use case.
 
 ## The principle
 
@@ -18,10 +22,12 @@ That single decision explains most of the structure below.
 
 | Level | Runs against | Command | Count |
 |---|---|---|---|
-| **Unit** | Mocks | `npm test` in `api/` | ~200 |
+| **Unit** | Mocks | `npm test` in `api/` | ~208 |
 | **Integration (real fixture)** | The actual 97-row challenge CSV, mocked repositories | `npm test` | 7 |
 | **Integration (real database)** | Postgres on `:5432`, skipped when absent | `npm test` | 7 |
-| **Frontend unit** | jsdom-free pure functions | `npm test` in `web/` | 103 |
+| **API e2e** | The real HTTP stack via supertest, skipped without a database | `npm run test:e2e` in `api/` | 5 |
+| **Frontend unit** | Pure functions, no jsdom | `npm test` in `web/` | 103 |
+| **Browser e2e** | The full Docker stack, driven by Playwright | `npm run test:e2e` in `web/` | 40 |
 | **Manual** | The full Docker stack | [docs/testing/](.) | 5 cases |
 
 `npm test` passes with or without Docker running. The database-backed specs detect the absence of a
@@ -30,7 +36,7 @@ still gets a green run.
 
 ## What each suite covers
 
-### API — 221 tests
+### API unit — 222 tests
 
 | Suite | Tests | What it protects |
 |---|---|---|
@@ -69,6 +75,31 @@ tests — see **Gaps** below.
 | `server-errors.test.ts` | 5 | Server validation mapped onto form fields |
 | `idempotency-key.test.ts` | 4 | Mint on entry, keep thereafter |
 
+### Browser end to end — 40 Playwright tests
+
+Driven against the running stack, one worker (the specs share a database and the import spec resets
+the products table).
+
+| Suite | Tests | What it protects |
+|---|---|---|
+| `product-filters.spec.ts` | 8 | Sorting across the catalog, chips, reload and back, remembered column widths |
+| `auth-session.spec.ts` | 7 | Redirects, returning to the requested route, reload, logout, the public shop |
+| `products-crud.spec.ts` | 5 | Create, edit, delete through the confirm dialog, the shop grid |
+| `product-csv-cases.spec.ts` | 6 | The nasty rows of the sample CSV, exercised through the real form |
+| `import-batch-search.spec.ts` | 4 | Finding a batch by filename, case-insensitively |
+| `product-import.spec.ts` | 4 | Uploading the real challenge CSV and seeing the report |
+| `product-import-batches.spec.ts` | 3 | History list and batch detail |
+| `product-search.spec.ts` | 2 | Server-side search and its empty state |
+
+`product-csv-cases.spec.ts` is the interesting one: it takes the genuinely hostile rows from the
+challenge file — the `<script>` payload, the SQL-injection sku, the whitespace-only name — and
+drives them through the actual form, proving the defence holds where a user would meet it.
+
+### API end to end — 5 tests
+
+`test/app.e2e-spec.ts`, via supertest. What it adds over the unit suites is the **real HTTP stack**:
+the global pipe and the exception filter actually running on a request, which no mock can show.
+
 ## The tests that matter most
 
 If you read four, read these — they are the ones covering behaviour that is expensive to get wrong.
@@ -95,8 +126,8 @@ Stating this is the point of a strategy document; a list of what exists is just 
 
 | Not tested | Why |
 |---|---|
-| **React components** | No jsdom or Testing Library in the project. Adding them for this exercise would be scope the challenge did not ask for. Component behaviour is covered by the manual cases instead, which is an honest trade rather than a hidden gap. |
-| **Nest wiring end to end (supertest)** | Controllers are thin by design; their logic lives in services, which are tested. `route-protection.spec.ts` covers the one wiring fact that matters — which endpoints are public. |
+| **React components in isolation** | No jsdom or Testing Library in the project. Component behaviour is covered where it actually matters — in a real browser, by the 40 Playwright specs — rather than in a simulated DOM. |
+| **The checkout in a browser** | The one real gap. Purchase logic has 15 unit tests and 7 against a real database, but no Playwright spec drives the checkout. Covered manually by [TC-05](TC-05-purchase-flow.md). First thing to add if this continues. |
 | **Rate limiting under real load** | The configuration is asserted; firing 300 requests in a test would be slow and prove little. |
 | **Helmet's individual headers** | Asserting a library sets its own headers tests the library. |
 | **The Redis cache** | Not built (TK-038). |
@@ -115,19 +146,24 @@ Stating this is the point of a strategy document; a list of what exists is just 
 ## Running them
 
 ```bash
-# API — unit + fixture + database-backed (the last skip if no Postgres)
+# API unit + fixture + database-backed (the last skip if no Postgres)
 cd api && npm test
 
-# With the stack up, the database-backed specs actually run
-docker compose up -d db
-cd api && npm test
+# API end to end through the real HTTP stack (skips without a database)
+cd api && npm run test:e2e
 
-# Web
+# Web unit
 cd web && npm test
+
+# Browser end to end — needs the whole stack up
+docker compose up -d --build
+cd web && npm run test:e2e
 
 # Coverage
 cd api && npm run test:cov
 ```
+
+Last full run, 2026-08-29: **222 + 5 + 103 + 40 = 370 automated tests, all passing.**
 
 ## Manual cases
 
