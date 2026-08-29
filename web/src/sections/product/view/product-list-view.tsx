@@ -1,4 +1,4 @@
-import type { IProductSortField } from 'src/types/product';
+import type { IProductCategory, IProductSortField } from 'src/types/product';
 import type {
   GridColDef,
   GridSortModel,
@@ -16,7 +16,6 @@ import {
   DataGrid,
   gridClasses,
   GridActionsCellItem,
-  GridToolbarContainer,
   GridToolbarColumnsButton,
 } from '@mui/x-data-grid';
 
@@ -47,6 +46,8 @@ import {
   RenderCellUpdatedAt,
   RenderCellDescription,
 } from '../product-table-row';
+
+import type { IProductListState } from '../product-list-params';
 
 // ----------------------------------------------------------------------
 
@@ -232,11 +233,11 @@ export function ProductListView() {
     <>
       <DashboardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         <CustomBreadcrumbs
-          heading="List"
+          heading="Product catalog"
           links={[
             { name: 'Dashboard', href: paths.dashboard.root },
             { name: 'Product', href: paths.dashboard.product.root },
-            { name: 'List' },
+            { name: 'Product catalog' },
           ]}
           action={
             <Stack direction="row" spacing={1.5}>
@@ -262,26 +263,7 @@ export function ProductListView() {
           sx={{ mb: { xs: 3, md: 5 } }}
         />
 
-        <Card
-          sx={{
-            flexGrow: { md: 1 },
-            display: { md: 'flex' },
-            height: { xs: 800, md: 2 },
-            flexDirection: { md: 'column' },
-          }}
-        >
-          <ProductFiltersToolbar
-            state={state}
-            categories={categories}
-            totalResults={totalResults}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            onApply={apply}
-            onReset={reset}
-          />
-
-          <Divider />
-
+        <Card sx={{ display: 'flex', flexDirection: 'column' }}>
           <DataGrid
             checkboxSelection
             disableRowSelectionOnClick
@@ -291,7 +273,7 @@ export function ProductListView() {
             onColumnWidthChange={onColumnWidthChange}
             onColumnVisibilityModelChange={onColumnVisibilityModelChange}
             loading={productsLoading || productsValidating}
-            pageSizeOptions={[5, 10, 25]}
+            pageSizeOptions={[10, 20, 50]}
             paginationMode="server"
             sortingMode="server"
             rowCount={totalResults}
@@ -316,13 +298,25 @@ export function ProductListView() {
             }}
             slotProps={{
               toolbar: {
+                state,
+                categories,
+                totalResults,
+                searchTerm,
+                onSearchChange: setSearchTerm,
+                onApply: apply,
+                onReset: reset,
                 selectedRowIds,
                 onOpenConfirmDeleteRows: handleOpenConfirmDeleteRows,
                 onResetColumns: resetColumns,
                 columnsCustomized,
               },
             }}
-            sx={{ [`& .${gridClasses.cell}`]: { alignItems: 'center', display: 'inline-flex' } }}
+            sx={{
+              // The grid sizes to its rows: a short page must not leave a blank block
+              // below the last one. The cap keeps the pagination footer reachable.
+              maxHeight: 'calc(100vh - 240px)',
+              [`& .${gridClasses.cell}`]: { alignItems: 'center', display: 'inline-flex' },
+            }}
           />
         </Card>
       </DashboardContent>
@@ -350,6 +344,13 @@ export function ProductListView() {
 // ----------------------------------------------------------------------
 
 type CustomToolbarProps = {
+  state: IProductListState;
+  categories: IProductCategory[];
+  totalResults: number;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  onApply: (changes: Partial<IProductListState>) => void;
+  onReset: () => void;
   selectedRowIds: GridRowSelectionModel;
   onOpenConfirmDeleteRows: () => void;
   onResetColumns: () => void;
@@ -360,40 +361,64 @@ declare module '@mui/x-data-grid' {
   interface ToolbarPropsOverrides extends CustomToolbarProps {}
 }
 
+/**
+ * The filters ARE the toolbar. GridToolbarColumnsButton reaches the grid through its
+ * apiRef, which only exists inside this slot, so putting the filters here is what lets
+ * both share one line instead of the columns button needing a band of its own.
+ */
 function CustomToolbar({
+  state,
+  categories,
+  totalResults,
+  searchTerm,
+  onSearchChange,
+  onApply,
+  onReset,
   selectedRowIds,
   onOpenConfirmDeleteRows,
   onResetColumns,
   columnsCustomized,
 }: CustomToolbarProps) {
   return (
-    <GridToolbarContainer>
-      <Stack spacing={1} flexGrow={1} direction="row" alignItems="center" justifyContent="flex-end">
-        {!!selectedRowIds.length && (
-          <Button
-            size="small"
-            color="error"
-            sx={{ mr: 'auto' }}
-            startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}
-            onClick={onOpenConfirmDeleteRows}
-          >
-            Delete ({selectedRowIds.length})
-          </Button>
-        )}
+    <>
+      <ProductFiltersToolbar
+        state={state}
+        categories={categories}
+        totalResults={totalResults}
+        searchTerm={searchTerm}
+        onSearchChange={onSearchChange}
+        onApply={onApply}
+        onReset={onReset}
+        gridControls={
+          <>
+            {!!selectedRowIds.length && (
+              <Button
+                size="small"
+                color="error"
+                startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}
+                onClick={onOpenConfirmDeleteRows}
+              >
+                Delete ({selectedRowIds.length})
+              </Button>
+            )}
 
-        {columnsCustomized && (
-          <Button
-            size="small"
-            color="inherit"
-            startIcon={<Iconify icon="solar:restart-bold" />}
-            onClick={onResetColumns}
-          >
-            Reset layout
-          </Button>
-        )}
+            {columnsCustomized && (
+              <Button
+                size="small"
+                color="inherit"
+                startIcon={<Iconify icon="solar:restart-bold" />}
+                onClick={onResetColumns}
+              >
+                Reset layout
+              </Button>
+            )}
 
-        <GridToolbarColumnsButton />
-      </Stack>
-    </GridToolbarContainer>
+            <GridToolbarColumnsButton />
+          </>
+        }
+      />
+
+      <Divider />
+    </>
   );
 }

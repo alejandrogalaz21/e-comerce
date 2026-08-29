@@ -1,8 +1,12 @@
 import type { IImportCreatedRow } from 'src/types/product';
 
+import { useMemo, useState } from 'react';
+
+import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Table from '@mui/material/Table';
 import Tooltip from '@mui/material/Tooltip';
+import Divider from '@mui/material/Divider';
 import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -16,6 +20,8 @@ import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 
+import { TableFilterBar } from './table-filter-bar';
+
 // ----------------------------------------------------------------------
 
 const EMPTY = '—';
@@ -25,6 +31,20 @@ type Props = {
 };
 
 export function ImportCreatedTable({ rows }: Props) {
+  const [search, setSearch] = useState('');
+
+  const visibleRows = useMemo(() => {
+    const term = search.trim().toLowerCase();
+
+    if (!term) return rows;
+
+    return rows.filter((row) =>
+      [String(row.line), row.sku, row.name, row.category, row.description]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(term))
+    );
+  }, [rows, search]);
+
   return (
     <Card data-testid="import-created">
       <CardHeader
@@ -41,6 +61,17 @@ export function ImportCreatedTable({ rows }: Props) {
         }
         sx={{ mb: 2 }}
       />
+
+      <TableFilterBar
+        value={search}
+        onChange={setSearch}
+        placeholder="Filter by line, SKU, name, category or description..."
+        label="Filter created rows"
+        visibleCount={visibleRows.length}
+        totalCount={rows.length}
+      />
+
+      <Divider />
 
       <Scrollbar sx={{ maxHeight: 420 }}>
         <TableContainer sx={{ minWidth: 960 }}>
@@ -65,7 +96,7 @@ export function ImportCreatedTable({ rows }: Props) {
             </TableHead>
 
             <TableBody>
-              {rows.map((row) => (
+              {visibleRows.map((row) => (
                 <TableRow key={`${row.line}-${row.sku}`}>
                   <TableCell>{row.line}</TableCell>
                   <TableCell>{row.sku}</TableCell>
@@ -95,6 +126,16 @@ export function ImportCreatedTable({ rows }: Props) {
                   </TableCell>
                 </TableRow>
               ))}
+
+              {!visibleRows.length && (
+                <TableRow>
+                  <TableCell colSpan={8} sx={{ py: 5, textAlign: 'center' }}>
+                    <Box sx={{ typography: 'body2', color: 'text.secondary' }}>
+                      No rows match this filter
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </TableContainer>

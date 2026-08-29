@@ -6,65 +6,34 @@ import Typography from '@mui/material/Typography';
 
 import { Iconify } from 'src/components/iconify';
 
+import { IMPORT_STATUS_META, importStatusTextColor } from '../import-utils';
+
+import type { IImportStatus } from '../import-utils';
+
 // ----------------------------------------------------------------------
 
-type Stat = {
-  label: string;
-  value: number;
-  icon: string;
-  color: string;
-  hint: string;
-};
+/** Card label and value per status; icon, color and hint come from the shared map. */
+const CARDS: { status: IImportStatus; label: string; pick: (s: IImportSummary) => number }[] = [
+  { status: 'total', label: 'Total rows', pick: (s) => s.totalRows },
+  { status: 'created', label: 'Created', pick: (s) => s.inserted },
+  { status: 'updated', label: 'Updated', pick: (s) => s.updated },
+  { status: 'unchanged', label: 'Unchanged', pick: (s) => s.unchanged },
+  { status: 'rejected', label: 'Rejected', pick: (s) => s.rejected },
+  { status: 'skipped', label: 'Skipped empty', pick: (s) => s.skippedEmpty },
+];
 
 type Props = {
   summary: IImportSummary;
 };
 
 export function ImportSummary({ summary }: Props) {
-  const stats: Stat[] = [
-    {
-      label: 'Total rows',
-      value: summary.totalRows,
-      icon: 'solar:documents-bold-duotone',
-      color: 'text.primary',
-      hint: 'Data rows found in the file, header excluded',
-    },
-    {
-      label: 'Created',
-      value: summary.inserted,
-      icon: 'solar:add-circle-bold-duotone',
-      color: 'success.main',
-      hint: 'New products inserted into the catalog',
-    },
-    {
-      label: 'Updated',
-      value: summary.updated,
-      icon: 'solar:refresh-circle-bold-duotone',
-      color: 'warning.main',
-      hint: 'Existing SKUs whose data changed',
-    },
-    {
-      label: 'Unchanged',
-      value: summary.unchanged,
-      icon: 'solar:check-circle-bold-duotone',
-      color: 'text.secondary',
-      hint: 'SKUs already stored with identical data',
-    },
-    {
-      label: 'Rejected',
-      value: summary.rejected,
-      icon: 'solar:close-circle-bold-duotone',
-      color: 'error.main',
-      hint: 'Rows that failed validation and were not saved',
-    },
-    {
-      label: 'Skipped empty',
-      value: summary.skippedEmpty,
-      icon: 'solar:eraser-bold-duotone',
-      color: 'text.disabled',
-      hint: 'Fully blank rows ignored as export noise',
-    },
-  ];
+  const stats = CARDS.map((card) => ({
+    label: card.label,
+    value: card.pick(summary),
+    icon: IMPORT_STATUS_META[card.status].icon,
+    color: importStatusTextColor(card.status),
+    hint: IMPORT_STATUS_META[card.status].hint,
+  }));
 
   return (
     <Box

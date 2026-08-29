@@ -266,7 +266,9 @@ export class ImportService {
         } else if (this.isIdentical(existing, dto)) {
           summary.unchanged++
         } else {
-          await this.productRepository.save(this.applyDtoToEntity(existing, dto))
+          await this.productRepository.save(
+            this.applyDtoToEntity(existing, dto)
+          )
           summary.updated++
           warnings.push({
             line,
@@ -376,6 +378,7 @@ export class ImportService {
         rejected.push({
           line: occurrence.line,
           sku,
+          name: occurrence.dto.name,
           errors: [
             `duplicate sku in the file (lines ${lines.join(', ')}) with ${detail} — a sku must appear at most once per import`
           ]

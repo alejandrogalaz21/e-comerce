@@ -57,3 +57,21 @@ export const HistoricalBatch: Story = {
     ],
   },
 };
+
+/** With no matching term the table says so instead of going silently blank. */
+export const NoFilterMatch: Story = {
+  args: {
+    rows: [
+      {
+        line: 2,
+        sku: 'RS-001',
+        name: 'Running Shoes',
+        description: 'Lightweight running shoes for daily training',
+        category: 'Footwear',
+        price: '89.99',
+        stock: 150,
+        weightKg: '0.35',
+      },
+    ],
+  },
+};

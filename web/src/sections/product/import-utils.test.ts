@@ -1,6 +1,15 @@
+import type { IImportStatus } from './import-utils';
+
 import { describe, it, expect } from 'vitest';
 
-import { importStatusColor, toImportIssueRows, formatImportSummary } from './import-utils';
+import {
+  IMPORT_STATUS_META,
+  importStatusColor,
+  toImportIssueRows,
+  formatImportSummary,
+  IMPORT_ISSUE_STATUSES,
+  importStatusTextColor,
+} from './import-utils';
 
 describe('formatImportSummary', () => {
   it('summarizes created, updated and rejected counts', () => {
@@ -41,6 +50,39 @@ describe('importStatusColor', () => {
 
   it('maps failed to error', () => {
     expect(importStatusColor('failed')).toBe('error');
+  });
+});
+
+describe('IMPORT_STATUS_META', () => {
+  const statuses = Object.keys(IMPORT_STATUS_META) as IImportStatus[];
+
+  it('describes every status with a label, a hint, a color and an icon', () => {
+    statuses.forEach((status) => {
+      const meta = IMPORT_STATUS_META[status];
+
+      expect(meta.label).toBeTruthy();
+      expect(meta.hint).toBeTruthy();
+      expect(meta.color).toBeTruthy();
+      expect(meta.icon).toBeTruthy();
+    });
+  });
+
+  it('gives each status its own icon, so two statuses never look alike', () => {
+    const icons = statuses.map((status) => IMPORT_STATUS_META[status].icon);
+
+    expect(new Set(icons).size).toBe(icons.length);
+  });
+
+  it('covers every status the review table can show', () => {
+    IMPORT_ISSUE_STATUSES.forEach((status) => {
+      expect(IMPORT_STATUS_META[status]).toBeDefined();
+    });
+  });
+
+  it('resolves a text color for every status', () => {
+    statuses.forEach((status) => {
+      expect(importStatusTextColor(status)).toMatch(/\./);
+    });
   });
 });
 

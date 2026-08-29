@@ -1,15 +1,17 @@
 export interface ImportRejectedRow {
   line: number
-  sku?: string
+  /** Raw value from the file. Empty string means the cell was blank, never that it was not sent. */
+  sku: string
   /** Raw value from the file: for a row rejected because of its name, this is the offending value. */
-  name?: string
+  name: string
   errors: string[]
 }
 
 export interface ImportWarning {
   line: number
+  /** Raw value from the file. Empty string means the cell was blank, never that it was not sent. */
   sku: string
-  name?: string
+  name: string
   message: string
 }
 

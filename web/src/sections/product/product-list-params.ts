@@ -23,7 +23,7 @@ export type IProductListState = {
 export const DEFAULT_SORT_BY: IProductSortField = 'createdAt';
 export const DEFAULT_SORT_DIR: IProductSortDirection = 'desc';
 export const DEFAULT_PAGE = 1;
-export const DEFAULT_LIMIT = 10;
+export const DEFAULT_LIMIT = 20;
 
 export const defaultProductListState: IProductListState = {
   q: [],
