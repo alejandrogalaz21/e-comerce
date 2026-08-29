@@ -15,7 +15,7 @@ screenshot of the result.
 | API | `http://localhost:4000/api/v1` |
 | Stack | `docker compose up -d --build` from the repository root |
 | Account | `demo@demo.com` / `demo` |
-| Sample file | [`docs/csv/`](../csv/) — a copy of the challenge CSV, downloaded 2026-08-26 |
+| Sample files | [`docs/csv/`](../csv/) — the challenge CSV and three variants |
 
 Reset the catalog between cases with:
 
@@ -25,6 +25,19 @@ docker exec ecommerce-db psql -U postgres -d ecommerce -c "TRUNCATE TABLE produc
 
 `user` and `migrations` must never be truncated: the first holds the demo account, the second
 is TypeORM's schema history.
+
+## The sample files
+
+Every variant differs from the original in **line 55 only**, the `RS-050` row. Keeping the
+change to a single line is what makes the counters readable: any row that moves buckets moved
+because of that edit and nothing else.
+
+| File | Line 55 | Used by |
+|---|---|---|
+| `LoanPro Code Challenge E-Commerce.csv` | `Budget running shoes...`, `49.99`, `200` | TC-01 |
+| `...-T1.csv` | `UPDATED DESCRIPTION`, `59.99`, `150` | TC-02, and TC-03 step 1 |
+| `...-T2.csv` | identical to T1 | interchangeable with T1 |
+| `...-T3.csv` | same as T1 but `64.99` | TC-03 step 2 |
 
 ## Cases
 
