@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, NotFoundException, Optional } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DeepPartial, Repository } from 'typeorm'
 
@@ -15,6 +15,7 @@ import { PaginationHelper } from '@/common/pagination/pagination.helper'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 import { escapeLikeWildcards } from '@/common/transformers/sanitize.transformer'
 import { translateDatabaseError } from '@/common/filters/database-error.translator'
+import { CacheService } from '@/database/redis/cache.service'
 
 import { Product } from './entities/product.entity'
 
@@ -28,18 +29,32 @@ export class ProductsService {
     updatedAt: 'product.updatedAt'
   }
 
+  /** Everything the catalog caches lives under this prefix, so one write clears it all. */
+  static readonly CACHE_PREFIX = 'products'
+
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
-    private readonly paginationBuilder: PaginationResponseBuilder<Product>
+    private readonly paginationBuilder: PaginationResponseBuilder<Product>,
+    // Optional so the service still works — uncached — wherever Redis is not
+    // wired, which is every unit test and any deployment without it.
+    @Optional() private readonly cache?: CacheService
   ) {}
+
+  /** Public so the import module can clear the catalog once per batch. */
+  async invalidateCache(): Promise<void> {
+    await this.cache?.invalidatePrefix(ProductsService.CACHE_PREFIX)
+  }
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
     try {
       const product = this.productRepository.create(
         this.toEntityData(createProductDto)
       )
-      return await this.productRepository.save(product)
+      const saved = await this.productRepository.save(product)
+      await this.invalidateCache()
+
+      return saved
     } catch (error) {
       translateDatabaseError(error, {
         resource: 'Product',
@@ -50,6 +65,17 @@ export class ProductsService {
   }
 
   async findAll(filters: ProductFiltersDto = {}) {
+    const cacheKey = CacheService.buildKey(
+      `${ProductsService.CACHE_PREFIX}:list`,
+      filters as Record<string, unknown>
+    )
+    const cached =
+      await this.cache?.get<
+        ReturnType<PaginationResponseBuilder<Product>['build']>
+      >(cacheKey)
+
+    if (cached) return cached
+
     const { page, limit, offset } = PaginationHelper.parse(filters)
 
     const sortBy = filters.sortBy ?? DEFAULT_PRODUCT_SORT_FIELD
@@ -112,11 +138,19 @@ export class ProductsService {
     }
 
     const [products, total] = await query.getManyAndCount()
+    const response = this.paginationBuilder.build(products, total, page, limit)
 
-    return this.paginationBuilder.build(products, total, page, limit)
+    await this.cache?.set(cacheKey, response)
+
+    return response
   }
 
   async findCategories(): Promise<ProductCategoryDto[]> {
+    const cacheKey = `${ProductsService.CACHE_PREFIX}:categories`
+    const cached = await this.cache?.get<ProductCategoryDto[]>(cacheKey)
+
+    if (cached) return cached
+
     const rows = await this.productRepository
       .createQueryBuilder('product')
       .select('product.category', 'category')
@@ -125,10 +159,14 @@ export class ProductsService {
       .orderBy('product.category', 'ASC')
       .getRawMany<{ category: string; count: string }>()
 
-    return rows.map(row => ({
+    const categories = rows.map(row => ({
       category: row.category,
       count: Number(row.count)
     }))
+
+    await this.cache?.set(cacheKey, categories)
+
+    return categories
   }
 
   async findOne(id: string): Promise<Product> {
@@ -148,7 +186,10 @@ export class ProductsService {
     this.productRepository.merge(product, this.toEntityData(updateProductDto))
 
     try {
-      return await this.productRepository.save(product)
+      const saved = await this.productRepository.save(product)
+      await this.invalidateCache()
+
+      return saved
     } catch (error) {
       translateDatabaseError(error, {
         resource: 'Product',
@@ -163,6 +204,7 @@ export class ProductsService {
 
     try {
       await this.productRepository.remove(product)
+      await this.invalidateCache()
     } catch (error) {
       // A product that appears in an order is protected by a RESTRICT foreign
       // key. That refusal is a conflict, not an internal failure.

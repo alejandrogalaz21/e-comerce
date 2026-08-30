@@ -77,15 +77,14 @@ export function JwtSignInView() {
     <Stack spacing={1.5} sx={{ mb: 5 }}>
       <Typography variant="h5">Sign in to your account</Typography>
 
-      <Stack direction="row" spacing={0.5}>
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          {`Don't have an account?`}
-        </Typography>
-
-        <Link component={RouterLink} href={paths.auth.jwt.signUp} variant="subtitle2">
-          Get started
-        </Link>
-      </Stack>
+      <Link
+        component={RouterLink}
+        href={paths.product.root}
+        variant="subtitle2"
+        sx={{ alignSelf: 'flex-start' }}
+      >
+        Back to the shop
+      </Link>
     </Stack>
   );
 

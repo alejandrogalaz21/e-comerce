@@ -20,6 +20,9 @@ async function expectStat(page: Page, label: string, value: number) {
   await expect(statCard(page, label).getByRole('heading')).toHaveText(String(value));
 }
 
+/** Products that appear in an order survive the wipe; the counts must allow for them. */
+let survivors = 0;
+
 test.beforeAll(async () => {
   // Wipe all products so the import numbers are deterministic regardless of prior runs.
   const api = await createAuthenticatedApiContext();
@@ -28,6 +31,7 @@ test.beforeAll(async () => {
   // refuses, which is correct. What matters for the import numbers is that no SKU
   // from the fixture survives, and those are never bought by the suite.
   const undeletable = await deleteAllProducts(api);
+  survivors = undeletable.length;
 
   const check = await api.get('/api/v1/products', { params: { page: 1, limit: 100 } });
   const checkBody = (await check.json()) as { data: unknown[] };
@@ -134,8 +138,11 @@ test.describe('product CSV import', () => {
     const grid = page.getByRole('grid');
     await expect(grid).toBeVisible();
 
-    // 85 products imported into an empty catalog.
-    await expect(page.getByText(/of 85/)).toBeVisible({ timeout: 15_000 });
+    // 85 from the fixture, plus anything a previous spec sold and therefore
+    // could not delete.
+    await expect(page.getByText(`of ${85 + survivors}`)).toBeVisible({
+      timeout: 15_000,
+    });
 
     // The grid virtualizes its rows, so paging through 85 of them only proves what
     // happens to fit the viewport. Ask the server for each sku instead: the list

@@ -14,9 +14,9 @@ import { fCurrency } from 'src/utils/format-number';
 
 import { CONFIG } from 'src/config-global';
 
-import { Image } from 'src/components/image';
 import { Iconify } from 'src/components/iconify';
 
+import { categoryIcon } from './category-icon';
 import { useCheckoutContext } from '../checkout/context';
 
 // ----------------------------------------------------------------------
@@ -77,12 +77,22 @@ export function ProductItem({ product }: Props) {
       )}
 
       <Tooltip title={!available && 'Out of stock'} placement="bottom-end">
-        <Image
-          alt={name}
-          src={PLACEHOLDER_IMAGE}
-          ratio="1/1"
-          sx={{ borderRadius: 1.5, ...(!available && { opacity: 0.48, filter: 'grayscale(1)' }) }}
-        />
+        {/* The catalog has no images, so a category icon says more than the same
+            placeholder repeated on every card. */}
+        <Box
+          sx={{
+            aspectRatio: '1/1',
+            display: 'flex',
+            borderRadius: 1.5,
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'background.neutral',
+            color: 'text.secondary',
+            ...(!available && { opacity: 0.48, filter: 'grayscale(1)' }),
+          }}
+        >
+          <Iconify icon={categoryIcon(category)} width={72} />
+        </Box>
       </Tooltip>
     </Box>
   );

@@ -11,8 +11,10 @@ import { NavMobile } from './nav/mobile';
 import { NavDesktop } from './nav/desktop';
 import { Footer, HomeFooter } from './footer';
 import { HeaderBase } from '../core/header-base';
+import { MiniCart } from '../components/mini-cart';
 import { LayoutSection } from '../core/layout-section';
 import { navData as mainNavData } from '../config-nav-main';
+import { HeaderSessionAction } from '../components/header-session-action';
 
 import type { NavMainProps } from './nav/types';
 
@@ -63,6 +65,12 @@ export function MainLayout({ sx, data, children }: MainLayoutProps) {
                     [theme.breakpoints.up(layoutQuery)]: { mr: 2.5, display: 'flex' },
                   }}
                 />
+              ),
+              rightAreaEnd: (
+                <>
+                  <MiniCart />
+                  <HeaderSessionAction />
+                </>
               ),
             }}
           />

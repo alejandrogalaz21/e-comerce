@@ -3,7 +3,6 @@
 ## Purpose
 
 Define cómo un administrador obtiene y conserva una sesión: con qué credenciales se autentica, qué usuario existe desde el arranque para que el evaluador entre sin fricción, qué habilita el token frente a los endpoints protegidos, y cómo la sesión sobrevive a una recarga y se cierra.
-
 ## Requirements
 ### Requirement: Autenticación con credenciales
 
@@ -86,4 +85,30 @@ aplicación en estado no autenticado.
 
 - **WHEN** el usuario autenticado ejecuta la acción de cerrar sesión
 - **THEN** el token deja de enviarse en las peticiones y el acceso a rutas protegidas vuelve a exigir login
+
+### Requirement: La pantalla de acceso no ofrece registro
+
+El sistema SHALL presentar el acceso sin ofrecer crear una cuenta, dado que opera con un usuario
+sembrado. Las direcciones de registro MUST llevar al acceso en lugar de mostrar un formulario que
+no corresponde al alcance del proyecto.
+
+#### Scenario: Mirar la pantalla de acceso
+
+- **WHEN** un visitante abre la pantalla de acceso
+- **THEN** no encuentra ninguna invitación a registrarse
+
+#### Scenario: Abrir la dirección de registro a mano
+
+- **WHEN** se escribe directamente la dirección de registro
+- **THEN** se acaba en la pantalla de acceso
+
+### Requirement: Desde el acceso se puede volver a la tienda
+
+La pantalla de acceso SHALL ofrecer una salida hacia la tienda, para que quien llegue por error no
+quede sin camino de vuelta.
+
+#### Scenario: Llegar por error
+
+- **WHEN** un visitante abre la pantalla de acceso sin querer entrar
+- **THEN** encuentra un enlace que le devuelve a la tienda
 

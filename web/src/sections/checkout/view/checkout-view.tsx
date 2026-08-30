@@ -4,6 +4,7 @@ import Container from '@mui/material/Container';
 import Grid from '@mui/material/Unstable_Grid2';
 import Typography from '@mui/material/Typography';
 
+import { downloadReceipt } from '../receipt';
 import { CheckoutCart } from '../checkout-cart';
 import { useCheckoutContext } from '../context';
 import { CheckoutPayment } from '../checkout-payment';
@@ -45,7 +46,9 @@ export function CheckoutView() {
             open
             purchase={checkout.purchase}
             onReset={checkout.onReset}
-            onDownloadPDF={() => {}}
+            onDownloadPDF={() => {
+              if (checkout.purchase) downloadReceipt(checkout.purchase);
+            }}
           />
         )}
       </>
