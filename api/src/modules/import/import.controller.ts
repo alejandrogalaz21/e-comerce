@@ -24,12 +24,9 @@ import { ImportService } from './import.service'
 import { ImportBatch } from './import-batch.entity'
 import { ImportBatchFiltersDto } from './import-batch-filters.dto'
 import { CurrentUser } from '@/common/decorators/current-user.decorator'
+import { THROTTLE } from '@/config'
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
-
-const IMPORT_RATE_LIMIT = process.env.IMPORT_RATE_LIMIT
-  ? parseInt(process.env.IMPORT_RATE_LIMIT, 10)
-  : 20
 
 @ApiTags('products import')
 @ApiBearerAuth('jwt')
@@ -40,9 +37,8 @@ export class ImportController {
 
   @Post()
   // A bulk upsert of the whole catalog is the most expensive operation the API
-  // exposes. The ceiling is configurable because the e2e suite imports far
-  // faster than a person: a limit that breaks the tests gets deleted.
-  @Throttle({ default: { ttl: 60_000, limit: IMPORT_RATE_LIMIT } })
+  // exposes, so it does not ride on the loose global ceiling.
+  @Throttle({ default: THROTTLE.import })
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } })
   )
