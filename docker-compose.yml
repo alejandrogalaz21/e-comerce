@@ -45,6 +45,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:-changeme}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       IMPORT_RATE_LIMIT: ${IMPORT_RATE_LIMIT:-20}
+      ORDER_RATE_LIMIT: ${ORDER_RATE_LIMIT:-20}
+      THROTTLE_LIMIT: ${THROTTLE_LIMIT:-300}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-0}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:

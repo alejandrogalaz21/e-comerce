@@ -38,8 +38,11 @@ graph TD
 |---|---|---|
 | Headers, CORS | [main.ts](../../api/src/main.ts) | `helmet()` and `enableCors` with an explicit origin list |
 | Origins | [app.configuration.ts](../../api/src/config/app.configuration.ts) | Parses `CORS_ORIGINS`, defaulting to the web container |
-| Rate limiting | [app.module.ts](../../api/src/app.module.ts) | `ThrottlerModule` plus the guard registered globally |
-| Import limit | [import.controller.ts](../../api/src/modules/import/import.controller.ts) | `@Throttle` — 5 per minute |
+| Rate limiting | [app.module.ts](../../api/src/app.module.ts) | `ThrottlerModule.forRootAsync` plus the guard registered globally |
+| Limits | [throttle.configuration.ts](../../api/src/config/throttle.configuration.ts) | Every ceiling, read from the environment in one place |
+| Import limit | [import.controller.ts](../../api/src/modules/import/import.controller.ts) | `@Throttle` — 20 per minute |
+| Checkout limit | [orders.controller.ts](../../api/src/modules/orders/orders.controller.ts) | `@Throttle` — 20 per minute |
+| Client identity | [main.ts](../../api/src/main.ts) | `trust proxy`, so limits count the caller and not the proxy |
 | Input rejection | [no-html.validator.ts](../../api/src/common/validators/no-html.validator.ts) | `@NoHtml` on `name` and `description` |
 | Auth boundary | see [P-06](P-06-authentication.md) | Fail-closed guard with `@Public()` opt-out |
 
@@ -70,13 +73,41 @@ served separately and the CSP would stay on. Stated here rather than left as a s
 
 | Route | Limit | Why |
 |---|---|---|
-| `POST /products/import` | **5 / min** | A bulk upsert of the whole catalog — the most expensive thing the API exposes. Generous for a person, useless for a script |
+| `POST /products/import` | **20 / min** | A bulk upsert of the whole catalog — the most expensive thing the API exposes. Generous for a person, useless for a script |
+| `POST /orders` | **20 / min** | The only public route that writes and charges. A shopper places one order; twenty a minute is not shopping |
 | Everything else | 300 / min | A loose ceiling, not a real limit |
 
-The default is deliberately loose because a tight one would throttle the app itself: the status
-page alone polls three endpoints every five seconds, which is 36 requests a minute before anyone
-browses anything. A limit that breaks normal use gets removed by the next developer, which is worse
-than no limit.
+Every value lives in [`throttle.configuration.ts`](../../api/src/config/throttle.configuration.ts)
+and is overridable per environment. The module reads it through `ConfigService`, matching how
+Postgres, Redis and JWT are wired; the decorators read the same object statically, because
+`@Throttle` is evaluated when the controller class is defined, before the DI container exists. One
+object feeds both, so the module and the routes cannot drift apart.
+
+The default is deliberately loose because a tight one would throttle the app itself: the status page
+alone polls three endpoints every five seconds. A limit that breaks normal use gets removed by the
+next developer, which is worse than no limit.
+
+The counter is keyed by **controller, handler, rule name and client IP**, so the ceiling is per
+route and per caller — not one shared budget. Two clients never consume each other's quota, and
+exhausting one route leaves the others untouched.
+
+That last ingredient is why `trust proxy` matters. Behind a reverse proxy every request arrives
+carrying the proxy's address, so without it every caller in the world would share a single counter
+and one script could lock everyone out. `TRUST_PROXY_HOPS` names how many proxies actually sit in
+front of the API; it defaults to `0` — a direct connection — because trusting the whole
+`X-Forwarded-For` chain lets a client forge an address and mint itself a fresh counter per request.
+
+### Where this belongs in production
+
+Application-level rate limiting is the **second** line, not the first. In a real deployment the
+sharp numbers live at the edge — API gateway, WAF, CDN — which rejects before the request consumes a
+connection, keeps one counter across every replica, changes without a redeploy, and knows the
+client's address by construction rather than by configuration.
+
+What stays in the application is the backstop: the ceiling that still applies if something reaches
+the API without passing the edge, and the one that works in local development and staging where no
+gateway exists. It is documented here so the generous numbers above read as a deliberate division of
+labour rather than an oversight.
 
 A `429` answers with the same envelope as every other error ([P-07](P-07-error-contract.md)):
 
@@ -158,10 +189,17 @@ browsing  200 x12
 | Claim | Where to check |
 |---|---|
 | CORS can never be a wildcard | `security.spec.ts` — "never resolves to a wildcard" |
-| The import carries the strict limit | `security.spec.ts` — reads the `@Throttle` metadata |
-| Browsing stays on the loose default | Same suite, asserts no per-route limit on `findAll` |
+| The import and checkout carry strict limits | `security.spec.ts` — reads the `@Throttle` metadata |
+| Browsing and reading orders stay on the loose default | Same suite, asserts no per-route limit on `findAll` |
+| The checkout ceiling actually reaches a request | `rate-limit.spec.ts` — real requests through the real guard, `429` on the attempt past the limit |
+| Orders sit on the right side of the auth boundary | `route-protection.spec.ts` — `POST` public, both `GET`s protected |
 | HTML is rejected in bulk import too | `import.service.spec.ts` — "rejects an XSS payload in the name instead of sanitizing it" |
 
-**Automated coverage:** `security.spec.ts` (6 tests). The header and rate-limit behaviour itself is
-verified against the running stack, above — asserting that helmet sets its own headers would be
-testing the library.
+**Automated coverage:** `security.spec.ts` (9 tests) and `rate-limit.spec.ts` (3 tests). Header
+behaviour is verified against the running stack, above — asserting that helmet sets its own headers
+would be testing the library.
+
+The split between those two suites is the point. `security.spec.ts` reads the `@Throttle` metadata,
+which proves the decorator was written but not that it still applies: renaming the global rule
+disconnects every per-route ceiling while leaving the metadata exactly where it was. `rate-limit.spec.ts`
+sends real requests through the real guard, so that regression cannot pass green.
