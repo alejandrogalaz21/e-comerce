@@ -4,6 +4,7 @@ import { IS_PUBLIC_KEY } from '@/common/decorators/public.decorator'
 import { AuthController } from '@/modules/auth/auth.controller'
 import { HealthController } from '@/modules/health/health.controller'
 import { ImportController } from '@/modules/import/import.controller'
+import { OrdersController } from '@/modules/orders/orders.controller'
 import { ProductsController } from '@/modules/products/products.controller'
 import { StatusController } from '@/modules/status/status.controller'
 import { UsersController } from '@/modules/users/users.controller'
@@ -26,6 +27,7 @@ const PUBLIC_SURFACE: [string, ControllerClass, string][] = [
   ['GET /products', ProductsController, 'findAll'],
   ['GET /products/categories', ProductsController, 'findCategories'],
   ['GET /products/:id', ProductsController, 'findOne'],
+  ['POST /orders', OrdersController, 'create'],
   ['POST /auth/sign-in', AuthController, 'signin'],
   ['POST /auth/sign-up', AuthController, 'signup']
 ]
@@ -37,6 +39,8 @@ const PROTECTED_SURFACE: [string, ControllerClass, string][] = [
   ['POST /products/import', ImportController, 'import'],
   ['GET /products/import/batches', ImportController, 'findAllBatches'],
   ['GET /products/import/batches/:id', ImportController, 'findBatch'],
+  ['GET /orders', OrdersController, 'findAll'],
+  ['GET /orders/:id', OrdersController, 'findOne'],
   ['GET /status/redis', StatusController, 'redisStatus'],
   ['GET /status/db', StatusController, 'dbStatus'],
   ['GET /auth/me', AuthController, 'getProfile'],
@@ -70,6 +74,7 @@ describe('public/protected boundary', () => {
       AuthController,
       HealthController,
       ImportController,
+      OrdersController,
       ProductsController,
       StatusController,
       UsersController
