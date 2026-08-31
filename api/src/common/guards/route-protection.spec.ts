@@ -4,6 +4,7 @@ import { IS_PUBLIC_KEY } from '@/common/decorators/public.decorator'
 import { AuthController } from '@/modules/auth/auth.controller'
 import { HealthController } from '@/modules/health/health.controller'
 import { ImportController } from '@/modules/import/import.controller'
+import { OrdersController } from '@/modules/orders/orders.controller'
 import { ProductsController } from '@/modules/products/products.controller'
 import { StatusController } from '@/modules/status/status.controller'
 import { UsersController } from '@/modules/users/users.controller'
@@ -27,7 +28,7 @@ const PUBLIC_SURFACE: [string, ControllerClass, string][] = [
   ['GET /products/categories', ProductsController, 'findCategories'],
   ['GET /products/:id', ProductsController, 'findOne'],
   ['POST /auth/sign-in', AuthController, 'signin'],
-  ['POST /auth/sign-up', AuthController, 'signup']
+  ['POST /orders', OrdersController, 'create']
 ]
 
 const PROTECTED_SURFACE: [string, ControllerClass, string][] = [
@@ -40,6 +41,11 @@ const PROTECTED_SURFACE: [string, ControllerClass, string][] = [
   ['GET /status/redis', StatusController, 'redisStatus'],
   ['GET /status/db', StatusController, 'dbStatus'],
   ['GET /auth/me', AuthController, 'getProfile'],
+  // An account is only good for administering the catalog here, so an open
+  // sign-up would hand those rights to anyone who found the endpoint.
+  ['POST /auth/sign-up', AuthController, 'signup'],
+  ['GET /orders', OrdersController, 'findAll'],
+  ['GET /orders/:id', OrdersController, 'findOne'],
   ['POST /users', UsersController, 'create'],
   ['GET /users', UsersController, 'findAll'],
   ['GET /users/:id', UsersController, 'findOne'],
@@ -70,6 +76,7 @@ describe('public/protected boundary', () => {
       AuthController,
       HealthController,
       ImportController,
+      OrdersController,
       ProductsController,
       StatusController,
       UsersController
