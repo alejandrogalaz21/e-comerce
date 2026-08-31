@@ -66,22 +66,22 @@ describe('ProductsService caching', () => {
 
   describe('reading', () => {
     it('queries the database once for two identical requests', async () => {
-      await service.findAll({ page: '1', limit: '20' })
-      await service.findAll({ page: '1', limit: '20' })
+      await service.findAll({ page: 1, limit: 20 })
+      await service.findAll({ page: 1, limit: 20 })
 
       expect(queryBuilder.getManyAndCount).toHaveBeenCalledTimes(1)
     })
 
     it('serves the second request exactly what the first produced', async () => {
-      const first = await service.findAll({ page: '1' })
-      const second = await service.findAll({ page: '1' })
+      const first = await service.findAll({ page: 1 })
+      const second = await service.findAll({ page: 1 })
 
       expect(second).toEqual(first)
     })
 
     it('does not share an entry between different queries', async () => {
-      await service.findAll({ page: '1' })
-      await service.findAll({ page: '2' })
+      await service.findAll({ page: 1 })
+      await service.findAll({ page: 2 })
 
       expect(queryBuilder.getManyAndCount).toHaveBeenCalledTimes(2)
     })
@@ -96,31 +96,31 @@ describe('ProductsService caching', () => {
 
   describe('invalidation', () => {
     it('drops the cache when a product is created', async () => {
-      await service.findAll({ page: '1' })
+      await service.findAll({ page: 1 })
       await service.create({
         sku: 'NEW-1',
         name: 'New',
         price: 1,
         stock: 1
       } as never)
-      await service.findAll({ page: '1' })
+      await service.findAll({ page: 1 })
 
       expect(cache.invalidatePrefix).toHaveBeenCalled()
       expect(queryBuilder.getManyAndCount).toHaveBeenCalledTimes(2)
     })
 
     it('drops the cache when a product is updated', async () => {
-      await service.findAll({ page: '1' })
+      await service.findAll({ page: 1 })
       await service.update('x', { stock: 5 } as never)
-      await service.findAll({ page: '1' })
+      await service.findAll({ page: 1 })
 
       expect(queryBuilder.getManyAndCount).toHaveBeenCalledTimes(2)
     })
 
     it('drops the cache when a product is removed', async () => {
-      await service.findAll({ page: '1' })
+      await service.findAll({ page: 1 })
       await service.remove('x')
-      await service.findAll({ page: '1' })
+      await service.findAll({ page: 1 })
 
       expect(queryBuilder.getManyAndCount).toHaveBeenCalledTimes(2)
     })
@@ -156,7 +156,7 @@ describe('ProductsService caching', () => {
         failing()
       )
 
-      await expect(degraded.findAll({ page: '1' })).resolves.toBeDefined()
+      await expect(degraded.findAll({ page: 1 })).resolves.toBeDefined()
       expect(queryBuilder.getManyAndCount).toHaveBeenCalled()
     })
 
@@ -178,7 +178,7 @@ describe('ProductsService caching', () => {
         new PaginationResponseBuilder<Product>()
       )
 
-      await expect(uncached.findAll({ page: '1' })).resolves.toBeDefined()
+      await expect(uncached.findAll({ page: 1 })).resolves.toBeDefined()
     })
   })
 })

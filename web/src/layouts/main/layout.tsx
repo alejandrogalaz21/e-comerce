@@ -78,7 +78,7 @@ export function MainLayout({ sx, data, children }: MainLayoutProps) {
         /** **************************************
          * Footer
          *************************************** */
-        footerSection={homePage ? <HomeFooter /> : <Footer layoutQuery={layoutQuery} />}
+        footerSection={homePage ? <HomeFooter /> : <Footer />}
         /** **************************************
          * Style
          *************************************** */

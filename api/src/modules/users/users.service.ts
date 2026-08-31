@@ -120,7 +120,11 @@ export class UsersService {
     if (parsedLimit) query.take(parsedLimit)
     if (parsedOffset) query.skip(parsedOffset)
 
-    const users = await query.getMany()
+    // Through instanceToPlain, never raw: the entity's @Exclude() only applies
+    // when something serializes it, and a query builder result is not that.
+    const users = (await query.getMany()).map(
+      user => instanceToPlain(user) as User
+    )
 
     return this.paginationBuilder.build(users, total, parsedPage, parsedLimit)
   }
@@ -140,7 +144,15 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
-    await this.userRepository.update(id, updateUserDto)
+    // A password arriving here is plain text. Writing it straight to the column
+    // would store it that way and leave sign-in comparing a hash against it.
+    const changes: Partial<User> = { ...updateUserDto }
+
+    if (updateUserDto.password) {
+      changes.password = await bcrypt.hash(updateUserDto.password, 10)
+    }
+
+    await this.userRepository.update(id, changes)
     return this.findOne(id)
   }
 

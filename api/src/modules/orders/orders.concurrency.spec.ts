@@ -9,6 +9,15 @@ import { Order } from './entities/order.entity'
 import { OrderItem } from './entities/order-item.entity'
 import { OrdersService } from './orders.service'
 
+const SHIPPING = {
+  name: 'Ada Lovelace',
+  phone: '+14155552671',
+  address: '1 Test Street',
+  city: 'Springfield',
+  state: 'IL',
+  zipCode: '62701',
+  country: 'United States'
+}
 /**
  * Locking and deadlock ordering are properties of Postgres, not of the service:
  * a mocked repository would assert that the code calls FOR UPDATE, never that
@@ -58,7 +67,8 @@ function serviceFor(source: DataSource, payment = approving): OrdersService {
     source,
     source.getRepository(Order),
     payment as never,
-    new PaginationResponseBuilder<Order>()
+    new PaginationResponseBuilder<Order>(),
+    { invalidateCache: async () => {} } as never
   )
 }
 
@@ -134,11 +144,13 @@ describe('OrdersService against a real database', () => {
       const results = await Promise.allSettled([
         service.create({
           items: [{ productId, quantity: 1 }],
-          idempotencyKey: `${SKU_PREFIX}buyer-a`
+          idempotencyKey: `${SKU_PREFIX}buyer-a`,
+          shippingAddress: SHIPPING
         }),
         service.create({
           items: [{ productId, quantity: 1 }],
-          idempotencyKey: `${SKU_PREFIX}buyer-b`
+          idempotencyKey: `${SKU_PREFIX}buyer-b`,
+          shippingAddress: SHIPPING
         })
       ])
 
@@ -165,7 +177,8 @@ describe('OrdersService against a real database', () => {
         Array.from({ length: 10 }, (_, index) =>
           service.create({
             items: [{ productId, quantity: 1 }],
-            idempotencyKey: `${SKU_PREFIX}rush-${index}`
+            idempotencyKey: `${SKU_PREFIX}rush-${index}`,
+          shippingAddress: SHIPPING
           })
         )
       )
@@ -193,14 +206,16 @@ describe('OrdersService against a real database', () => {
             { productId: first, quantity: 1 },
             { productId: second, quantity: 1 }
           ],
-          idempotencyKey: `${SKU_PREFIX}forward`
+          idempotencyKey: `${SKU_PREFIX}forward`,
+          shippingAddress: SHIPPING
         }),
         service.create({
           items: [
             { productId: second, quantity: 1 },
             { productId: first, quantity: 1 }
           ],
-          idempotencyKey: `${SKU_PREFIX}reverse`
+          idempotencyKey: `${SKU_PREFIX}reverse`,
+          shippingAddress: SHIPPING
         })
       ])
 
@@ -216,7 +231,8 @@ describe('OrdersService against a real database', () => {
     const service = serviceFor(source)
     const order = {
       items: [{ productId, quantity: 2 }],
-      idempotencyKey: `${SKU_PREFIX}same-key`
+      idempotencyKey: `${SKU_PREFIX}same-key`,
+          shippingAddress: SHIPPING
     }
 
     const first = await service.create(order)
@@ -240,7 +256,8 @@ describe('OrdersService against a real database', () => {
     await expect(
       service.create({
         items: [{ productId, quantity: 3 }],
-        idempotencyKey: `${SKU_PREFIX}declined`
+        idempotencyKey: `${SKU_PREFIX}declined`,
+          shippingAddress: SHIPPING
       })
     ).rejects.toMatchObject({ status: 402 })
 
@@ -260,7 +277,8 @@ describe('OrdersService against a real database', () => {
 
     await service.create({
       items: [{ productId, quantity: 1 }],
-      idempotencyKey: `${SKU_PREFIX}sold-one`
+      idempotencyKey: `${SKU_PREFIX}sold-one`,
+          shippingAddress: SHIPPING
     })
 
     const products = new ProductsService(
@@ -287,7 +305,8 @@ describe('OrdersService against a real database', () => {
 
       const { order } = await service.create({
         items: [{ productId, quantity: 1 }],
-        idempotencyKey: `${SKU_PREFIX}snapshot`
+        idempotencyKey: `${SKU_PREFIX}snapshot`,
+          shippingAddress: SHIPPING
       })
 
       await source.query(

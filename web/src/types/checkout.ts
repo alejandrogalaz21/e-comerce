@@ -13,30 +13,15 @@ export type ICheckoutItem = {
   subtotal?: number;
 };
 
-export type ICheckoutDeliveryOption = {
-  value: number;
-  label: string;
-  description: string;
-  /** Part of the option: choosing it by comparing the label ties behaviour to UI copy. */
-  icon: string;
-};
-
 export type ICheckoutPaymentOption = {
   value: string;
   label: string;
   description: string;
 };
 
-export type ICheckoutCardOption = {
-  value: string;
-  label: string;
-};
-
 export type ICheckoutState = {
   total: number;
   subtotal: number;
-  discount: number;
-  shipping: number;
   totalItems: number;
   items: ICheckoutItem[];
   billing: IAddressItem | null;
@@ -73,8 +58,6 @@ export type CheckoutContextValue = ICheckoutState & {
   onGotoStep: (step: number) => void;
   //
   onCreateBilling: (billing: IAddressItem) => void;
-  onApplyDiscount: (discount: number) => void;
-  onApplyShipping: (discount: number) => void;
   //
   onPurchasePlaced: (purchase: IPurchase) => void;
   /** A declined attempt closes that key. Retrying means a new attempt. */

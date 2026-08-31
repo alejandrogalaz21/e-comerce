@@ -14,9 +14,15 @@ export type IAddressItem = {
   name: string;
   company?: string;
   primary?: boolean;
+  /** One line, for display. The API is given the parts below instead. */
   fullAddress: string;
   phoneNumber?: string;
   addressType?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
 };
 
 export type IDateValue = string | number | null;

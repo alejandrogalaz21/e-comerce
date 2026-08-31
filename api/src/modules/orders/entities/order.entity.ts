@@ -62,6 +62,36 @@ export class Order {
   @Column('varchar', { name: 'decline_reason', length: 255, nullable: true })
   declineReason: string | null
 
+  // Where the order goes. Nullable because orders placed before deliveries were
+  // recorded have none; the DTO is what requires it from now on.
+  @ApiProperty({ example: 'Ada Lovelace', nullable: true, required: false })
+  @Column('varchar', { name: 'ship_name', length: 255, nullable: true })
+  shipName: string | null
+
+  @ApiProperty({ example: '+14155552671', nullable: true, required: false })
+  @Column('varchar', { name: 'ship_phone', length: 30, nullable: true })
+  shipPhone: string | null
+
+  @ApiProperty({ example: '1 Test Street', nullable: true, required: false })
+  @Column('varchar', { name: 'ship_address', length: 255, nullable: true })
+  shipAddress: string | null
+
+  @ApiProperty({ example: 'Springfield', nullable: true, required: false })
+  @Column('varchar', { name: 'ship_city', length: 100, nullable: true })
+  shipCity: string | null
+
+  @ApiProperty({ example: 'IL', nullable: true, required: false })
+  @Column('varchar', { name: 'ship_state', length: 100, nullable: true })
+  shipState: string | null
+
+  @ApiProperty({ example: '62701', nullable: true, required: false })
+  @Column('varchar', { name: 'ship_zip_code', length: 20, nullable: true })
+  shipZipCode: string | null
+
+  @ApiProperty({ example: 'United States', nullable: true, required: false })
+  @Column('varchar', { name: 'ship_country', length: 100, nullable: true })
+  shipCountry: string | null
+
   @ApiProperty({ example: '2026-08-29T10:00:00.000Z' })
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date

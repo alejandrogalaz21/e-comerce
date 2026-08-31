@@ -1,9 +1,11 @@
 import {
+  BadRequestException,
   ConflictException,
   HttpException,
   HttpStatus,
   Inject,
   Injectable,
+  Logger,
   NotFoundException
 } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -11,12 +13,13 @@ import { DataSource, EntityManager, Repository } from 'typeorm'
 
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 import { Product } from '@/modules/products/entities/product.entity'
+import { ProductsService } from '@/modules/products/products.service'
 import {
   PAYMENT_PROVIDER,
   PaymentProvider
 } from '@/modules/payment/payment.interface'
 
-import { CreateOrderDto } from './dto/create-order.dto'
+import { CreateOrderDto, ShippingAddressDto } from './dto/create-order.dto'
 import { OrderFiltersDto } from './dto/order-filters.dto'
 import { Order } from './entities/order.entity'
 import { OrderItem } from './entities/order-item.entity'
@@ -42,13 +45,16 @@ type LockedProduct = Pick<Product, 'id' | 'sku' | 'name' | 'price' | 'stock'>
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name)
+
   constructor(
     private readonly dataSource: DataSource,
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
     @Inject(PAYMENT_PROVIDER)
     private readonly paymentProvider: PaymentProvider,
-    private readonly paginationBuilder: PaginationResponseBuilder<Order>
+    private readonly paginationBuilder: PaginationResponseBuilder<Order>,
+    private readonly productsService: ProductsService
   ) {}
 
   async create(dto: CreateOrderDto): Promise<{ order: Order; replayed: boolean }> {
@@ -73,6 +79,7 @@ export class OrdersService {
           status: OrderStatus.PENDING,
           totalAmount: fromCents(totalInCents),
           idempotencyKey: dto.idempotencyKey,
+          ...toShippingColumns(dto.shippingAddress),
           items
         })
         const saved = await manager.save(Order, order)
@@ -99,10 +106,19 @@ export class OrdersService {
         return saved
       })
 
+      // After the commit, never inside it: a rolled-back attempt changed no
+      // stock, so clearing the catalog for it would be work for nothing. A
+      // replay does not reach here either, for the same reason.
+      await this.clearCatalogCache()
+
       return { order: await this.findOne(order.id), replayed: false }
     } catch (error) {
       if (error instanceof PaymentDeclinedError) {
-        await this.recordDeclinedAttempt(dto.idempotencyKey, error)
+        await this.recordDeclinedAttempt(
+          dto.idempotencyKey,
+          error,
+          dto.shippingAddress
+        )
         throw declined(error.reason)
       }
 
@@ -113,6 +129,21 @@ export class OrdersService {
         if (replayed) return this.replay(replayed)
       }
       throw error
+    }
+  }
+
+  /**
+   * The sale is already committed when this runs, so a cache that cannot be
+   * reached costs freshness and nothing else. Letting it throw here would undo
+   * a purchase that succeeded because Redis is down.
+   */
+  private async clearCatalogCache(): Promise<void> {
+    try {
+      await this.productsService.invalidateCache()
+    } catch (error) {
+      this.logger.warn(
+        `stock changed but the catalog cache was not cleared: ${String(error)}`
+      )
     }
   }
 
@@ -135,13 +166,15 @@ export class OrdersService {
    */
   private async recordDeclinedAttempt(
     idempotencyKey: string,
-    failure: PaymentDeclinedError
+    failure: PaymentDeclinedError,
+    shippingAddress: ShippingAddressDto
   ): Promise<void> {
     const order = this.orderRepository.create({
       status: OrderStatus.FAILED,
       totalAmount: failure.totalAmount,
       idempotencyKey,
       declineReason: failure.reason,
+      ...toShippingColumns(shippingAddress),
       items: failure.items
     })
 
@@ -157,12 +190,49 @@ export class OrdersService {
     const page = filters.page ?? 1
     const limit = filters.limit ?? 20
 
-    const [data, total] = await this.orderRepository.findAndCount({
-      relations: { items: true },
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit
-    })
+    assertDateRange(filters)
+
+    const query = this.orderRepository
+      .createQueryBuilder('o')
+      .leftJoinAndSelect('o.items', 'item')
+      .orderBy('o.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+
+    if (filters.q) {
+      const term = filters.q.trim()
+
+      // An order has no customer, so what identifies it is its id and what it
+      // contains. EXISTS rather than a join: joining the lines would multiply
+      // the order by them and break the count that drives pagination.
+      query.andWhere(
+        `(o.id::text ILIKE :prefix
+          OR EXISTS (
+            SELECT 1 FROM order_items i
+            WHERE i.order_id = o.id
+              AND (i.sku ILIKE :contains OR i.name ILIKE :contains)
+          ))`,
+        { prefix: `${term}%`, contains: `%${term}%` }
+      )
+    }
+
+    if (filters.status) {
+      query.andWhere('o.status = :status', { status: filters.status })
+    }
+
+    if (filters.dateFrom) {
+      query.andWhere('o.createdAt >= :dateFrom', { dateFrom: filters.dateFrom })
+    }
+
+    if (filters.dateTo) {
+      // Half-open on the next day: `<= dateTo` would cut the range at midnight
+      // and drop every order placed during that day.
+      query.andWhere(`o.createdAt < (CAST(:dateTo AS date) + INTERVAL '1 day')`, {
+        dateTo: filters.dateTo
+      })
+    }
+
+    const [data, total] = await query.getManyAndCount()
 
     return this.paginationBuilder.build(data, total, page, limit)
   }
@@ -294,6 +364,37 @@ function toCents(amount: string): number {
 
 function fromCents(cents: number): string {
   return (cents / 100).toFixed(2)
+}
+
+/**
+ * The wire groups the address in one object; the table keeps it in columns so
+ * Postgres can enforce lengths. `addressType` and `primary` are not carried
+ * over: they belong to an address book this system does not have.
+ */
+function toShippingColumns(address: ShippingAddressDto) {
+  return {
+    shipName: address.name,
+    shipPhone: address.phone,
+    shipAddress: address.address,
+    shipCity: address.city,
+    shipState: address.state,
+    shipZipCode: address.zipCode,
+    shipCountry: address.country
+  }
+}
+
+/**
+ * An inverted range is a client mistake, and answering it with an empty list
+ * would be indistinguishable from "no orders in that range".
+ */
+function assertDateRange(filters: OrderFiltersDto): void {
+  const { dateFrom, dateTo } = filters
+
+  if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
+    throw new BadRequestException(
+      `dateFrom (${dateFrom}) must not be later than dateTo (${dateTo})`
+    )
+  }
 }
 
 function declined(reason: string): HttpException {

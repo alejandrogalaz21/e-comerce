@@ -42,7 +42,9 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-changeme}
       DB_NAME: ${DB_NAME:-ecommerce}
-      JWT_SECRET: ${JWT_SECRET:-changeme}
+      # Left empty on purpose: an unset secret is generated per boot, while a
+      # placeholder committed here would be a published signing key.
+      JWT_SECRET: ${JWT_SECRET:-}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       IMPORT_RATE_LIMIT: ${IMPORT_RATE_LIMIT:-20}
       REDIS_HOST: redis

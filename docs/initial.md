@@ -443,6 +443,14 @@ Para el import CSV específicamente, la respuesta incluye detalle por fila:
   offset/limit, suficiente para el volumen del dataset de ejemplo; se documenta como algo a
   revisar si el catálogo creciera a millones de filas.
 
+> **Corrección parcial (TK-049, 2026-08-31).** El envío estaba aquí como una sola exclusión y
+> resultó ser dos cosas distintas. La orden **sí guarda la dirección de entrega**: el checkout la
+> pedía y la descartaba, así que el detalle no podía mostrarla y pedirla era teatro. Lo que sigue
+> fuera es el **costo** de envío —tarifas, transportistas, impuestos—: el total se deriva
+> exclusivamente de las líneas compradas. Se guarda **dónde** se entrega, no cuánto cuesta llevarlo.
+> Tampoco hay libreta de direcciones reutilizable, porque comprar sigue siendo anónimo y no hay
+> cuenta a la que asociarlas.
+
 ---
 
 ## 10. Estructura del proyecto y decisiones de stack (frontend/infra)

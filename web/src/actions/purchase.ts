@@ -4,6 +4,7 @@ import type {
   ApiPurchase,
   IStockConflict,
   IPurchaseErrorKind,
+  IPurchaseListParams,
   IPlacePurchasePayload,
 } from 'src/types/purchase';
 
@@ -47,7 +48,7 @@ export async function placePurchase(payload: IPlacePurchasePayload): Promise<IPu
   }
 }
 
-export async function getPurchases(params: { page: number; limit: number }) {
+export async function getPurchases(params: IPurchaseListParams) {
   const res = await axiosInstance.get<IPaginatedResponse<ApiPurchase>>(endpoints.purchase.list, {
     params,
   });

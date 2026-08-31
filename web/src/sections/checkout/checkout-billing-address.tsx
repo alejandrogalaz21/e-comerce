@@ -1,12 +1,12 @@
+import Card from '@mui/material/Card';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Unstable_Grid2';
 
 import { useBoolean } from 'src/hooks/use-boolean';
 
-import { _addressBooks } from 'src/_mock';
-
 import { Iconify } from 'src/components/iconify';
+import { EmptyContent } from 'src/components/empty-content';
 
 import { useCheckoutContext } from './context';
 import { CheckoutSummary } from './checkout-summary';
@@ -19,29 +19,19 @@ export function CheckoutBillingAddress() {
 
   const addressForm = useBoolean();
 
+  const { billing } = checkout;
+
   return (
     <>
       <Grid container spacing={3}>
         <Grid xs={12} md={8}>
-          {_addressBooks.slice(0, 4).map((address) => (
+          {billing ? (
             <AddressItem
-              key={address.id}
-              address={address}
+              address={billing}
               action={
-                <Stack flexDirection="row" flexWrap="wrap" flexShrink={0}>
-                  {!address.primary && (
-                    <Button size="small" color="error" sx={{ mr: 1 }}>
-                      Delete
-                    </Button>
-                  )}
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => checkout.onCreateBilling(address)}
-                  >
-                    Deliver to this address
-                  </Button>
-                </Stack>
+                <Button variant="outlined" size="small" onClick={() => checkout.onCreateBilling(billing)}>
+                  Deliver to this address
+                </Button>
               }
               sx={{
                 p: 3,
@@ -50,7 +40,25 @@ export function CheckoutBillingAddress() {
                 boxShadow: (theme) => theme.customShadows.card,
               }}
             />
-          ))}
+          ) : (
+            <Card sx={{ mb: 3 }}>
+              <EmptyContent
+                title="No delivery address yet"
+                description="Add where this order should be delivered to continue."
+                action={
+                  <Button
+                    variant="contained"
+                    onClick={addressForm.onTrue}
+                    sx={{ mt: 3 }}
+                    startIcon={<Iconify icon="mingcute:add-line" />}
+                  >
+                    Add address
+                  </Button>
+                }
+                sx={{ py: 8 }}
+              />
+            </Card>
+          )}
 
           <Stack direction="row" justifyContent="space-between">
             <Button
@@ -62,23 +70,21 @@ export function CheckoutBillingAddress() {
               Back
             </Button>
 
-            <Button
-              size="small"
-              color="primary"
-              onClick={addressForm.onTrue}
-              startIcon={<Iconify icon="mingcute:add-line" />}
-            >
-              New address
-            </Button>
+            {billing && (
+              <Button
+                size="small"
+                color="primary"
+                onClick={addressForm.onTrue}
+                startIcon={<Iconify icon="solar:pen-bold" />}
+              >
+                Change address
+              </Button>
+            )}
           </Stack>
         </Grid>
 
         <Grid xs={12} md={4}>
-          <CheckoutSummary
-            total={checkout.total}
-            subtotal={checkout.subtotal}
-            discount={checkout.discount}
-          />
+          <CheckoutSummary total={checkout.total} subtotal={checkout.subtotal} />
         </Grid>
       </Grid>
 

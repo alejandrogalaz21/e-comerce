@@ -86,11 +86,40 @@ async function addToCartAndOpenCheckout(page: Page, id: string): Promise<void> {
   await expect(page.getByRole('button', { name: 'Check out' })).toBeEnabled();
 }
 
+/**
+ * The billing step no longer ships a book of sample addresses, so the delivery
+ * address is the one the visitor types.
+ */
+async function fillDeliveryAddress(page: Page): Promise<void> {
+  const deliver = page.getByRole('button', { name: 'Deliver to this address' });
+
+  if (!(await deliver.count())) {
+    await page.getByRole('button', { name: 'Add address' }).click();
+
+    await page.getByLabel('Full name').fill('Test Buyer');
+    await page.getByPlaceholder('Enter phone number').fill('+14155552671');
+    await page.getByLabel('Address', { exact: true }).fill('1 Test Street');
+    await page.getByLabel('Town/city').fill('Springfield');
+    await page.getByLabel('State').fill('IL');
+    await page.getByLabel('Zip/code').fill('62701');
+
+    const country = page.getByPlaceholder('Choose a country');
+    await country.click();
+    await country.fill('United States');
+    await page.getByRole('option').first().click();
+
+    await page.getByRole('button', { name: 'Deliver to this address' }).click();
+    return;
+  }
+
+  await deliver.first().click();
+}
+
 /** Walks cart -> billing -> payment and presses Complete order once. */
 async function completeOrder(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Check out' }).click();
 
-  await page.getByRole('button', { name: 'Deliver to this address' }).first().click();
+  await fillDeliveryAddress(page);
 
   // The payment method is required by the form schema; without it the submit
   // never reaches the API.
@@ -229,7 +258,7 @@ test.describe('checkout', () => {
     await addToCartAndOpenCheckout(page, productId);
 
     await page.getByRole('button', { name: 'Check out' }).click();
-    await page.getByRole('button', { name: 'Deliver to this address' }).first().click();
+    await fillDeliveryAddress(page);
     await page.getByText('Cash', { exact: false }).first().click();
 
     // Hold the response so the in-flight state is observable rather than a race.
@@ -279,5 +308,99 @@ test.describe('checkout', () => {
     const res = await anonymous.get(`${API_URL}/api/v1/orders`);
 
     expect(res.status()).toBe(401);
+  });
+
+  /**
+   * Closes the loop the challenge describes: what was bought in the shop has to
+   * be findable in the dashboard, and its detail has to agree with the record.
+   */
+  test('the purchase shows up in the orders dashboard with its lines and total', async ({
+    page,
+  }) => {
+    const res = await api.get('/api/v1/orders', { params: { page: 1, limit: 50 } });
+    const body = (await res.json()) as {
+      data: {
+        id: string;
+        status: string;
+        totalAmount: string;
+        idempotencyKey: string;
+        paymentReference: string | null;
+        items: { sku: string; name: string; quantity: number }[];
+      }[];
+    };
+
+    const order = body.data.find(
+      (candidate) => candidate.status === 'PAID' && candidate.items.some((i) => i.sku === sku)
+    );
+
+    expect(order, 'the earlier tests must have left a paid order behind').toBeTruthy();
+    if (!order) return;
+
+    await page.goto('/dashboard/order');
+
+    const shortId = order.id.slice(0, 8);
+    await expect(page.getByText(shortId).first()).toBeVisible();
+
+    await page.goto(`/dashboard/order/${order.id}`);
+
+    // The lines, as sold.
+    await expect(page.getByText(sku).first()).toBeVisible();
+    await expect(page.getByText(productName).first()).toBeVisible();
+
+    // The evidence a reviewer checks: the charge was simulated, and replaying
+    // the key would return this same order instead of charging again.
+    await expect(page.getByText(order.idempotencyKey)).toBeVisible();
+    if (order.paymentReference) {
+      await expect(page.getByText(order.paymentReference)).toBeVisible();
+    }
+  });
+
+  test('an order that does not exist says so instead of rendering nothing', async ({ page }) => {
+    await page.goto('/dashboard/order/00000000-0000-4000-8000-000000000000');
+
+    await expect(page.getByText('Order not found')).toBeVisible();
+  });
+
+  /**
+   * Buying is the fourth thing that changes stock and was the only one not
+   * clearing the cached catalog, so the shop kept serving the old number for up
+   * to five minutes and the app looked like it never discounted inventory.
+   */
+  test('the stock the shop shows drops as soon as something is bought', async ({ page }) => {
+    const stockOf = async (): Promise<number> => {
+      const res = await api.get('/api/v1/products', { params: { page: 1, limit: 100 } });
+      const body = (await res.json()) as { data: { id: string; stock: number }[] };
+      return body.data.find((product) => product.id === productId)!.stock;
+    };
+
+    // Read once so the listing is cached before anything changes it.
+    const before = await stockOf();
+
+    await buyUntilApproved(page, productId);
+
+    expect(await stockOf()).toBeLessThan(before);
+  });
+
+  test('searching the orders table filters across every page, not just the visible one', async ({
+    page,
+  }) => {
+    await page.goto('/dashboard/order');
+
+    const search = page.getByPlaceholder('Order id, SKU or product name, then Enter...');
+    await search.fill(sku);
+    await search.press('Enter');
+
+    await expect(page).toHaveURL(new RegExp(`q=${sku}`));
+
+    // The table has no product column, so what proves the search worked is that
+    // orders survived it: the earlier tests bought exactly this SKU.
+    await expect(page.getByText('No orders match these filters')).toBeHidden();
+    await expect(page.getByRole('row').filter({ hasText: 'PAID' }).first()).toBeVisible();
+
+    // A term no order carries must empty the table, not fall back to everything.
+    await search.fill('NO-SUCH-ORDER-ANYWHERE');
+    await search.press('Enter');
+
+    await expect(page.getByText('No orders match these filters')).toBeVisible();
   });
 });

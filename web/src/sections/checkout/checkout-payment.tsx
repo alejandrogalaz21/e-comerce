@@ -1,9 +1,5 @@
 import type { PlacePurchaseError } from 'src/actions/purchase';
-import type {
-  ICheckoutCardOption,
-  ICheckoutPaymentOption,
-  ICheckoutDeliveryOption,
-} from 'src/types/checkout';
+import type { ICheckoutPaymentOption } from 'src/types/checkout';
 
 import { z as zod } from 'zod';
 import { useState } from 'react';
@@ -23,17 +19,10 @@ import { usePlacePurchase } from 'src/sections/purchase/hooks/use-purchase';
 
 import { useCheckoutContext } from './context';
 import { CheckoutSummary } from './checkout-summary';
-import { CheckoutDelivery } from './checkout-delivery';
 import { CheckoutBillingInfo } from './checkout-billing-info';
 import { CheckoutPaymentMethods } from './checkout-payment-methods';
 
 // ----------------------------------------------------------------------
-
-const DELIVERY_OPTIONS: ICheckoutDeliveryOption[] = [
-  { value: 0, label: 'Free', description: '5-7 days delivery', icon: 'carbon:delivery-truck' },
-  { value: 10, label: 'Standard', description: '3-5 days delivery', icon: 'carbon:delivery' },
-  { value: 20, label: 'Express', description: '2-3 days delivery', icon: 'carbon:rocket' },
-];
 
 const PAYMENT_OPTIONS: ICheckoutPaymentOption[] = [
   {
@@ -49,20 +38,12 @@ const PAYMENT_OPTIONS: ICheckoutPaymentOption[] = [
   { value: 'cash', label: 'Cash', description: 'Pay with cash when your order is delivered.' },
 ];
 
-const CARDS_OPTIONS: ICheckoutCardOption[] = [
-  { value: 'ViSa1', label: '**** **** **** 1212 - Jimmy Holland' },
-  { value: 'ViSa2', label: '**** **** **** 2424 - Shawn Stokes' },
-  { value: 'MasterCard', label: '**** **** **** 4545 - Cole Armstrong' },
-];
-
 // ----------------------------------------------------------------------
 
 export type PaymentSchemaType = zod.infer<typeof PaymentSchema>;
 
 export const PaymentSchema = zod.object({
   payment: zod.string().min(1, { message: 'Payment is required!' }),
-  // Not required
-  delivery: zod.number(),
 });
 
 // ----------------------------------------------------------------------
@@ -74,7 +55,7 @@ export function CheckoutPayment() {
 
   const [failure, setFailure] = useState<PlacePurchaseError | null>(null);
 
-  const defaultValues = { delivery: checkout.shipping, payment: '' };
+  const defaultValues = { payment: '' };
 
   const methods = useForm<PaymentSchemaType>({
     resolver: zodResolver(PaymentSchema),
@@ -89,6 +70,15 @@ export function CheckoutPayment() {
   const onSubmit = handleSubmit(async () => {
     setFailure(null);
 
+    const { billing } = checkout;
+
+    // The API refuses an order it cannot deliver. Catching it here means the
+    // customer is told what to fix instead of meeting a validation error.
+    if (!billing) {
+      checkout.onGotoStep(1);
+      return;
+    }
+
     try {
       const purchase = await placePurchase.mutateAsync({
         items: checkout.items.map((item) => ({
@@ -96,6 +86,15 @@ export function CheckoutPayment() {
           quantity: item.quantity,
         })),
         idempotencyKey: checkout.idempotencyKey,
+        shippingAddress: {
+          name: billing.name,
+          phone: billing.phoneNumber ?? '',
+          address: billing.street ?? billing.fullAddress,
+          city: billing.city ?? '',
+          state: billing.state ?? '',
+          zipCode: billing.zipCode ?? '',
+          country: billing.country ?? '',
+        },
       });
 
       checkout.onPurchasePlaced(purchase);
@@ -118,15 +117,7 @@ export function CheckoutPayment() {
         <Grid xs={12} md={8}>
           {failure && <PurchaseFailure failure={failure} onEditCart={() => checkout.onGotoStep(0)} />}
 
-          <CheckoutDelivery onApplyShipping={checkout.onApplyShipping} options={DELIVERY_OPTIONS} />
-
-          <CheckoutPaymentMethods
-            options={{
-              payments: PAYMENT_OPTIONS,
-              cards: CARDS_OPTIONS,
-            }}
-            sx={{ my: 3 }}
-          />
+          <CheckoutPaymentMethods options={PAYMENT_OPTIONS} sx={{ mb: 3 }} />
 
           <Button
             size="small"
@@ -144,8 +135,6 @@ export function CheckoutPayment() {
           <CheckoutSummary
             total={checkout.total}
             subtotal={checkout.subtotal}
-            discount={checkout.discount}
-            shipping={checkout.shipping}
             onEdit={() => checkout.onGotoStep(0)}
           />
 
@@ -155,7 +144,12 @@ export function CheckoutPayment() {
             type="submit"
             variant="contained"
             loading={isSubmitting || placePurchase.isPending}
-            disabled={isSubmitting || placePurchase.isPending || !checkout.items.length}
+            disabled={
+              isSubmitting ||
+              placePurchase.isPending ||
+              !checkout.items.length ||
+              !checkout.billing
+            }
           >
             Complete order
           </LoadingButton>
