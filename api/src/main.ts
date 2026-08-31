@@ -4,11 +4,12 @@ import { ConfigService } from '@nestjs/config'
 import helmet from 'helmet'
 import { AllExceptionsFilter } from '@/common/filters/http-exception.filter'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import { NestExpressApplication } from '@nestjs/platform-express'
 import { AppModule } from './app.module'
 
 async function main() {
   process.env.APP_STARTED_AT = String(Date.now())
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create<NestExpressApplication>(AppModule)
   const prefix = 'api/v1'
   const appName = process.env.APP_NAME || 'E-commerce API'
   const apiVersion = process.env.APP_VERSION ?? '1.0.0'
@@ -16,6 +17,14 @@ async function main() {
   const config = app.get(ConfigService)
 
   app.setGlobalPrefix(prefix)
+
+  // Rate limiting counts by client IP. Behind a reverse proxy every request
+  // carries the proxy's address, so without this one counter would be shared by
+  // the whole internet. The hop count must match the real deployment: trusting
+  // the entire chain would let a client forge X-Forwarded-For and mint itself a
+  // fresh counter on every request.
+  const trustProxyHops = config.get<number>('app.trustProxyHops') ?? 0
+  if (trustProxyHops > 0) app.set('trust proxy', trustProxyHops)
 
   // Swagger serves its own inline scripts and styles, so the default CSP would
   // break the docs page. Everything else stays on.

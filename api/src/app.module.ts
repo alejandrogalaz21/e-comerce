@@ -1,10 +1,14 @@
 // src/app.module.ts
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common'
-import { ConfigModule } from '@nestjs/config'
+import { ConfigModule, ConfigService } from '@nestjs/config'
 import { APP_GUARD } from '@nestjs/core'
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
+import {
+  ThrottlerGuard,
+  ThrottlerModule,
+  ThrottlerOptions
+} from '@nestjs/throttler'
 // Config
-import { PgConfig, AppConfig, RedisConfig } from '@/config'
+import { PgConfig, AppConfig, RedisConfig, ThrottleConfig } from '@/config'
 // Database
 import { PgModule } from '@/database/postgres/pg.module'
 import { RedisModule } from '@/database/redis/redis.module'
@@ -26,12 +30,14 @@ import { StatusModule } from '@/modules/status/status.module'
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [AppConfig, PgConfig, RedisConfig]
+      load: [AppConfig, PgConfig, RedisConfig, ThrottleConfig]
     }),
-    // The default ceiling is deliberately loose: the status page alone polls
-    // three endpoints every five seconds, so a tight global limit would throttle
-    // the app itself. Routes that need a real limit declare it with @Throttle.
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
+    ThrottlerModule.forRootAsync({
+      useFactory: (configService: ConfigService) => [
+        configService.get<ThrottlerOptions>('throttle.default')
+      ],
+      inject: [ConfigService]
+    }),
     PgModule,
     RedisModule,
     CommonModule,

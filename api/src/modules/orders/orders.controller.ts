@@ -17,9 +17,11 @@ import {
   ApiResponse,
   ApiTags
 } from '@nestjs/swagger'
+import { Throttle } from '@nestjs/throttler'
 import { Response } from 'express'
 
 import { Public } from '@/common/decorators/public.decorator'
+import { THROTTLE } from '@/config'
 
 import { CreateOrderDto } from './dto/create-order.dto'
 import { OrderFiltersDto } from './dto/order-filters.dto'
@@ -34,6 +36,10 @@ export class OrdersController {
 
   @Post()
   @Public()
+  // The only public route that writes and charges. The loose global ceiling
+  // would let one address attempt hundreds of purchases a minute, each one
+  // locking catalog rows and calling the payment provider.
+  @Throttle({ default: THROTTLE.placeOrder })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Place an order',
@@ -43,14 +49,22 @@ export class OrdersController {
   @ApiResponse({ status: 201, description: 'Order placed', type: Order })
   @ApiResponse({
     status: 200,
-    description: 'The idempotency key was already used: the existing order is returned',
+    description:
+      'The idempotency key was already used: the existing order is returned',
     type: Order
   })
   @ApiResponse({
     status: 400,
     description: 'Validation error: { statusCode, message: string[], error }'
   })
-  @ApiResponse({ status: 404, description: 'A referenced product does not exist' })
+  @ApiResponse({
+    status: 404,
+    description: 'A referenced product does not exist'
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many orders placed from this address in the last minute'
+  })
   @ApiResponse({
     status: 409,
     description:

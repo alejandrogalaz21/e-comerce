@@ -1,7 +1,9 @@
 import { Reflector } from '@nestjs/core'
 
 import AppConfig from '@/config/app.configuration'
+import { THROTTLE } from '@/config'
 import { ImportController } from '@/modules/import/import.controller'
+import { OrdersController } from '@/modules/orders/orders.controller'
 import { ProductsController } from '@/modules/products/products.controller'
 
 describe('security hardening', () => {
@@ -54,13 +56,37 @@ describe('security hardening', () => {
     const ttlOf = (target: object, handler: string) =>
       reflector.get(`${TTL}default`, (target as never)[handler])
 
+    // These assert the decorator carries the configured ceiling. That it still
+    // reaches a request is a different claim, proved in rate-limit.spec.ts.
     it('caps the CSV import, the one route that upserts the whole catalog', () => {
-      expect(limitOf(ImportController.prototype, 'import')).toBe(20)
-      expect(ttlOf(ImportController.prototype, 'import')).toBe(60_000)
+      expect(limitOf(ImportController.prototype, 'import')).toBe(
+        THROTTLE.import.limit
+      )
+      expect(ttlOf(ImportController.prototype, 'import')).toBe(
+        THROTTLE.import.ttl
+      )
+    })
+
+    it('caps guest checkout, the one public route that writes and charges', () => {
+      expect(limitOf(OrdersController.prototype, 'create')).toBe(
+        THROTTLE.placeOrder.limit
+      )
+      expect(ttlOf(OrdersController.prototype, 'create')).toBe(
+        THROTTLE.placeOrder.ttl
+      )
+    })
+
+    it('keeps both route ceilings well under the global one', () => {
+      expect(THROTTLE.import.limit).toBeLessThan(THROTTLE.default.limit)
+      expect(THROTTLE.placeOrder.limit).toBeLessThan(THROTTLE.default.limit)
     })
 
     it('leaves browsing the catalog on the loose default', () => {
       expect(limitOf(ProductsController.prototype, 'findAll')).toBeUndefined()
+    })
+
+    it('leaves reading orders on the loose default: only writing is capped', () => {
+      expect(limitOf(OrdersController.prototype, 'findAll')).toBeUndefined()
     })
   })
 })

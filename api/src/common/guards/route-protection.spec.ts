@@ -27,6 +27,7 @@ const PUBLIC_SURFACE: [string, ControllerClass, string][] = [
   ['GET /products', ProductsController, 'findAll'],
   ['GET /products/categories', ProductsController, 'findCategories'],
   ['GET /products/:id', ProductsController, 'findOne'],
+  ['POST /orders', OrdersController, 'create'],
   ['POST /auth/sign-in', AuthController, 'signin'],
   ['POST /orders', OrdersController, 'create']
 ]
@@ -38,6 +39,8 @@ const PROTECTED_SURFACE: [string, ControllerClass, string][] = [
   ['POST /products/import', ImportController, 'import'],
   ['GET /products/import/batches', ImportController, 'findAllBatches'],
   ['GET /products/import/batches/:id', ImportController, 'findBatch'],
+  ['GET /orders', OrdersController, 'findAll'],
+  ['GET /orders/:id', OrdersController, 'findOne'],
   ['GET /status/redis', StatusController, 'redisStatus'],
   ['GET /status/db', StatusController, 'dbStatus'],
   ['GET /auth/me', AuthController, 'getProfile'],
