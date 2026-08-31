@@ -23,15 +23,36 @@ async function expectStat(page: Page, label: string, value: number) {
 /** Products that appear in an order survive the wipe; the counts must allow for them. */
 let survivors = 0;
 
+/** Marks a surviving product's sku as out of play, so the fixture can claim its own. */
+const PARKED_SKU_PREFIX = 'PARKED-';
+
 test.beforeAll(async () => {
   // Wipe all products so the import numbers are deterministic regardless of prior runs.
   const api = await createAuthenticatedApiContext();
 
   // Products that appear in an order cannot be deleted — the RESTRICT foreign key
   // refuses, which is correct. What matters for the import numbers is that no SKU
-  // from the fixture survives, and those are never bought by the suite.
+  // from the fixture survives: one that did would be *updated* by the import
+  // instead of created, moving every count asserted below. The suite never buys a
+  // fixture sku, but a person using the app might, so the sku is parked out of the
+  // way rather than assumed free. The order keeps its own snapshot of sku and
+  // name, so nothing already sold changes.
   const undeletable = await deleteAllProducts(api);
   survivors = undeletable.length;
+
+  for (const [index, id] of undeletable.entries()) {
+    // eslint-disable-next-line no-await-in-loop
+    const current = await api.get(`/api/v1/products/${id}`);
+    // eslint-disable-next-line no-await-in-loop
+    const product = (await current.json()) as { sku: string };
+
+    if (product.sku.startsWith(PARKED_SKU_PREFIX)) continue;
+
+    // eslint-disable-next-line no-await-in-loop
+    await api.patch(`/api/v1/products/${id}`, {
+      data: { sku: `${PARKED_SKU_PREFIX}${index}-${product.sku}`.slice(0, 50) },
+    });
+  }
 
   const check = await api.get('/api/v1/products', { params: { page: 1, limit: 100 } });
   const checkBody = (await check.json()) as { data: unknown[] };
