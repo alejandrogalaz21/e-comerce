@@ -121,7 +121,7 @@ describe('ProductsService', () => {
     })
 
     it('returns the pagination builder envelope ordered by createdAt DESC', async () => {
-      const result = await service.findAll({ page: '1', limit: '10' })
+      const result = await service.findAll({ page: 1, limit: 10 })
 
       expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('product')
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
@@ -144,7 +144,7 @@ describe('ProductsService', () => {
     })
 
     it('applies no filters when q and category are absent', async () => {
-      await service.findAll({ page: '1', limit: '10' })
+      await service.findAll({ page: 1, limit: 10 })
 
       expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled()
     })

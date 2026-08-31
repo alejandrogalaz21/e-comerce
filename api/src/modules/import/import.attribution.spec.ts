@@ -198,7 +198,7 @@ describe('import attribution', () => {
     })
 
     it('keeps a deterministic order across pages', async () => {
-      await service.findAllBatches({ q: 'loanpro', page: '2', limit: '5' })
+      await service.findAllBatches({ q: 'loanpro', page: 2, limit: 5 })
 
       expect(mockBatchQueryBuilder.orderBy).toHaveBeenCalledWith(
         'batch.createdAt',
