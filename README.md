@@ -5,10 +5,30 @@ flow with a faked payment.
 
 - **Sample CSV download date: 2026-08-26**
 - Stack: NestJS 10 + TypeORM + PostgreSQL 16 + Redis · React 18 + Vite + MUI · Docker Compose
-- **438 automated tests** across four levels, plus five manual cases with their evidence
+- **521 automated tests** across four levels, plus five manual cases with their evidence
 
 **Start here:** `docker compose up --build`, then http://localhost:3000. The shop is the front
 door and needs no account; sign in with `demo@demo.com` / `demo` to manage the catalog.
+
+### Verifying it in five minutes
+
+The fastest way to exercise every requirement, in order:
+
+| # | Do this | What it proves |
+|---|---|---|
+| 1 | Sign in, then *Dashboard → Product → Import CSV* with the sample file | CSV import, per-row validation, partial import with a report |
+| 2 | Open the shop at `/` and search or filter by category | Server-side search and filtering over the imported catalog |
+| 3 | Add products to the cart and complete the checkout | Purchase with a simulated payment, stock decremented in the same transaction |
+| 4 | Go to *Dashboard → Orders* and open the order you just placed | The order is read back from the database, not from sample data |
+| 5 | Edit that product's price, then reopen the order | The line keeps the price it was bought at and flags the difference |
+| 6 | Note the product's stock before step 3, and recheck it after | Stock drops immediately: buying clears the cached catalog, not just the database |
+| 7 | Search the orders table by that product's SKU | Filtering runs on the server, across every page, since an order has no customer to search by |
+
+Step 5 is the interesting one. Each order line stores `unit_price_snapshot`, so a later price
+change never rewrites history. The order detail also shows the **idempotency key** (replaying it
+returns the same order instead of charging twice) and the **payment reference** returned by the
+simulated provider, prefixed `fake_ch_` so it is obvious no real charge happened. A declined order
+shows its decline reason instead.
 
 ## How to run
 
@@ -27,6 +47,12 @@ docker compose up --build
 
 No `.env` required (everything has defaults); to override values, copy `.env.example` to `.env`.
 
+One default is deliberately absent: **`JWT_SECRET` ships empty**, so the API generates a random
+signing key at boot and says so in its log. Sessions therefore end when the container restarts —
+which is loud and harmless. A placeholder committed here would be the opposite: a published signing
+key anyone could use to mint an administrator token. Set `JWT_SECRET` (16+ characters) to keep
+sessions across restarts; a known placeholder like `changeme` stops the boot on purpose.
+
 The application starts with an **empty catalog** on purpose — you create everything through the
 UI (product CRUD, or CSV import at *Dashboard → Product → Import CSV* using the challenge sample
 file). Migrations run automatically at boot and seed a single **demo login**:
@@ -43,6 +69,7 @@ Shopping is open to everyone; managing the catalog is not.
 | Open to anyone | Requires signing in |
 |---|---|
 | Browsing the catalog, product detail, and completing a purchase | Creating, editing and deleting products |
+| | Creating an account: an account only grants catalog administration |
 | `GET /health` (monitoring) | CSV import and its batch history |
 | | Infrastructure status and user administration |
 
@@ -64,14 +91,14 @@ cd web && cp .env.example .env && npm install && npm run dev
 
 ## How to run the tests
 
-**438 automated tests.** Every level runs green; the browser suite needs the stack up.
+**521 automated tests.** Every level runs green; the browser suite needs the stack up.
 
 | Suite | What it covers | Count | Command |
 |---|---|---|---|
-| API unit + fixture + real database | Domain logic, the real 97-row CSV, and locking against Postgres | 247 | `cd api && npm test` |
+| API unit + fixture + real database | Domain logic, the real 97-row CSV, and locking and filtering against Postgres | 299 | `cd api && npm test` |
 | API end to end | The real HTTP stack: global pipe and exception filter on a live request | 5 | `cd api && npm run test:e2e` |
-| Web unit | URL state, mappers, schemas, token handling | 124 | `cd web && npm test` |
-| Browser end to end | The whole app driven by Playwright | 62 | `cd web && npm run test:e2e` |
+| Web unit | URL state, mappers, schemas, token handling | 152 | `cd web && npm test` |
+| Browser end to end | The whole app driven by Playwright | 65 | `cd web && npm run test:e2e` |
 
 ```bash
 docker compose up -d --build     # the browser suite needs the stack
@@ -84,7 +111,7 @@ First Playwright run only: `npx playwright install chromium`.
 `npm test` passes with or without Docker. The database-backed specs detect the absence of a
 database and skip with a message rather than failing.
 
-**What is worth reading**, if you read four:
+**What is worth reading**, if you read five:
 
 - `orders.concurrency.spec.ts` — two simultaneous buyers, one unit left, against a real Postgres.
   Exactly one wins and stock lands on zero, never `-1`.
@@ -94,6 +121,8 @@ database and skip with a message rather than failing.
   floating point.
 - `product-csv-cases.spec.ts` — the hostile rows of the sample file (`<script>`, SQL-injection SKU)
   driven through the actual form, where a user would meet them.
+- `orders.filters.spec.ts` — searching orders by a SKU still finds them after the product is
+  renamed, because the filter reads the sold line and not the catalog.
 
 Two documents make this navigable rather than a wall of names:
 
@@ -239,6 +268,46 @@ movement, written in its own transaction — the one holding the order was rolle
 one outcome: replaying the key of a declined attempt declines again instead of charging twice, so
 retrying is a *new* attempt with a new key.
 
+That asymmetry is why the two retryable failures are handled differently in the browser: a stock
+conflict writes **nothing**, so the same key is reused after fixing the cart; a decline burns its
+key, so the checkout mints a fresh one.
+
+> **Seeing a decline yourself.** It is a 1-in-10 dice roll, so buy a few times. `74797462` in
+> *Dashboard → Orders* is one that already happened, kept as evidence: `FAILED`, its reason, and no
+> payment reference. To force a fresh one, put a real product id in a body file and buy in a loop
+> until a `402` comes back — each attempt needs its own idempotency key, since a repeated key
+> replays the first outcome instead of rolling the dice again:
+>
+> ```bash
+> cat > /tmp/buy.json <<'JSON'
+> {
+>   "items": [{ "productId": "PUT-A-REAL-PRODUCT-ID-HERE", "quantity": 1 }],
+>   "idempotencyKey": "REPLACED-PER-ATTEMPT",   
+>   "shippingAddress": {
+>     "name": "Test Buyer", "phone": "+14155552671", "address": "1 Test Street",
+>     "city": "Springfield", "state": "IL", "zipCode": "62701", "country": "United States"
+>   }
+> }
+> JSON
+> ```
+>
+> ```bash
+> for i in $(seq 1 20); do
+>   key=$(node -e 'console.log(crypto.randomUUID())')
+>   sed "s/REPLACED-PER-ATTEMPT/$key/" /tmp/buy.json > /tmp/attempt.json
+>   code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:4000/api/v1/orders \
+>     -H 'Content-Type: application/json' -d @/tmp/attempt.json)
+>   echo "attempt $i -> $code"
+>   [ "$code" = "402" ] && break
+> done
+> ```
+>
+> Every approved attempt is a **real order** that discounts real stock — expect roughly nine of
+> them before a decline shows up, and occasionally many more. That residue is the point: the
+> rollback path is reachable from outside the test suite, not only from the mocked provider in the
+> specs. If you would rather not touch the data, look at the decline already in the dashboard
+> instead.
+
 Reading orders (`GET /orders`) requires a session; placing one does not. The buyer's confirmation
 travels in the `POST` response.
 
@@ -283,6 +352,11 @@ rejected option was genuinely defensible.
 | Category **icons** on cards | Product images | The catalog has no images. One placeholder repeated on every card says nothing; an icon per category says something, with a mandatory fallback because the field is free text |
 | Repeated `q` parameter for search | Comma-separated, like `category` | A free-text search term may legitimately contain a comma |
 | Fake payment declining **~10%** | Always approve | If it never declined, the rollback path would exist only in tests and no reviewer could see it. The randomness is injected so tests stay deterministic |
+| **Invalidate** the catalog cache when someone buys | Shorten the cache TTL | Buying is the fourth thing that changes stock and was the only one not telling the cache, so the shop served the old number for up to five minutes and the app looked like it never discounted inventory. A shorter TTL narrows the window without closing it, and strips Redis of most of what it was added for |
+| Delivery address in **flat columns** | A single JSONB column | The form already handles the object, so JSONB is tempting — but it gives up the `NOT NULL` and length constraints that are the last layer of this project's defence in depth, and would accept `{}` without complaint |
+| Search orders by **id and by their lines** | Search by customer | There is no customer: buying is anonymous. What identifies an order is its id, and what distinguishes it is what it contains, read from the sold lines so renaming a product never loses its orders |
+| **Drop** the checkout's shipping and discount controls | Send shipping and discount to the API | The API derives the order total from the lines it receives, so a shipping charge added in the browser produced a total the order never recorded — the checkout could show $249.97 while the database stored $229.97. Making them real means new columns, a migration and a recalculated total for a feature the challenge does not ask for. Removing them makes the number on screen the number in the database |
+| Orders screen built on the **real** order shape | Adapt orders into the UI template's richer model | The template's order type wants a customer, an address, a card and a four-step delivery history. Buying is anonymous here, so filling those fields means inventing them. The screen shows the five things the system actually knows, and no columns it cannot fill |
 
 ## What is not built, and why
 
@@ -291,9 +365,10 @@ Stating this is more useful than letting a reviewer wonder whether it was forgot
 | Not built | Reason |
 |---|---|
 | Real payment gateway | The challenge says to fake it. The provider sits behind an interface, so connecting one is implementing that interface |
-| Customer accounts and order history | Buying is deliberately anonymous ([docs/initial.md](docs/initial.md) §10.2). Registration exists in the code but is hidden |
+| Customer accounts | Buying is deliberately anonymous ([docs/initial.md](docs/initial.md) §10.2), so an order has no owner to show it to. Registration exists in the code, hidden in the UI and closed on the API: creating an account requires an existing session, because an account only grants catalog administration. Placed orders are readable by an administrator at *Dashboard → Orders* |
 | Roles and permissions | Not asked for; any authenticated user manages the catalog. The guard is the extension point |
-| Shipping, taxes, refunds | Out of scope, documented in [docs/initial.md](docs/initial.md) §9 |
+| Shipping cost, taxes, refunds | Out of scope, documented in [docs/initial.md](docs/initial.md) §9. The order records **where** it is delivered, never what delivering it costs, so the total on screen stays the total that gets recorded |
+| Reusable address book | Buying is anonymous, so there is no account to attach saved addresses to. Each order carries the address it was given |
 | Product images | No image data in the source CSV |
 | Content Security Policy | Traded for a working Swagger page; see [P-08](docs/processes/P-08-security-hardening.md) |
 | Rate limiting on sign-in | Would matter in production; the project has one seeded user |

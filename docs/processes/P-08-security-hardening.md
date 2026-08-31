@@ -108,17 +108,37 @@ React's escaping is treated as a second line of defence, never the first.
 | Parameterised queries, no string-concatenated SQL | TypeORM query builder throughout |
 | `LIKE` wildcards escaped | `escapeLikeWildcards` — see [P-03](P-03-product-search.md) |
 | Unknown fields rejected | `forbidNonWhitelisted` on the global pipe |
-| Credentials from environment | [app.configuration.ts](../../api/src/config/app.configuration.ts) — the only place reading `process.env` |
+| Credentials from environment | [app.configuration.ts](../../api/src/config/app.configuration.ts) — the only place reading `process.env`, and where a weak `JWT_SECRET` stops the boot |
+| Sign-in rate limited | `@Throttle` at 30/min on the credential endpoint, apart from the loose global ceiling |
+| Pagination bounded | [pagination.dto.ts](../../api/src/common/dto/pagination.dto.ts) — integers only, floor 1, ceiling 100 |
 | Uploads never touch disk | Multer memory storage — see [P-01](P-01-csv-import.md) |
 | Internal detail never returned | See [P-07](P-07-error-contract.md) |
+
+## The security review, and what it changed
+
+A review of the whole surface — not only of the last change — found five things worth fixing. All
+of them are fixed; they are recorded here because the reasoning is the useful part.
+
+| Finding | Why it mattered | Fix |
+|---|---|---|
+| `POST /auth/sign-up` was public | An account only grants catalog administration, so anyone who found the endpoint could hand themselves those rights and read every order with its shipping details. The UI hid registration; the API did not | The handler lost its `@Public()`. Creating an account now needs a session, and [route-protection.spec.ts](../../api/src/common/guards/route-protection.spec.ts) asserts it |
+| `GET /users` returned the bcrypt hashes | `@Exclude()` on the entity only applies when something serializes it, and a query builder result is not that. `findOne` went through `instanceToPlain`; `findAll` did not, so the list leaked what the detail hid | `findAll` serializes each row, with a test asserting no `$2a$10$` reaches the payload |
+| `PATCH /users/:id` stored passwords in plain text | The DTO reached `repository.update` untouched, so a password change wrote the typed string into the column and sign-in then compared a hash against it | Hashed on the way in, like `create` already did |
+| The refresh token was an access token | Same secret, same payload, only a longer life — the JWT strategy could not tell them apart, so it was a seven-day access token with nothing to revoke it | Not issued. A real one needs its own claim, endpoint and rotation |
+| `JWT_SECRET` was a committed placeholder | `changeme` in the compose file is a published signing key: anyone can mint an administrator token with it. An unset value reached passport as `undefined` | A weak value now stops the boot; an absent one is generated per process. Neither file ships a default any more |
+
+Two smaller ones came from the same pass: `idempotencyKey` is now a UUID rather than any string of
+eight characters — placing an order needs no session and replaying a key returns that order's
+shipping address, so a guessable key was a way to read someone else's — and the shipping fields now
+trim and reject HTML like the product fields always have.
 
 ## Known gaps
 
 | Gap | Status |
 |---|---|
 | CSP disabled | Traded for working Swagger docs, as explained above |
-| No rate limit on `sign-in` | Would matter in production; the challenge has one seeded user |
-| No refresh-token rotation | A refresh token is issued but there is no refresh flow |
+| No roles | Any authenticated user administers the catalog. The guard is the extension point; sign-up being closed is what keeps that set small |
+| No refresh-token rotation | No refresh token is issued at all, which is the honest half of the feature |
 | No secret management | Secrets come from environment variables, which is right for this scope but not a vault |
 | Rate limiting is per-instance, in memory | Multiple API replicas would each keep their own count; a shared store would be needed |
 
