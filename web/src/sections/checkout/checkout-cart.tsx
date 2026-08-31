@@ -68,12 +68,7 @@ export function CheckoutCart() {
       </Grid>
 
       <Grid xs={12} md={4}>
-        <CheckoutSummary
-          total={checkout.total}
-          discount={checkout.discount}
-          subtotal={checkout.subtotal}
-          onApplyDiscount={checkout.onApplyDiscount}
-        />
+        <CheckoutSummary total={checkout.total} subtotal={checkout.subtotal} />
 
         <Button
           fullWidth

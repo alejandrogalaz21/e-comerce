@@ -24,6 +24,7 @@ import { Public } from '@/common/decorators/public.decorator'
 import { CreateOrderDto } from './dto/create-order.dto'
 import { OrderFiltersDto } from './dto/order-filters.dto'
 import { Order } from './entities/order.entity'
+import { OrderStatus } from './order-status.enum'
 import { OrdersService } from './orders.service'
 
 @ApiTags('orders')
@@ -76,7 +77,22 @@ export class OrdersController {
   @ApiOperation({ summary: 'List placed orders' })
   @ApiQuery({ name: 'page', required: false, example: '1' })
   @ApiQuery({ name: 'limit', required: false, example: '20' })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    example: 'PRJ-001',
+    description: 'Order id prefix, or a SKU or product name among its lines'
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: OrderStatus,
+    example: OrderStatus.PAID
+  })
+  @ApiQuery({ name: 'dateFrom', required: false, example: '2026-08-01' })
+  @ApiQuery({ name: 'dateTo', required: false, example: '2026-08-31' })
   @ApiResponse({ status: 200, description: 'Paginated orders' })
+  @ApiResponse({ status: 400, description: 'Invalid status or inverted date range' })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token' })
   findAll(@Query() filters: OrderFiltersDto) {
     return this.ordersService.findAll(filters)

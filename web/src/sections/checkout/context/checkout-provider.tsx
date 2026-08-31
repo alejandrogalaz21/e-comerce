@@ -28,8 +28,6 @@ const initialState: ICheckoutState = {
   items: [],
   subtotal: 0,
   total: 0,
-  discount: 0,
-  shipping: 0,
   billing: null,
   totalItems: 0,
   idempotencyKey: '',
@@ -79,8 +77,10 @@ function Container({ children }: Props) {
 
     setField('subtotal', subtotal);
     setField('totalItems', totalItems);
-    setField('total', state.subtotal - state.discount + state.shipping);
-  }, [setField, state.discount, state.items, state.shipping, state.subtotal]);
+    // The API derives the total from the lines it receives, so anything the
+    // checkout adds on top would be a number the order never records.
+    setField('total', subtotal);
+  }, [setField, state.items]);
 
   useEffect(() => {
     const restoredValue = getStorage(STORAGE_KEY);
@@ -201,20 +201,6 @@ function Container({ children }: Props) {
     [onNextStep, setField]
   );
 
-  const onApplyDiscount = useCallback(
-    (discount: number) => {
-      setField('discount', discount);
-    },
-    [setField]
-  );
-
-  const onApplyShipping = useCallback(
-    (shipping: number) => {
-      setField('shipping', shipping);
-    },
-    [setField]
-  );
-
   // Reset
   const onReset = useCallback(() => {
     if (completed) {
@@ -240,8 +226,6 @@ function Container({ children }: Props) {
       onDecreaseQuantity,
       //
       onCreateBilling,
-      onApplyDiscount,
-      onApplyShipping,
       //
       onPurchasePlaced,
       onRenewIdempotencyKey,
@@ -268,8 +252,6 @@ function Container({ children }: Props) {
       initialStep,
       onAddToCart,
       onDeleteCart,
-      onApplyDiscount,
-      onApplyShipping,
       onCreateBilling,
       onDecreaseQuantity,
       onIncreaseQuantity,

@@ -3,7 +3,6 @@
 ## Purpose
 
 Define qué consultas del catálogo se reutilizan, qué distingue una entrada de caché de otra, cuándo deja de ser válida, y qué ocurre cuando la caché no está disponible.
-
 ## Requirements
 ### Requirement: Consultas repetidas del catálogo se sirven de caché
 
@@ -30,6 +29,10 @@ mismos parámetros. Dos consultas que difieran en cualquier parámetro MUST trat
 Cuando el catálogo cambia, el sistema SHALL dejar de servir resultados anteriores. Un cliente MUST
 NOT recibir un catálogo que ya no refleja lo almacenado.
 
+Esto SHALL aplicarse a **cualquier** operación que altere el catálogo, sin importar qué parte del
+sistema la origine. Comprar cambia el stock igual que editarlo, así que cuenta como cambio: para
+quien consulta, el origen es indiferente.
+
 #### Scenario: Alta de producto
 
 - **GIVEN** una consulta ya cacheada
@@ -45,6 +48,12 @@ NOT recibir un catálogo que ya no refleja lo almacenado.
 
 - **WHEN** termina un import que alteró el catálogo
 - **THEN** las consultas siguientes reflejan lo importado, sin esperar a que expire nada
+
+#### Scenario: Una compra descuenta stock
+
+- **GIVEN** una consulta ya cacheada que incluye cierto producto
+- **WHEN** alguien compra ese producto
+- **THEN** la siguiente consulta muestra el stock que quedó, sin esperar a que expire nada
 
 #### Scenario: Las categorías siguen el mismo criterio
 

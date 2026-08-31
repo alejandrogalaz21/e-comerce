@@ -5,12 +5,16 @@ import { useMemo, useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import TextField from '@mui/material/TextField';
 import Pagination from '@mui/material/Pagination';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
+
+import { paths } from 'src/routes/paths';
+import { RouterLink } from 'src/routes/components';
 
 import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
@@ -46,7 +50,11 @@ export function ProductShopView({ products, categories, total, loading }: Props)
     [categories]
   );
 
+  // An empty catalog and a query that matched nothing need opposite actions:
+  // one has nothing to search, the other has a criterion to drop.
   const nothingFound = !loading && !products.length;
+  const filtered = Boolean(state.q || state.category);
+  const catalogEmpty = nothingFound && !filtered;
 
   const renderSearch = (
     <TextField
@@ -108,6 +116,45 @@ export function ProductShopView({ products, categories, total, loading }: Props)
     </Stack>
   );
 
+  const renderEmpty = catalogEmpty ? (
+    <EmptyContent
+      filled
+      sx={{ py: 10 }}
+      title="No products yet"
+      description="The catalog is empty. Import the sample CSV to fill it with products."
+      action={
+        <Button
+          component={RouterLink}
+          href={paths.dashboard.product.import}
+          variant="contained"
+          sx={{ mt: 3 }}
+          startIcon={<Iconify icon="eva:cloud-upload-fill" />}
+        >
+          Import products
+        </Button>
+      }
+    />
+  ) : (
+    <EmptyContent
+      filled
+      sx={{ py: 10 }}
+      title={
+        state.q ? `No results for "${state.q}"` : `No products in ${state.category}`
+      }
+      description="Try a different search, or clear what is filtering the catalog."
+      action={
+        <Button
+          variant="outlined"
+          sx={{ mt: 3 }}
+          onClick={() => apply({ q: '', category: '' })}
+          startIcon={<Iconify icon="mingcute:close-line" />}
+        >
+          {state.q ? 'Clear search' : 'Clear category'}
+        </Button>
+      }
+    />
+  );
+
   return (
     <Container sx={{ mb: 15 }}>
       <Stack spacing={1} sx={{ my: { xs: 3, md: 5 } }}>
@@ -123,13 +170,7 @@ export function ProductShopView({ products, categories, total, loading }: Props)
       </Stack>
 
       {nothingFound ? (
-        <EmptyContent
-          filled
-          sx={{ py: 10 }}
-          title={
-            state.q ? `No results for "${state.q}"` : 'No products match the selected category'
-          }
-        />
+        renderEmpty
       ) : (
         <ProductList products={products} loading={loading} />
       )}

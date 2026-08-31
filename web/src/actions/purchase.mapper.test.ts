@@ -23,6 +23,13 @@ const apiPurchase = {
   declineReason: null,
   createdAt: '2026-08-29T10:00:00.000Z',
   items: [apiItem],
+  shipName: 'Ada Lovelace',
+  shipPhone: '+14155552671',
+  shipAddress: '1 Test Street',
+  shipCity: 'Springfield',
+  shipState: 'IL',
+  shipZipCode: '62701',
+  shipCountry: 'United States',
 };
 
 describe('toPurchaseItem', () => {
@@ -54,6 +61,26 @@ describe('toPurchase', () => {
 
   it('tolerates a response without lines', () => {
     expect(toPurchase({ ...apiPurchase, items: undefined as never }).items).toEqual([]);
+  });
+
+  it('maps the delivery address the order recorded', () => {
+    expect(toPurchase(apiPurchase).shippingAddress).toEqual({
+      name: 'Ada Lovelace',
+      phone: '+14155552671',
+      address: '1 Test Street',
+      city: 'Springfield',
+      state: 'IL',
+      zipCode: '62701',
+      country: 'United States',
+    });
+  });
+
+  /**
+   * Orders placed before deliveries were recorded have none. Null says that;
+   * an object of empty strings would read as a blank address.
+   */
+  it('reports no address for an order placed before they were recorded', () => {
+    expect(toPurchase({ ...apiPurchase, shipName: null }).shippingAddress).toBeNull();
   });
 });
 

@@ -75,6 +75,12 @@ export function AddressNewForm({ open, onClose, onCreate }: Props) {
         fullAddress: `${data.address}, ${data.city}, ${data.state}, ${data.country}, ${data.zipCode}`,
         addressType: data.addressType,
         primary: data.primary,
+        // The one-line form is for display; the order is stored in parts.
+        street: data.address,
+        city: data.city,
+        state: data.state,
+        zipCode: data.zipCode,
+        country: data.country ?? '',
       });
       onClose();
     } catch (error) {

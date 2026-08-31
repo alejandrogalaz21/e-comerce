@@ -37,10 +37,10 @@ export const navData = [
         ],
       },
       {
-        title: 'Order',
+        title: 'Orders',
         path: paths.dashboard.order.root,
         icon: ICONS.order,
-        children: [{ title: 'List', path: paths.dashboard.order.root }],
+        children: [{ title: 'Placed orders', path: paths.dashboard.order.root }],
       },
       {
         title: 'Status',
