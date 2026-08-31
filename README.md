@@ -100,6 +100,8 @@ cd web && cp .env.example .env && npm install && npm run dev
 | Web unit | URL state, mappers, schemas, token handling | 152 | `cd web && npm test` |
 | Browser end to end | The whole app driven by Playwright | 65 | `cd web && npm run test:e2e` |
 
+Playwright reports 66: the extra one is the sign-in fixture that runs as its own project, not a test.
+
 ```bash
 docker compose up -d --build     # the browser suite needs the stack
 cd api && npm test && npm run test:e2e
