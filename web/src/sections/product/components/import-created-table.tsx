@@ -22,8 +22,6 @@ import { Scrollbar } from 'src/components/scrollbar';
 
 import { TableFilterBar } from './table-filter-bar';
 
-// ----------------------------------------------------------------------
-
 const EMPTY = '—';
 
 type Props = {

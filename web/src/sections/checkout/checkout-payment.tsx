@@ -22,8 +22,6 @@ import { CheckoutSummary } from './checkout-summary';
 import { CheckoutBillingInfo } from './checkout-billing-info';
 import { CheckoutPaymentMethods } from './checkout-payment-methods';
 
-// ----------------------------------------------------------------------
-
 const PAYMENT_OPTIONS: ICheckoutPaymentOption[] = [
   {
     value: 'paypal',
@@ -38,15 +36,11 @@ const PAYMENT_OPTIONS: ICheckoutPaymentOption[] = [
   { value: 'cash', label: 'Cash', description: 'Pay with cash when your order is delivered.' },
 ];
 
-// ----------------------------------------------------------------------
-
 export type PaymentSchemaType = zod.infer<typeof PaymentSchema>;
 
 export const PaymentSchema = zod.object({
   payment: zod.string().min(1, { message: 'Payment is required!' }),
 });
-
-// ----------------------------------------------------------------------
 
 export function CheckoutPayment() {
   const checkout = useCheckoutContext();
@@ -115,7 +109,9 @@ export function CheckoutPayment() {
     <Form methods={methods} onSubmit={onSubmit}>
       <Grid container spacing={3}>
         <Grid xs={12} md={8}>
-          {failure && <PurchaseFailure failure={failure} onEditCart={() => checkout.onGotoStep(0)} />}
+          {failure && (
+            <PurchaseFailure failure={failure} onEditCart={() => checkout.onGotoStep(0)} />
+          )}
 
           <CheckoutPaymentMethods options={PAYMENT_OPTIONS} sx={{ mb: 3 }} />
 
@@ -145,10 +141,7 @@ export function CheckoutPayment() {
             variant="contained"
             loading={isSubmitting || placePurchase.isPending}
             disabled={
-              isSubmitting ||
-              placePurchase.isPending ||
-              !checkout.items.length ||
-              !checkout.billing
+              isSubmitting || placePurchase.isPending || !checkout.items.length || !checkout.billing
             }
           >
             Complete order
@@ -158,8 +151,6 @@ export function CheckoutPayment() {
     </Form>
   );
 }
-
-// ----------------------------------------------------------------------
 
 type FailureProps = {
   failure: PlacePurchaseError;

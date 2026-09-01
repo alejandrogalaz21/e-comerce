@@ -6,8 +6,6 @@ import { loadingButtonClasses } from '@mui/lab/LoadingButton';
 
 import { varAlpha, stylesMode } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 // NEW VARIANT
 declare module '@mui/material/Button' {
   interface ButtonPropsVariantOverrides {
@@ -30,16 +28,12 @@ function styleColors(ownerState: ButtonProps, styles: (val: ColorType) => CSSObj
   return outputStyle;
 }
 
-// ----------------------------------------------------------------------
-
 const MuiButtonBase: Components<Theme>['MuiButtonBase'] = {
   /** **************************************
    * STYLE
    *************************************** */
   styleOverrides: { root: ({ theme }) => ({ fontFamily: theme.typography.fontFamily }) },
 };
-
-// ----------------------------------------------------------------------
 
 const softVariant: Record<string, ComponentsVariants<Theme>['MuiButton']> = {
   colors: COLORS.map((color) => ({
@@ -176,7 +170,5 @@ const MuiButton: Components<Theme>['MuiButton'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const button = { MuiButtonBase, MuiButton };

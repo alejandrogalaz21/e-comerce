@@ -2,8 +2,6 @@ import type { StackProps } from '@mui/material/Stack';
 import type { Theme, SxProps } from '@mui/material/styles';
 import type { ButtonBaseProps } from '@mui/material/ButtonBase';
 
-// ----------------------------------------------------------------------
-
 export type NavItemStateProps = {
   open?: boolean;
   active?: boolean;

@@ -11,8 +11,6 @@ import { Logo } from 'src/components/logo';
 import { Scrollbar } from 'src/components/scrollbar';
 import { NavSectionVertical } from 'src/components/nav-section';
 
-// ----------------------------------------------------------------------
-
 type NavMobileProps = NavSectionProps & {
   open: boolean;
   onClose: () => void;

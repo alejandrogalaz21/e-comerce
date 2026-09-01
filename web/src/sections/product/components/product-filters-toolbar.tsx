@@ -25,8 +25,6 @@ import { isPriceRangeValid } from '../product-list-params';
 
 import type { IProductListState } from '../product-list-params';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   state: IProductListState;
   totalResults: number;
@@ -236,8 +234,6 @@ export function ProductFiltersToolbar({
   );
 }
 
-// ----------------------------------------------------------------------
-
 function priceRangeLabel(minPrice?: number, maxPrice?: number): string {
   if (minPrice !== undefined && maxPrice !== undefined) return `${minPrice} - ${maxPrice}`;
   if (minPrice !== undefined) return `from ${minPrice}`;
@@ -265,7 +261,8 @@ function PriceRangeFilter({ state, onApply }: PriceRangeProps) {
   };
 
   const hasInvalidNumber =
-    (parsed.minPrice !== undefined && !(Number.isFinite(parsed.minPrice) && parsed.minPrice >= 0)) ||
+    (parsed.minPrice !== undefined &&
+      !(Number.isFinite(parsed.minPrice) && parsed.minPrice >= 0)) ||
     (parsed.maxPrice !== undefined && !(Number.isFinite(parsed.maxPrice) && parsed.maxPrice >= 0));
 
   const rangeIsInverted = !hasInvalidNumber && !isPriceRangeValid(parsed.minPrice, parsed.maxPrice);

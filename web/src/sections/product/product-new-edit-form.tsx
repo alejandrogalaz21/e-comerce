@@ -24,13 +24,9 @@ import { useCreateProduct, useUpdateProduct } from './hooks/use-product';
 
 import type { NewProductSchemaType } from './product-schema';
 
-// ----------------------------------------------------------------------
-
 export { NewProductSchema } from './product-schema';
 
 export type { NewProductSchemaType } from './product-schema';
-
-// ----------------------------------------------------------------------
 
 const PRODUCT_FIELD_NAMES = [
   'sku',

@@ -1,7 +1,5 @@
 import type { Theme, Components } from '@mui/material/styles';
 
-// ----------------------------------------------------------------------
-
 const MuiTypography: Components<Theme>['MuiTypography'] = {
   /** **************************************
    * STYLE
@@ -11,7 +9,5 @@ const MuiTypography: Components<Theme>['MuiTypography'] = {
     gutterBottom: ({ theme }) => ({ marginBottom: theme.spacing(1) }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const typography = { MuiTypography };

@@ -1,5 +1,3 @@
-// ----------------------------------------------------------------------
-
 /**
  * The purchase contract served by the API. It is deliberately separate from
  * `order.ts`, which is the template's own order domain and belongs to screens

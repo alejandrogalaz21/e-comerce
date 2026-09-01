@@ -1,11 +1,7 @@
-// ----------------------------------------------------------------------
-
 export const hasParams = (url: string): boolean => {
   const queryString = url.split('?')[1];
   return queryString ? new URLSearchParams(queryString).toString().length > 0 : false;
 };
-
-// ----------------------------------------------------------------------
 
 export function removeLastSlash(pathname: string): string {
   /**
@@ -24,8 +20,6 @@ export function removeLastSlash(pathname: string): string {
   return pathname;
 }
 
-// ----------------------------------------------------------------------
-
 export function removeParams(url: string): string {
   try {
     const urlObj = new URL(url, window.location.origin);
@@ -35,8 +29,6 @@ export function removeParams(url: string): string {
     return url;
   }
 }
-
-// ----------------------------------------------------------------------
 
 export function isExternalLink(url: string): boolean {
   return url.startsWith('http');

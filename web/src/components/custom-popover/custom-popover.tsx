@@ -9,8 +9,6 @@ import { calculateAnchorOrigin } from './utils';
 
 import type { CustomPopoverProps } from './types';
 
-// ----------------------------------------------------------------------
-
 export function CustomPopover({
   open,
   onClose,

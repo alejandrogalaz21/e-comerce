@@ -2,8 +2,6 @@ import { paths } from 'src/routes/paths';
 
 import packageJson from '../package.json';
 
-// ----------------------------------------------------------------------
-
 export type ConfigValue = {
   site: {
     name: string;
@@ -18,8 +16,6 @@ export type ConfigValue = {
     redirectPath: string;
   };
 };
-
-// ----------------------------------------------------------------------
 
 export const CONFIG: ConfigValue = {
   site: {

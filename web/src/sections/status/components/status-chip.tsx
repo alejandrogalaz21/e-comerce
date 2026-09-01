@@ -1,7 +1,5 @@
 import Chip from '@mui/material/Chip';
 
-// ----------------------------------------------------------------------
-
 export type StatusChipProps = {
   loading: boolean;
   ok?: boolean;

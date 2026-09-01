@@ -5,8 +5,6 @@ import { RouterLink } from 'src/routes/components';
 
 import type { BreadcrumbsLinkProps } from './types';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   disabled: boolean;
   activeLast?: boolean;

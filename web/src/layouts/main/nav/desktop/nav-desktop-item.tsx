@@ -18,8 +18,6 @@ import { useNavItem } from 'src/components/nav-section/hooks';
 
 import type { NavItemProps, NavItemStateProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export const NavItem = forwardRef<HTMLButtonElement, NavItemProps>(
   ({ title, path, open, active, hasChild, externalLink, subItem, ...other }, ref) => {
     const navItem = useNavItem({ path, hasChild, externalLink });
@@ -42,8 +40,6 @@ export const NavItem = forwardRef<HTMLButtonElement, NavItemProps>(
     );
   }
 );
-
-// ----------------------------------------------------------------------
 
 const StyledNavItem = styled(ButtonBase, {
   shouldForwardProp: (prop) => prop !== 'active' && prop !== 'open' && prop !== 'subItem',
@@ -104,8 +100,6 @@ const StyledNavItem = styled(ButtonBase, {
     }),
   };
 });
-
-// ----------------------------------------------------------------------
 
 type NavItemDashboardProps = LinkProps & {
   path: string;

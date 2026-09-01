@@ -14,8 +14,6 @@ import { OrderCompleteIllustration } from 'src/assets/illustrations';
 
 import { Iconify } from 'src/components/iconify';
 
-// ----------------------------------------------------------------------
-
 type Props = DialogProps & {
   onReset: () => void;
   onDownloadPDF: () => void;
@@ -72,10 +70,7 @@ export function CheckoutOrderComplete({ open, onReset, onDownloadPDF, purchase }
 
             <Stack spacing={1} sx={{ width: 1, textAlign: 'left' }}>
               {purchase.items.map((item) => (
-                <Box
-                  key={item.id}
-                  sx={{ gap: 2, display: 'flex', typography: 'body2' }}
-                >
+                <Box key={item.id} sx={{ gap: 2, display: 'flex', typography: 'body2' }}>
                   <Box sx={{ flexGrow: 1 }}>
                     {item.name}
                     <Box component="span" sx={{ color: 'text.secondary' }}>

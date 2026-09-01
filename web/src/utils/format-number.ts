@@ -1,7 +1,5 @@
 import { formatNumberLocale } from 'src/locales';
 
-// ----------------------------------------------------------------------
-
 /*
  * Locales code
  * https://gist.github.com/raushankrjha/d1c7e35cf87e69aa8b4208a8171a8416
@@ -18,8 +16,6 @@ function processInput(inputValue: InputNumberValue): number | null {
   return Number(inputValue);
 }
 
-// ----------------------------------------------------------------------
-
 export function fNumber(inputValue: InputNumberValue, options?: Options) {
   const locale = formatNumberLocale() || DEFAULT_LOCALE;
 
@@ -34,8 +30,6 @@ export function fNumber(inputValue: InputNumberValue, options?: Options) {
 
   return fm;
 }
-
-// ----------------------------------------------------------------------
 
 export function fCurrency(inputValue: InputNumberValue, options?: Options) {
   const locale = formatNumberLocale() || DEFAULT_LOCALE;
@@ -54,8 +48,6 @@ export function fCurrency(inputValue: InputNumberValue, options?: Options) {
   return fm;
 }
 
-// ----------------------------------------------------------------------
-
 export function fPercent(inputValue: InputNumberValue, options?: Options) {
   const locale = formatNumberLocale() || DEFAULT_LOCALE;
 
@@ -72,8 +64,6 @@ export function fPercent(inputValue: InputNumberValue, options?: Options) {
   return fm;
 }
 
-// ----------------------------------------------------------------------
-
 export function fShortenNumber(inputValue: InputNumberValue, options?: Options) {
   const locale = formatNumberLocale() || DEFAULT_LOCALE;
 
@@ -88,8 +78,6 @@ export function fShortenNumber(inputValue: InputNumberValue, options?: Options) 
 
   return fm.replace(/[A-Z]/g, (match) => match.toLowerCase());
 }
-
-// ----------------------------------------------------------------------
 
 export function fData(inputValue: InputNumberValue) {
   const number = processInput(inputValue);

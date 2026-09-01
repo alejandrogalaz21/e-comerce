@@ -12,8 +12,6 @@ import { Iconify } from 'src/components/iconify';
 
 import { SvgColor } from '../../svg-color';
 
-// ----------------------------------------------------------------------
-
 type Props = ButtonBaseProps & {
   icon: string;
   label: string;

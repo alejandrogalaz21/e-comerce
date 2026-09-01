@@ -9,8 +9,6 @@ import { CONFIG } from 'src/config-global';
 
 import { remToPx, varAlpha, mediaQueries } from './utils';
 
-// ----------------------------------------------------------------------
-
 /**
  * Usage:
  * ...hideScrollX,

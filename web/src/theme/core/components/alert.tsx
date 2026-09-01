@@ -7,8 +7,6 @@ import { alertClasses } from '@mui/material/Alert';
 
 import { varAlpha, stylesMode } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 /**
  * Icons
  */
@@ -60,8 +58,6 @@ const AlertErrorIcon = (props: SvgIconProps) => (
   </SvgIcon>
 );
 
-// ----------------------------------------------------------------------
-
 const COLORS = ['info', 'success', 'warning', 'error'] as const;
 
 type ColorType = (typeof COLORS)[number];
@@ -76,8 +72,6 @@ function styleColors(ownerState: AlertProps, styles: (val: ColorType) => CSSObje
 
   return outputStyle;
 }
-
-// ----------------------------------------------------------------------
 
 const MuiAlert: Components<Theme>['MuiAlert'] = {
   /** **************************************
@@ -149,8 +143,6 @@ const MuiAlert: Components<Theme>['MuiAlert'] = {
   },
 };
 
-// ----------------------------------------------------------------------
-
 const MuiAlertTitle: Components<Theme>['MuiAlertTitle'] = {
   /** **************************************
    * STYLE
@@ -162,7 +154,5 @@ const MuiAlertTitle: Components<Theme>['MuiAlertTitle'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const alert = { MuiAlert, MuiAlertTitle };

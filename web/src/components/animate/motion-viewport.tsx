@@ -10,8 +10,6 @@ import { useResponsive } from 'src/hooks/use-responsive';
 
 import { varContainer } from './variants';
 
-// ----------------------------------------------------------------------
-
 export type MotionViewportProps = BoxProps &
   MotionProps & {
     disableAnimate?: boolean;

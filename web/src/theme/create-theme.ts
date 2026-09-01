@@ -10,8 +10,6 @@ import { updateCoreWithSettings, updateComponentsWithSettings } from './with-set
 
 import type { ThemeLocaleComponents } from './types';
 
-// ----------------------------------------------------------------------
-
 export function createTheme(
   localeComponents: ThemeLocaleComponents,
   settings: SettingsState
@@ -48,8 +46,6 @@ export function createTheme(
 
   return theme;
 }
-
-// ----------------------------------------------------------------------
 
 function shouldSkipGeneratingVar(keys: string[], value: string | number): boolean {
   const skipGlobalKeys = [

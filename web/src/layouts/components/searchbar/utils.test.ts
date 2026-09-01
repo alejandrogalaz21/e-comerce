@@ -3,8 +3,6 @@ import { describe, it, expect } from 'vitest';
 import { navData } from '../../config-nav-dashboard';
 import { groupItems, applyFilter, getAllItems, highlightMatches } from './utils';
 
-// ----------------------------------------------------------------------
-
 const pages = () => getAllItems({ data: navData });
 
 const titles = () => pages().map((item) => item.title);

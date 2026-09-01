@@ -1,7 +1,5 @@
 import { useMemo, useState, useCallback } from 'react';
 
-// ----------------------------------------------------------------------
-
 export type UseBooleanReturn = {
   value: boolean;
   onTrue: () => void;

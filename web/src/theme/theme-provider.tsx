@@ -14,8 +14,6 @@ import { createTheme } from './create-theme';
 import { RTL } from './with-settings/right-to-left';
 import { schemeConfig } from './color-scheme-script';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   children: React.ReactNode;
 };

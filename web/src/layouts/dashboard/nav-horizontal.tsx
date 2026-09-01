@@ -8,8 +8,6 @@ import { varAlpha } from 'src/theme/styles';
 
 import { NavSectionHorizontal } from 'src/components/nav-section';
 
-// ----------------------------------------------------------------------
-
 export type NavHorizontalProps = NavSectionProps & {
   layoutQuery: Breakpoint;
 };

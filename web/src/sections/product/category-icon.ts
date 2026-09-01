@@ -1,5 +1,3 @@
-// ----------------------------------------------------------------------
-
 /**
  * `category` is free text with a default of `Uncategorized`, so any value can
  * arrive. The map is normalised and the fallback is not optional: an unknown

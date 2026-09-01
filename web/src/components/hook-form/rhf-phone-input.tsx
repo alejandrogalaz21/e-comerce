@@ -4,8 +4,6 @@ import { PhoneInput } from '../phone-input';
 
 import type { PhoneInputProps } from '../phone-input';
 
-// ----------------------------------------------------------------------
-
 type Props = Omit<PhoneInputProps, 'value' | 'onChange'> & {
   name: string;
 };

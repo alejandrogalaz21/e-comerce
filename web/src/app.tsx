@@ -1,7 +1,5 @@
 import 'src/global.css';
 
-// ----------------------------------------------------------------------
-
 import { QueryClientProvider } from '@tanstack/react-query';
 
 import { Router } from 'src/routes/sections';
@@ -21,8 +19,6 @@ import { SettingsDrawer, defaultSettings, SettingsProvider } from 'src/component
 import { CheckoutProvider } from 'src/sections/checkout/context';
 
 import { AuthProvider } from 'src/auth/context/jwt';
-
-// ----------------------------------------------------------------------
 
 export default function App() {
   useScrollToTop();

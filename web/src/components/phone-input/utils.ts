@@ -4,8 +4,6 @@ import { parsePhoneNumber } from 'react-phone-number-input';
 
 import { countries } from 'src/assets/data/countries';
 
-// ----------------------------------------------------------------------
-
 export function getCountryCode(inputValue: string, countryCode?: Country) {
   if (inputValue) {
     const phoneNumber = parsePhoneNumber(inputValue);
@@ -18,14 +16,10 @@ export function getCountryCode(inputValue: string, countryCode?: Country) {
   return countryCode ?? 'US';
 }
 
-// ----------------------------------------------------------------------
-
 export function getCountry(countryCode?: Country) {
   const option = countries.filter((country) => country.code === countryCode)[0];
   return option;
 }
-
-// ----------------------------------------------------------------------
 
 type ApplyFilterProps = {
   query: string;

@@ -8,8 +8,6 @@ import { iconifyClasses } from './classes';
 
 import type { IconifyProps } from './types';
 
-// ----------------------------------------------------------------------
-
 export const Iconify = forwardRef<SVGElement, IconifyProps>(
   ({ className, width = 20, sx, ...other }, ref) => {
     const baseStyles = {

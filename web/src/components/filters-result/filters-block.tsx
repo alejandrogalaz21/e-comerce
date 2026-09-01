@@ -2,8 +2,6 @@ import type { Theme, SxProps } from '@mui/material/styles';
 
 import Box from '@mui/material/Box';
 
-// ----------------------------------------------------------------------
-
 export type FilterBlockProps = {
   label: string;
   isShow: boolean;

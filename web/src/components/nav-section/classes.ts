@@ -1,5 +1,3 @@
-// ----------------------------------------------------------------------
-
 export const navSectionClasses = {
   mini: {
     root: 'nav__section__mini',

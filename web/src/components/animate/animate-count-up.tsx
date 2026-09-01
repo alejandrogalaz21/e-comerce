@@ -6,8 +6,6 @@ import { m, animate, useInView, useTransform, useMotionValue } from 'framer-moti
 
 import Typography from '@mui/material/Typography';
 
-// ----------------------------------------------------------------------
-
 export type AnimateCountUpProps = TypographyProps & {
   to: number;
   from?: number;

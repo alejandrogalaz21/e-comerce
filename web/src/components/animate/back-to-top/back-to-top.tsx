@@ -7,8 +7,6 @@ import Fab from '@mui/material/Fab';
 
 import { Iconify } from 'src/components/iconify';
 
-// ----------------------------------------------------------------------
-
 export type BackToTopProps = FabProps & {
   value?: number;
 };

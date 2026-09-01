@@ -15,8 +15,6 @@ import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
-// ----------------------------------------------------------------------
-
 type RHFCheckboxProps = Omit<FormControlLabelProps, 'control'> & {
   name: string;
   helperText?: React.ReactNode;
@@ -64,8 +62,6 @@ export function RHFCheckbox({ name, helperText, label, slotProps, ...other }: RH
     />
   );
 }
-
-// ----------------------------------------------------------------------
 
 type RHFMultiCheckboxProps = FormGroupProps & {
   name: string;

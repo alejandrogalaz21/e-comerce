@@ -5,8 +5,6 @@ import { varAlpha, stylesMode } from 'src/theme/styles';
 
 import type { PopoverArrow } from './types';
 
-// ----------------------------------------------------------------------
-
 export const StyledArrow = styled('span', {
   shouldForwardProp: (prop) => prop !== 'size' && prop !== 'placement' && prop !== 'offset',
 })<PopoverArrow>(({ placement, offset = 0, size = 0, theme }) => {

@@ -1,7 +1,5 @@
 import type { Path, FieldValues, UseFormSetError } from 'react-hook-form';
 
-// ----------------------------------------------------------------------
-
 export function applyServerFieldErrors<T extends FieldValues>(
   error: unknown,
   setError: UseFormSetError<T>,

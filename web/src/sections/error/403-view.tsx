@@ -11,8 +11,6 @@ import { ForbiddenIllustration } from 'src/assets/illustrations';
 
 import { varBounce, MotionContainer } from 'src/components/animate';
 
-// ----------------------------------------------------------------------
-
 export function View403() {
   return (
     <SimpleLayout content={{ compact: true }}>

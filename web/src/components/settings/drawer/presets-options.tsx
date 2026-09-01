@@ -9,8 +9,6 @@ import { SvgColor } from '../../svg-color';
 
 import type { SettingsState } from '../types';
 
-// ----------------------------------------------------------------------
-
 type Value = SettingsState['primaryColor'];
 
 type Props = {

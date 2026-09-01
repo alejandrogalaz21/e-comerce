@@ -8,8 +8,6 @@ import { BreadcrumbsLink } from './breadcrumb-link';
 
 import type { CustomBreadcrumbsProps } from './types';
 
-// ----------------------------------------------------------------------
-
 export function CustomBreadcrumbs({
   links,
   action,
@@ -71,8 +69,6 @@ export function CustomBreadcrumbs({
     </Stack>
   );
 }
-
-// ----------------------------------------------------------------------
 
 function Separator() {
   return (

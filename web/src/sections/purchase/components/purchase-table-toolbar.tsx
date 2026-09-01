@@ -15,8 +15,6 @@ import { PURCHASE_STATUSES, hasPurchaseFilters } from '../purchase-params';
 
 import type { IPurchaseFilters } from '../purchase-params';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   state: IPurchaseFilters;
   totalResults: number;
@@ -39,11 +37,7 @@ export function PurchaseTableToolbar({ state, totalResults, onApply, onReset }: 
 
   return (
     <Stack spacing={2} sx={{ p: 2.5 }}>
-      <Stack
-        spacing={2}
-        direction={{ xs: 'column', md: 'row' }}
-        alignItems={{ md: 'center' }}
-      >
+      <Stack spacing={2} direction={{ xs: 'column', md: 'row' }} alignItems={{ md: 'center' }}>
         <TextField
           value={term}
           onChange={(event) => setTerm(event.target.value)}
@@ -66,9 +60,7 @@ export function PurchaseTableToolbar({ state, totalResults, onApply, onReset }: 
           select
           label="Status"
           value={state.status}
-          onChange={(event) =>
-            onApply({ status: event.target.value as IPurchaseStatus | '' })
-          }
+          onChange={(event) => onApply({ status: event.target.value as IPurchaseStatus | '' })}
           sx={{ width: { xs: 1, md: 160 } }}
         >
           <MenuItem value="">All</MenuItem>
@@ -105,11 +97,7 @@ export function PurchaseTableToolbar({ state, totalResults, onApply, onReset }: 
           </FiltersBlock>
 
           <FiltersBlock label="Status:" isShow={!!state.status}>
-            <Chip
-              {...chipProps}
-              label={state.status}
-              onDelete={() => onApply({ status: '' })}
-            />
+            <Chip {...chipProps} label={state.status} onDelete={() => onApply({ status: '' })} />
           </FiltersBlock>
 
           <FiltersBlock label="Date:" isShow={!!(state.dateFrom || state.dateTo)}>

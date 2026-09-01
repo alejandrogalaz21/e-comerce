@@ -15,8 +15,6 @@ import { Iconify } from 'src/components/iconify';
 import { signOut } from 'src/auth/context/jwt';
 import { useAuthContext } from 'src/auth/hooks';
 
-// ----------------------------------------------------------------------
-
 export function SessionMenu() {
   const router = useRouter();
 

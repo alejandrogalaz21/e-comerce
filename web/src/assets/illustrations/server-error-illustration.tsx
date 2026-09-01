@@ -9,8 +9,6 @@ import { CONFIG } from 'src/config-global';
 
 import { BackgroundShape } from './background-shape';
 
-// ----------------------------------------------------------------------
-
 type Props = BoxProps & {
   hideBackground?: boolean;
 };

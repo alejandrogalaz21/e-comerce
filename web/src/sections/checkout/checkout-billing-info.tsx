@@ -8,8 +8,6 @@ import CardHeader from '@mui/material/CardHeader';
 
 import { Iconify } from 'src/components/iconify';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   onBackStep: () => void;
   billing: IAddressItem | null;

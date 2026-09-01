@@ -11,8 +11,6 @@ import { fCurrency } from 'src/utils/format-number';
 
 import { sumSubtotals } from '../purchase-utils';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   purchase: IPurchase;
 };

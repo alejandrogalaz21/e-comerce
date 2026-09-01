@@ -7,8 +7,6 @@ import { CONFIG } from 'src/config-global';
 
 import { SvgColor, svgColorClasses } from '../../svg-color';
 
-// ----------------------------------------------------------------------
-
 export function FullScreenButton() {
   const [fullscreen, setFullscreen] = useState(false);
 

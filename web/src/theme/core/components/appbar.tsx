@@ -1,7 +1,5 @@
 import type { Theme, Components } from '@mui/material/styles';
 
-// ----------------------------------------------------------------------
-
 const MuiAppBar: Components<Theme>['MuiAppBar'] = {
   /** **************************************
    * DEFAULT PROPS
@@ -13,7 +11,5 @@ const MuiAppBar: Components<Theme>['MuiAppBar'] = {
    *************************************** */
   styleOverrides: { root: { boxShadow: 'none' } },
 };
-
-// ----------------------------------------------------------------------
 
 export const appBar = { MuiAppBar };

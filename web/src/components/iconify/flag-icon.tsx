@@ -7,8 +7,6 @@ import NoSsr from '@mui/material/NoSsr';
 
 import { CONFIG } from 'src/config-global';
 
-// ----------------------------------------------------------------------
-
 export type FlagIconProps = {
   code?: string;
   sx?: SxProps<Theme>;

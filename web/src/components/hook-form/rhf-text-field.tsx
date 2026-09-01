@@ -4,8 +4,6 @@ import { Controller, useFormContext } from 'react-hook-form';
 
 import TextField from '@mui/material/TextField';
 
-// ----------------------------------------------------------------------
-
 type Props = TextFieldProps & {
   name: string;
 };

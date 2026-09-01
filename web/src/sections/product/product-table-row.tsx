@@ -10,8 +10,6 @@ import { fTime, fDate } from 'src/utils/format-time';
 
 import { Label } from 'src/components/label';
 
-// ----------------------------------------------------------------------
-
 type ParamsProps = {
   params: GridCellParams;
 };
@@ -77,7 +75,10 @@ export function RenderCellStock({ params }: ParamsProps) {
   const { stock } = params.row;
 
   return (
-    <Label variant="soft" color={(stock === 0 && 'error') || (stock < 10 && 'warning') || 'success'}>
+    <Label
+      variant="soft"
+      color={(stock === 0 && 'error') || (stock < 10 && 'warning') || 'success'}
+    >
       {stock}
     </Label>
   );
@@ -90,13 +91,7 @@ export function RenderCellProduct({
   onViewRow: () => void;
 }) {
   return (
-    <Link
-      noWrap
-      color="inherit"
-      variant="subtitle2"
-      onClick={onViewRow}
-      sx={{ cursor: 'pointer' }}
-    >
+    <Link noWrap color="inherit" variant="subtitle2" onClick={onViewRow} sx={{ cursor: 'pointer' }}>
       {params.row.name}
     </Link>
   );

@@ -1,8 +1,6 @@
 import dayjs from 'dayjs';
 import { z as zod } from 'zod';
 
-// ----------------------------------------------------------------------
-
 // const isSsr = typeof window === 'undefined';
 
 type InputProps = {

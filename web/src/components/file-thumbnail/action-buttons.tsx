@@ -9,8 +9,6 @@ import { bgBlur, varAlpha } from 'src/theme/styles';
 
 import { Iconify } from '../iconify';
 
-// ----------------------------------------------------------------------
-
 export function DownloadButton({ sx, ...other }: ButtonBaseProps) {
   const theme = useTheme();
 
@@ -40,8 +38,6 @@ export function DownloadButton({ sx, ...other }: ButtonBaseProps) {
     </ButtonBase>
   );
 }
-
-// ----------------------------------------------------------------------
 
 export function RemoveButton({ sx, ...other }: IconButtonProps) {
   return (

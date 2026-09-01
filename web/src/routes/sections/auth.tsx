@@ -9,8 +9,6 @@ import { SplashScreen } from 'src/components/loading-screen';
 
 import { GuestGuard } from 'src/auth/guard';
 
-// ----------------------------------------------------------------------
-
 /** **************************************
  * Jwt
  *************************************** */
@@ -37,8 +35,6 @@ const authJwt = {
     { path: 'sign-up', element: <Navigate to={paths.auth.jwt.signIn} replace /> },
   ],
 };
-
-// ----------------------------------------------------------------------
 
 export const authRoutes = [
   {

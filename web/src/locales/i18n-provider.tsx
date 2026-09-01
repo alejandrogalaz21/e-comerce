@@ -7,8 +7,6 @@ import { localStorageGetItem } from 'src/utils/storage-available';
 
 import { i18nOptions, fallbackLng } from './config-locales';
 
-// ----------------------------------------------------------------------
-
 /**
  * [1] localStorage
  * Auto detection:
@@ -21,8 +19,6 @@ i18next
   .use(initReactI18next)
   .use(resourcesToBackend((lang: string, ns: string) => import(`./langs/${lang}/${ns}.json`)))
   .init({ ...i18nOptions(lng), detection: { caches: ['localStorage'] } });
-
-// ----------------------------------------------------------------------
 
 type Props = {
   children: React.ReactNode;

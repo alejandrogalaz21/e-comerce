@@ -7,8 +7,6 @@ import { useTheme } from '@mui/material/styles';
 
 import { BackgroundShape } from './background-shape';
 
-// ----------------------------------------------------------------------
-
 type Props = BoxProps & {
   hideBackground?: boolean;
 };

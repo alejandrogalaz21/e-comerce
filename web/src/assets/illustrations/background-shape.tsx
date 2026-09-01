@@ -2,8 +2,6 @@ import { useId } from 'react';
 
 import { useTheme } from '@mui/material/styles';
 
-// ----------------------------------------------------------------------
-
 export function BackgroundShape() {
   const theme = useTheme();
 

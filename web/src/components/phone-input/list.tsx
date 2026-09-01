@@ -22,8 +22,6 @@ import { getCountry, applyFilter } from './utils';
 
 import type { CountryListProps } from './types';
 
-// ----------------------------------------------------------------------
-
 export function CountryListPopover({ countryCode, onClickCountry }: CountryListProps) {
   const popover = usePopover();
 

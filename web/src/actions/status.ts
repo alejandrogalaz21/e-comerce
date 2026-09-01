@@ -2,8 +2,6 @@ import type { IApiHealth, IServiceStatus } from 'src/types/status';
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
-// ----------------------------------------------------------------------
-
 export async function getApiHealth(): Promise<IApiHealth> {
   const res = await axiosInstance.get<IApiHealth>(endpoints.status.health);
   return res.data;

@@ -2,8 +2,6 @@ import type { Theme, Components } from '@mui/material/styles';
 
 import { varAlpha } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 const MuiBackdrop: Components<Theme>['MuiBackdrop'] = {
   /** **************************************
    * STYLE
@@ -15,7 +13,5 @@ const MuiBackdrop: Components<Theme>['MuiBackdrop'] = {
     invisible: { background: 'transparent' },
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const backdrop = { MuiBackdrop };

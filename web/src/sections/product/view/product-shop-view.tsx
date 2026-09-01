@@ -24,8 +24,6 @@ import { categoryIcon } from '../category-icon';
 import { SHOP_PAGE_SIZE } from '../shop-params';
 import { useShopParams } from '../hooks/use-shop-params';
 
-// ----------------------------------------------------------------------
-
 const MAX_CATEGORY_CHIPS = 8;
 
 type Props = {
@@ -138,9 +136,7 @@ export function ProductShopView({ products, categories, total, loading }: Props)
     <EmptyContent
       filled
       sx={{ py: 10 }}
-      title={
-        state.q ? `No results for "${state.q}"` : `No products in ${state.category}`
-      }
+      title={state.q ? `No results for "${state.q}"` : `No products in ${state.category}`}
       description="Try a different search, or clear what is filtering the catalog."
       action={
         <Button
@@ -169,11 +165,7 @@ export function ProductShopView({ products, categories, total, loading }: Props)
         {renderCategories}
       </Stack>
 
-      {nothingFound ? (
-        renderEmpty
-      ) : (
-        <ProductList products={products} loading={loading} />
-      )}
+      {nothingFound ? renderEmpty : <ProductList products={products} loading={loading} />}
 
       {pageCount > 1 && (
         <Box sx={{ mt: 6, display: 'flex', justifyContent: 'center' }}>

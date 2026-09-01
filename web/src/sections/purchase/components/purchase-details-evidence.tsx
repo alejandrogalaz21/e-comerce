@@ -11,8 +11,6 @@ import { fDateTime } from 'src/utils/format-time';
 import { CopyableValue } from './copyable-value';
 import { PurchaseStatusLabel } from './purchase-status-label';
 
-// ----------------------------------------------------------------------
-
 type RowProps = {
   label: string;
   hint?: string;
@@ -36,8 +34,6 @@ function Row({ label, hint, children }: RowProps) {
     </Stack>
   );
 }
-
-// ----------------------------------------------------------------------
 
 type Props = {
   purchase: IPurchase;

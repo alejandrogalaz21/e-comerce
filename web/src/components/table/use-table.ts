@@ -2,8 +2,6 @@ import { useState, useCallback } from 'react';
 
 import type { TableProps } from './types';
 
-// ----------------------------------------------------------------------
-
 type UseTableReturn = TableProps;
 
 export type UseTableProps = {

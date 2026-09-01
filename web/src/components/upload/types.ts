@@ -3,8 +3,6 @@ import type { Theme, SxProps } from '@mui/material/styles';
 
 import type { FileThumbnailProps } from '../file-thumbnail';
 
-// ----------------------------------------------------------------------
-
 export type FileUploadType = File | string | null;
 
 export type FilesUploadType = (File | string)[];

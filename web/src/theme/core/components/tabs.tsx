@@ -2,8 +2,6 @@ import type { Theme, Components } from '@mui/material/styles';
 
 import { tabClasses } from '@mui/material/Tab';
 
-// ----------------------------------------------------------------------
-
 const MuiTabs: Components<Theme>['MuiTabs'] = {
   /** **************************************
    * DEFAULT PROPS
@@ -30,8 +28,6 @@ const MuiTabs: Components<Theme>['MuiTabs'] = {
   },
 };
 
-// ----------------------------------------------------------------------
-
 const MuiTab: Components<Theme>['MuiTab'] = {
   /** **************************************
    * DEFAULT PROPS
@@ -57,7 +53,5 @@ const MuiTab: Components<Theme>['MuiTab'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const tabs = { MuiTabs, MuiTab };

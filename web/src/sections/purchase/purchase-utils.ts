@@ -1,7 +1,5 @@
 import type { IPurchase, IPurchaseItem } from 'src/types/purchase';
 
-// ----------------------------------------------------------------------
-
 export function countItems(purchase: Pick<IPurchase, 'items'>): number {
   return purchase.items.reduce((total, item) => total + item.quantity, 0);
 }

@@ -2,8 +2,6 @@ import type { NavSectionProps, NavItemBaseProps } from 'src/components/nav-secti
 
 import { flattenArray } from 'src/utils/helper';
 
-// ----------------------------------------------------------------------
-
 type ItemProps = {
   group: string;
   title: string;
@@ -26,8 +24,6 @@ export function getAllItems({ data }: { data: NavSectionProps['data'] }) {
   return items;
 }
 
-// ----------------------------------------------------------------------
-
 type ApplyFilterProps = {
   inputData: ItemProps[];
   query: string;
@@ -44,8 +40,6 @@ export function applyFilter({ inputData, query }: ApplyFilterProps) {
 
   return inputData;
 }
-
-// ----------------------------------------------------------------------
 
 export function splitPath(array: NavItemBaseProps[], key: string) {
   let stack = array.map((item) => ({ path: [item.title], currItem: item }));
@@ -72,8 +66,6 @@ export function splitPath(array: NavItemBaseProps[], key: string) {
   return null;
 }
 
-// ----------------------------------------------------------------------
-
 export function handleLoop(array: any, subheader?: string) {
   return array?.map((list: any) => ({
     subheader,
@@ -81,8 +73,6 @@ export function handleLoop(array: any, subheader?: string) {
     ...(list.children && { children: handleLoop(list.children, subheader) }),
   }));
 }
-
-// ----------------------------------------------------------------------
 
 type GroupsProps = {
   [key: string]: ItemProps[];
@@ -99,8 +89,6 @@ export function groupItems(array: ItemProps[]) {
 
   return group;
 }
-
-// ----------------------------------------------------------------------
 
 export type HighlightPart = {
   text: string;

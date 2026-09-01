@@ -3,8 +3,6 @@ import type { ColorSystemOptions } from '@mui/material/styles';
 import COLORS from './colors.json';
 import { varAlpha, createPaletteChannel } from '../styles';
 
-// ----------------------------------------------------------------------
-
 declare module '@mui/material/styles/createPalette' {
   interface CommonColors {
     whiteChannel: string;
@@ -53,8 +51,6 @@ declare module '@mui/material' {
 }
 
 export type ColorType = 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error';
-
-// ----------------------------------------------------------------------
 
 // Grey
 export const grey = createPaletteChannel(COLORS.grey);
@@ -137,8 +133,6 @@ export const darkPalette = {
   background: background.dark,
   action: action.dark,
 };
-
-// ----------------------------------------------------------------------
 
 export const colorSchemes: Partial<Record<'dark' | 'light', ColorSystemOptions>> = {
   light: { palette: lightPalette },

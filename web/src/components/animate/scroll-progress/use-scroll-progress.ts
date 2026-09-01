@@ -3,8 +3,6 @@ import type { MotionValue } from 'framer-motion';
 import { useRef, useMemo } from 'react';
 import { useScroll } from 'framer-motion';
 
-// ----------------------------------------------------------------------
-
 export type UseScrollProgressReturn = {
   scrollXProgress: MotionValue<number>;
   scrollYProgress: MotionValue<number>;

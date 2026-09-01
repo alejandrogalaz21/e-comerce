@@ -6,8 +6,6 @@ import { varAlpha } from 'src/theme/styles';
 
 import { Label } from 'src/components/label';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   title: {
     text: string;

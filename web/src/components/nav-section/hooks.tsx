@@ -4,8 +4,6 @@ import { RouterLink } from 'src/routes/components';
 
 import type { NavItemProps } from './types';
 
-// ----------------------------------------------------------------------
-
 export type UseNavItemReturn = {
   subItem: boolean;
   rootItem: boolean;

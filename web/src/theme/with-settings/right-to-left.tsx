@@ -5,8 +5,6 @@ import { CacheProvider } from '@emotion/react';
 
 import type { ThemeDirection } from '../types';
 
-// ----------------------------------------------------------------------
-
 type RTLProps = {
   children: React.ReactNode;
   direction: ThemeDirection;

@@ -4,8 +4,6 @@ import { CONFIG } from 'src/config-global';
 
 import { ProductListView } from 'src/sections/product/view';
 
-// ----------------------------------------------------------------------
-
 const metadata = { title: `Product catalog | Dashboard - ${CONFIG.site.name}` };
 
 export default function Page() {

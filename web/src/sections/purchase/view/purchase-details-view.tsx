@@ -21,8 +21,6 @@ import {
   PurchaseDetailsEvidence,
 } from '../components';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   id: string;
 };

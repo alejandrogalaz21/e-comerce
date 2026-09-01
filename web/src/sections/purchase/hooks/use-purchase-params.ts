@@ -1,4 +1,3 @@
-
 import { useMemo, useCallback } from 'react';
 
 import { useRouter, usePathname, useSearchParams } from 'src/routes/hooks';
@@ -6,8 +5,6 @@ import { useRouter, usePathname, useSearchParams } from 'src/routes/hooks';
 import { parsePurchaseFilters, serializePurchaseFilters } from '../purchase-params';
 
 import type { IPurchaseFilters } from '../purchase-params';
-
-// ----------------------------------------------------------------------
 
 /**
  * The address is the state, the same way the product list and the shop work:

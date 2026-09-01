@@ -6,8 +6,6 @@ import type {
   IShippingAddress,
 } from 'src/types/purchase';
 
-// ----------------------------------------------------------------------
-
 /**
  * Money crosses the wire as a string so decimal precision survives Postgres and
  * JSON. It becomes a number only here, at the edge that renders it.

@@ -2,8 +2,6 @@ import type { BoxProps } from '@mui/material/Box';
 import type { Theme, SxProps } from '@mui/material/styles';
 import type { LazyLoadImageProps } from 'react-lazy-load-image-component';
 
-// ----------------------------------------------------------------------
-
 type BaseRatioType =
   | '2/3'
   | '3/2'

@@ -10,8 +10,6 @@ import { InfoRow } from 'src/components/info-row';
 
 import { StatusChip } from './status-chip';
 
-// ----------------------------------------------------------------------
-
 export type ServiceStatusCardProps = {
   title: string;
   subheader: string;

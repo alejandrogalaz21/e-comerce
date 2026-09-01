@@ -41,8 +41,6 @@ import { autocomplete } from './autocomplete';
 import { toggleButton } from './button-toggle';
 import { datePicker } from './mui-x-date-picker';
 
-// ----------------------------------------------------------------------
-
 export const components = {
   ...fab,
   ...card,

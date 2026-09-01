@@ -3,8 +3,6 @@ import type { Theme, Components } from '@mui/material/styles';
 
 import SvgIcon from '@mui/material/SvgIcon';
 
-// ----------------------------------------------------------------------
-
 /**
  * Icons
  * https://icon-sets.iconify.design/eva/arrow-ios-downward-fill/
@@ -17,8 +15,6 @@ const ArrowDownIcon = (props: SvgIconProps) => (
     />
   </SvgIcon>
 );
-
-// ----------------------------------------------------------------------
 
 const MuiSelect: Components<Theme>['MuiSelect'] = {
   /** **************************************
@@ -39,8 +35,6 @@ const MuiSelect: Components<Theme>['MuiSelect'] = {
   },
 };
 
-// ----------------------------------------------------------------------
-
 const MuiNativeSelect: Components<Theme>['MuiNativeSelect'] = {
   /** **************************************
    * DEFAULT PROPS
@@ -59,7 +53,5 @@ const MuiNativeSelect: Components<Theme>['MuiNativeSelect'] = {
     },
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const select = { MuiSelect, MuiNativeSelect };

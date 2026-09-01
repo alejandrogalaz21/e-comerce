@@ -15,8 +15,6 @@ import { DeleteButton, SingleFilePreview } from './components/preview-single-fil
 
 import type { UploadProps } from './types';
 
-// ----------------------------------------------------------------------
-
 export function Upload({
   sx,
   value,

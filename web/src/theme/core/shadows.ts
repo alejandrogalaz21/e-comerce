@@ -5,8 +5,6 @@ import { grey, common } from './palette';
 
 import type { ThemeColorScheme } from '../types';
 
-// ----------------------------------------------------------------------
-
 export function shadows(colorScheme: ThemeColorScheme): Shadows {
   const colorChannel = colorScheme === 'light' ? grey['500Channel'] : common.blackChannel;
 

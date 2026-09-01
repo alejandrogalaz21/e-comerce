@@ -5,8 +5,6 @@ import Tooltip from '@mui/material/Tooltip';
 
 import { Label } from 'src/components/label';
 
-// ----------------------------------------------------------------------
-
 const STATUS_COLOR: Record<IPurchaseStatus, LabelColor> = {
   PAID: 'success',
   FAILED: 'error',

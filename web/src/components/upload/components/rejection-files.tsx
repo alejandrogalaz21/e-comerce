@@ -10,8 +10,6 @@ import { varAlpha } from 'src/theme/styles';
 
 import { fileData } from '../../file-thumbnail';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   files: FileRejection[];
 };

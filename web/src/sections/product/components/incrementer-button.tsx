@@ -9,8 +9,6 @@ import { varAlpha } from 'src/theme/styles';
 
 import { Iconify } from 'src/components/iconify';
 
-// ----------------------------------------------------------------------
-
 type Props = StackProps & {
   name?: string;
   quantity: number;

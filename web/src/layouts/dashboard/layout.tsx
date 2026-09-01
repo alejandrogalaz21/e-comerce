@@ -24,8 +24,6 @@ import { LayoutSection } from '../core/layout-section';
 import { SessionMenu } from '../components/session-menu';
 import { navData as dashboardNavData } from '../config-nav-dashboard';
 
-// ----------------------------------------------------------------------
-
 export type DashboardLayoutProps = {
   sx?: SxProps<Theme>;
   children: React.ReactNode;
@@ -179,8 +177,6 @@ export function DashboardLayout({ sx, children, data }: DashboardLayoutProps) {
     </>
   );
 }
-
-// ----------------------------------------------------------------------
 
 function useNavColorVars(
   theme: Theme,

@@ -1,7 +1,5 @@
 import type { IPurchaseStatus } from 'src/types/purchase';
 
-// ----------------------------------------------------------------------
-
 export const PURCHASE_PAGE_SIZE = 20;
 
 export const PURCHASE_STATUSES: IPurchaseStatus[] = ['PAID', 'FAILED', 'PENDING'];

@@ -4,8 +4,6 @@ import { avatarGroupClasses } from '@mui/material/AvatarGroup';
 
 import { varAlpha } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 // NEW VARIANT
 declare module '@mui/material/AvatarGroup' {
   interface AvatarGroupPropsVariantOverrides {
@@ -26,8 +24,6 @@ const colorByName = (name: string) => {
   if (['v', 'x', 'y'].includes(charAt)) return 'error';
   return 'default';
 };
-
-// ----------------------------------------------------------------------
 
 const avatarColors: Record<string, ComponentsVariants<Theme>['MuiAvatar']> = {
   colors: COLORS.map((color) => ({
@@ -79,8 +75,6 @@ const MuiAvatar: Components<Theme>['MuiAvatar'] = {
   },
 };
 
-// ----------------------------------------------------------------------
-
 const MuiAvatarGroup: Components<Theme>['MuiAvatarGroup'] = {
   /** **************************************
    * DEFAULT PROPS
@@ -118,7 +112,5 @@ const MuiAvatarGroup: Components<Theme>['MuiAvatarGroup'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const avatar = { MuiAvatar, MuiAvatarGroup };

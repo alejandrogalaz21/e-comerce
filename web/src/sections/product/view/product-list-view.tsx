@@ -49,8 +49,6 @@ import {
 
 import type { IProductListState } from '../product-list-params';
 
-// ----------------------------------------------------------------------
-
 export function ProductListView() {
   const confirmRows = useBoolean();
 
@@ -340,8 +338,6 @@ export function ProductListView() {
     </>
   );
 }
-
-// ----------------------------------------------------------------------
 
 type CustomToolbarProps = {
   state: IProductListState;

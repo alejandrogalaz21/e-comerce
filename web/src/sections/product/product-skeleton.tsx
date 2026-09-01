@@ -6,8 +6,6 @@ import Paper from '@mui/material/Paper';
 import Skeleton from '@mui/material/Skeleton';
 import Grid from '@mui/material/Unstable_Grid2';
 
-// ----------------------------------------------------------------------
-
 export function ProductItemSkeleton({
   sx,
   amount = 16,
@@ -35,8 +33,6 @@ export function ProductItemSkeleton({
     </Paper>
   ));
 }
-
-// ----------------------------------------------------------------------
 
 export function ProductDetailsSkeleton({ ...other }: Grid2Props) {
   return (

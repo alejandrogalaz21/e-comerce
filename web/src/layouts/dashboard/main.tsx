@@ -10,8 +10,6 @@ import { layoutClasses } from 'src/layouts/classes';
 
 import { useSettingsContext } from 'src/components/settings';
 
-// ----------------------------------------------------------------------
-
 type MainProps = BoxProps & {
   isNavHorizontal: boolean;
 };
@@ -36,8 +34,6 @@ export function Main({ children, isNavHorizontal, sx, ...other }: MainProps) {
     </Box>
   );
 }
-
-// ----------------------------------------------------------------------
 
 type DashboardContentProps = ContainerProps & {
   disablePadding?: boolean;

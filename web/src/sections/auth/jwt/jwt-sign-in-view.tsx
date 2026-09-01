@@ -23,11 +23,7 @@ import { Form, Field } from 'src/components/hook-form';
 import { useAuthContext } from 'src/auth/hooks';
 import { signInWithPassword, getAuthErrorMessage } from 'src/auth/context/jwt';
 
-// ----------------------------------------------------------------------
-
 const DEMO_CREDENTIALS = { email: 'demo@demo.com', password: 'demo' };
-
-// ----------------------------------------------------------------------
 
 export type SignInSchemaType = zod.infer<typeof SignInSchema>;
 
@@ -38,8 +34,6 @@ export const SignInSchema = zod.object({
     .email({ message: 'Email must be a valid email address!' }),
   password: zod.string().min(1, { message: 'Password is required!' }),
 });
-
-// ----------------------------------------------------------------------
 
 export function JwtSignInView() {
   const router = useRouter();

@@ -25,8 +25,6 @@ import { SearchNotFound } from 'src/components/search-not-found';
 import { ResultItem } from './result-item';
 import { groupItems, applyFilter, getAllItems, highlightMatches } from './utils';
 
-// ----------------------------------------------------------------------
-
 const isMacOs = () =>
   typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(navigator.userAgent);
 

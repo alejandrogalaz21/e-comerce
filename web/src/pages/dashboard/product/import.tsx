@@ -4,8 +4,6 @@ import { CONFIG } from 'src/config-global';
 
 import { ProductImportView } from 'src/sections/product/view';
 
-// ----------------------------------------------------------------------
-
 const metadata = { title: `Import products from CSV | Dashboard - ${CONFIG.site.name}` };
 
 export default function Page() {

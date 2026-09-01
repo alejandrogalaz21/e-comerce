@@ -3,8 +3,6 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import { isEqual } from 'src/utils/helper';
 import { localStorageGetItem } from 'src/utils/storage-available';
 
-// ----------------------------------------------------------------------
-
 export type UseLocalStorageReturn<T> = {
   state: T;
   canReset: boolean;
@@ -74,8 +72,6 @@ export function useLocalStorage<T>(key: string, initialState: T): UseLocalStorag
 
   return memoizedValue;
 }
-
-// ----------------------------------------------------------------------
 
 export function getStorage(key: string) {
   try {

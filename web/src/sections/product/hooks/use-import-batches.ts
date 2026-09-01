@@ -4,16 +4,12 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 
 import { getImportBatch, getImportBatches } from 'src/actions/product';
 
-// ----------------------------------------------------------------------
-
 export const importBatchKeys = {
   all: ['import-batches'] as const,
   lists: () => [...importBatchKeys.all, 'list'] as const,
   list: (params: IImportBatchListParams) => [...importBatchKeys.lists(), params] as const,
   detail: (id: string) => [...importBatchKeys.all, 'detail', id] as const,
 };
-
-// ----------------------------------------------------------------------
 
 export function useGetImportBatches(params: IImportBatchListParams) {
   const query = useQuery({

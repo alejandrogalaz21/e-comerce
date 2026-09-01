@@ -5,8 +5,6 @@ import Stack from '@mui/material/Stack';
 import CardHeader from '@mui/material/CardHeader';
 import Typography from '@mui/material/Typography';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   address: IShippingAddress | null;
 };

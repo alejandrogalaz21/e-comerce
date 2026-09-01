@@ -16,8 +16,6 @@ import { useCheckoutContext } from './context';
 import { CheckoutSummary } from './checkout-summary';
 import { CheckoutCartProductList } from './checkout-cart-product-list';
 
-// ----------------------------------------------------------------------
-
 export function CheckoutCart() {
   const checkout = useCheckoutContext();
 

@@ -2,8 +2,6 @@ import { useContext } from 'react';
 
 import { CheckoutContext } from './checkout-provider';
 
-// ----------------------------------------------------------------------
-
 export function useCheckoutContext() {
   const context = useContext(CheckoutContext);
 

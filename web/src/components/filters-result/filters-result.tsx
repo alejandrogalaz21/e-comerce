@@ -6,8 +6,6 @@ import Button from '@mui/material/Button';
 
 import { Iconify } from 'src/components/iconify';
 
-// ----------------------------------------------------------------------
-
 export const chipProps: ChipProps = {
   size: 'small',
   variant: 'soft',

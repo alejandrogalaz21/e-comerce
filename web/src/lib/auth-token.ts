@@ -1,7 +1,5 @@
 export const ACCESS_TOKEN_KEY = 'jwt_access_token';
 
-// ----------------------------------------------------------------------
-
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') {
     return null;
@@ -21,8 +19,6 @@ export function setAccessToken(accessToken: string | null): void {
     window.localStorage.removeItem(ACCESS_TOKEN_KEY);
   }
 }
-
-// ----------------------------------------------------------------------
 
 type RequestConfigLike = { headers: Record<string, unknown> };
 

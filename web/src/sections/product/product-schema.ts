@@ -1,7 +1,5 @@
 import { z as zod } from 'zod';
 
-// ----------------------------------------------------------------------
-
 export type NewProductSchemaType = zod.infer<typeof NewProductSchema>;
 
 const HTML_TAG_PATTERN = /<[^>]*>/;

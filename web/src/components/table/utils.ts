@@ -1,16 +1,10 @@
-// ----------------------------------------------------------------------
-
 export function rowInPage<T>(data: T[], page: number, rowsPerPage: number) {
   return data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 }
 
-// ----------------------------------------------------------------------
-
 export function emptyRows(page: number, rowsPerPage: number, arrayLength: number) {
   return page ? Math.max(0, (1 + page) * rowsPerPage - arrayLength) : 0;
 }
-
-// ----------------------------------------------------------------------
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
   if (a[orderBy] === null) {
@@ -27,8 +21,6 @@ function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
   }
   return 0;
 }
-
-// ----------------------------------------------------------------------
 
 export function getComparator<Key extends keyof any>(
   order: 'asc' | 'desc',

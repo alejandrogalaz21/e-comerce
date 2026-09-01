@@ -13,8 +13,6 @@ import { SvgColor, svgColorClasses } from '../../svg-color';
 
 import type { SettingsState } from '../types';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   value: {
     color: SettingsState['navColor'];
@@ -95,8 +93,6 @@ export function NavOptions({ options, value, onClickOption, hideNavColor, hideNa
     </Block>
   );
 }
-
-// ----------------------------------------------------------------------
 
 type OptionProps = ButtonBaseProps & {
   option: string;
@@ -220,8 +216,6 @@ export function LayoutOption({ option, selected, sx, ...other }: OptionProps) {
     </ButtonBase>
   );
 }
-
-// ----------------------------------------------------------------------
 
 export function ColorOption({ option, selected, sx, ...other }: OptionProps) {
   return (

@@ -12,8 +12,6 @@ import { CountryListPopover } from './list';
 
 import type { PhoneInputProps } from './types';
 
-// ----------------------------------------------------------------------
-
 export const PhoneInput = forwardRef<HTMLDivElement, PhoneInputProps>(
   ({ value, onChange, placeholder, country: inputCountryCode, disableSelect, ...other }, ref) => {
     const defaultCountryCode = getCountryCode(value, inputCountryCode);
@@ -47,8 +45,6 @@ export const PhoneInput = forwardRef<HTMLDivElement, PhoneInputProps>(
     );
   }
 );
-
-// ----------------------------------------------------------------------
 
 const CustomInput = forwardRef<HTMLInputElement, TextFieldProps>(({ ...props }, ref) => (
   <TextField inputRef={ref} {...props} />

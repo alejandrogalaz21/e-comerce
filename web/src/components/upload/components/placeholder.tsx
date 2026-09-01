@@ -5,8 +5,6 @@ import Stack from '@mui/material/Stack';
 
 import { UploadIllustration } from 'src/assets/illustrations';
 
-// ----------------------------------------------------------------------
-
 export function UploadPlaceholder({ ...other }: BoxProps) {
   return (
     <Box

@@ -43,8 +43,6 @@ test.afterAll(async () => {
   await api.dispose();
 });
 
-// ----------------------------------------------------------------------
-
 test.describe('dashboard without a session', () => {
   test.use({ storageState: ANONYMOUS_STATE });
 
@@ -117,8 +115,6 @@ test.describe('dashboard without a session', () => {
   });
 });
 
-// ----------------------------------------------------------------------
-
 test.describe('public store without a session', () => {
   test.use({ storageState: ANONYMOUS_STATE });
 
@@ -153,8 +149,6 @@ test.describe('public store without a session', () => {
     await api.dispose();
   });
 });
-
-// ----------------------------------------------------------------------
 
 test.describe('dashboard with the stored session', () => {
   test('renders a protected route without redirecting', async ({ page }) => {

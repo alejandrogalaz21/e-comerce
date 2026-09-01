@@ -7,8 +7,6 @@ import { CONFIG } from 'src/config-global';
 import { ProductShopDetailsView } from 'src/sections/product/view';
 import { useGetProduct } from 'src/sections/product/hooks/use-product';
 
-// ----------------------------------------------------------------------
-
 const metadata = { title: `Product details - ${CONFIG.site.name}` };
 
 export default function Page() {

@@ -14,8 +14,6 @@ import { Iconify } from 'src/components/iconify';
 
 import { IncrementerButton } from '../product/components/incrementer-button';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   row: ICheckoutItem;
   onDelete: () => void;

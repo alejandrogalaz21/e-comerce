@@ -11,8 +11,6 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { ServiceStatusCard } from '../components';
 import { useDbStatus, useApiHealth, useRedisStatus } from '../hooks/use-status';
 
-// ----------------------------------------------------------------------
-
 export function StatusView() {
   const apiHealth = useApiHealth();
   const dbStatus = useDbStatus();

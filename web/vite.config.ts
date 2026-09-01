@@ -3,8 +3,6 @@ import checker from 'vite-plugin-checker';
 import { loadEnv, defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 
-// ----------------------------------------------------------------------
-
 const PORT = 3000;
 
 const env = loadEnv('all', process.cwd());

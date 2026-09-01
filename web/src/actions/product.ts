@@ -13,9 +13,12 @@ import type {
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
 
-import { toImportBatch, toProductItem, toImportResult, toImportBatchDetail } from './product.mapper';
-
-// ----------------------------------------------------------------------
+import {
+  toImportBatch,
+  toProductItem,
+  toImportResult,
+  toImportBatchDetail,
+} from './product.mapper';
 
 export async function getProducts(
   params: IProductListParams

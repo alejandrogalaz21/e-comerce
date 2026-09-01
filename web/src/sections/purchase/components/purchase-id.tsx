@@ -1,8 +1,6 @@
 import { shortId } from '../purchase-utils';
 import { CopyableValue } from './copyable-value';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   id: string;
 };

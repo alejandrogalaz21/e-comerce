@@ -5,8 +5,6 @@ import Portal from '@mui/material/Portal';
 
 import { AnimateLogo1 } from 'src/components/animate';
 
-// ----------------------------------------------------------------------
-
 type Props = BoxProps & {
   portal?: boolean;
 };

@@ -5,8 +5,6 @@ import { tableCellClasses } from '@mui/material/TableCell';
 
 import { varAlpha } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 const MuiTableContainer: Components<Theme>['MuiTableContainer'] = {
   /** **************************************
    * STYLE
@@ -20,8 +18,6 @@ const MuiTableContainer: Components<Theme>['MuiTableContainer'] = {
   },
 };
 
-// ----------------------------------------------------------------------
-
 const MuiTable: Components<Theme>['MuiTable'] = {
   /** **************************************
    * STYLE
@@ -30,8 +26,6 @@ const MuiTable: Components<Theme>['MuiTable'] = {
     root: ({ theme }) => ({ '--palette-TableCell-border': theme.vars.palette.divider }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 const MuiTableRow: Components<Theme>['MuiTableRow'] = {
   /** **************************************
@@ -47,8 +41,6 @@ const MuiTableRow: Components<Theme>['MuiTableRow'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 const MuiTableCell: Components<Theme>['MuiTableCell'] = {
   /** **************************************
@@ -69,8 +61,6 @@ const MuiTableCell: Components<Theme>['MuiTableCell'] = {
     paddingCheckbox: ({ theme }) => ({ paddingLeft: theme.spacing(1) }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 const MuiTablePagination: Components<Theme>['MuiTablePagination'] = {
   /** **************************************
@@ -101,8 +91,6 @@ const MuiTablePagination: Components<Theme>['MuiTablePagination'] = {
     },
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const table = {
   MuiTable,

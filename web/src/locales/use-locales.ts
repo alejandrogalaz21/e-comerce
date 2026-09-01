@@ -9,8 +9,6 @@ import { fallbackLng, changeLangMessages as messages } from './config-locales';
 
 import type { LanguageValue } from './config-locales';
 
-// ----------------------------------------------------------------------
-
 export function useTranslate(ns?: string) {
   const { t, i18n } = useTranslation(ns);
 

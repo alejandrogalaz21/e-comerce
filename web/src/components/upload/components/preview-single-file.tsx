@@ -9,8 +9,6 @@ import { Iconify } from '../../iconify';
 
 import type { SingleFilePreviewProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export function SingleFilePreview({ file }: SingleFilePreviewProps) {
   const fileName = typeof file === 'string' ? file : file.name;
 
@@ -41,8 +39,6 @@ export function SingleFilePreview({ file }: SingleFilePreviewProps) {
     </Box>
   );
 }
-
-// ----------------------------------------------------------------------
 
 export function DeleteButton({ sx, ...other }: IconButtonProps) {
   return (

@@ -19,8 +19,6 @@ import { Iconify } from 'src/components/iconify';
 import { categoryIcon } from './category-icon';
 import { useCheckoutContext } from '../checkout/context';
 
-// ----------------------------------------------------------------------
-
 const PLACEHOLDER_IMAGE = `${CONFIG.site.basePath}/assets/placeholder.svg`;
 
 type Props = {

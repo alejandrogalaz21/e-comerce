@@ -23,8 +23,6 @@ import { Form, Field } from 'src/components/hook-form';
 import { signUp } from 'src/auth/context/jwt';
 import { useAuthContext } from 'src/auth/hooks';
 
-// ----------------------------------------------------------------------
-
 export type SignUpSchemaType = zod.infer<typeof SignUpSchema>;
 
 export const SignUpSchema = zod.object({
@@ -39,8 +37,6 @@ export const SignUpSchema = zod.object({
     .min(1, { message: 'Password is required!' })
     .min(6, { message: 'Password must be at least 6 characters!' }),
 });
-
-// ----------------------------------------------------------------------
 
 export function JwtSignUpView() {
   const { checkUserSession } = useAuthContext();

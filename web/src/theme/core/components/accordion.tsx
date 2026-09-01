@@ -4,8 +4,6 @@ import { accordionClasses } from '@mui/material/Accordion';
 import { typographyClasses } from '@mui/material/Typography';
 import { accordionSummaryClasses } from '@mui/material/AccordionSummary';
 
-// ----------------------------------------------------------------------
-
 const MuiAccordion: Components<Theme>['MuiAccordion'] = {
   /** **************************************
    * STYLE
@@ -22,8 +20,6 @@ const MuiAccordion: Components<Theme>['MuiAccordion'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 const MuiAccordionSummary: Components<Theme>['MuiAccordionSummary'] = {
   /** **************************************
@@ -42,7 +38,5 @@ const MuiAccordionSummary: Components<Theme>['MuiAccordionSummary'] = {
     expandIconWrapper: { color: 'inherit' },
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const accordion = { MuiAccordion, MuiAccordionSummary };

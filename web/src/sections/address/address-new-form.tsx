@@ -16,8 +16,6 @@ import DialogContent from '@mui/material/DialogContent';
 
 import { Form, Field, schemaHelper } from 'src/components/hook-form';
 
-// ----------------------------------------------------------------------
-
 export type NewAddressSchemaType = zod.infer<typeof NewAddressSchema>;
 
 export const NewAddressSchema = zod.object({
@@ -34,8 +32,6 @@ export const NewAddressSchema = zod.object({
   primary: zod.boolean(),
   addressType: zod.string(),
 });
-
-// ----------------------------------------------------------------------
 
 type Props = {
   open: boolean;

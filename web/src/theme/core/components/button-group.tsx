@@ -5,8 +5,6 @@ import { buttonGroupClasses } from '@mui/material/ButtonGroup';
 
 import { varAlpha, stylesMode } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 // NEW VARIANT
 declare module '@mui/material/ButtonGroup' {
   interface ButtonGroupPropsVariantOverrides {
@@ -73,8 +71,6 @@ const softVariant: Record<string, ComponentsVariants<Theme>['MuiButtonGroup']> =
     },
   ],
 };
-
-// ----------------------------------------------------------------------
 
 const MuiButtonGroup: Components<Theme>['MuiButtonGroup'] = {
   /** **************************************
@@ -150,7 +146,5 @@ const MuiButtonGroup: Components<Theme>['MuiButtonGroup'] = {
     },
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const buttonGroup = { MuiButtonGroup };

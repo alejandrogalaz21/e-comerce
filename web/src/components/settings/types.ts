@@ -1,8 +1,6 @@
 import type { Theme, SxProps } from '@mui/material/styles';
 import type { ThemeDirection, ThemeColorScheme } from 'src/theme/types';
 
-// ----------------------------------------------------------------------
-
 export type SettingsDrawerProps = {
   sx?: SxProps<Theme>;
   hideFont?: boolean;

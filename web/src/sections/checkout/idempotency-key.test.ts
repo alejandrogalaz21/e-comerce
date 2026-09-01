@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 
 import { keepOrMintKey, shouldMintKey } from './idempotency-key';
 
-// ----------------------------------------------------------------------
-
 describe('keepOrMintKey', () => {
   it('mints a key when the checkout has none yet', () => {
     expect(keepOrMintKey('')).toMatch(/[0-9a-f-]{36}/);

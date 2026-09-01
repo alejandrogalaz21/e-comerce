@@ -1,7 +1,5 @@
 import type { IPurchase } from 'src/types/purchase';
 
-// ----------------------------------------------------------------------
-
 /**
  * Downloads a receipt for an order.
  *

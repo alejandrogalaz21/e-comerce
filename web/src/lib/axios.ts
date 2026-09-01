@@ -14,8 +14,6 @@ import {
   shouldClearSessionOnUnauthorized,
 } from './auth-token';
 
-// ----------------------------------------------------------------------
-
 const authEndpoints = {
   me: '/api/v1/auth/me',
   signIn: '/api/v1/auth/sign-in',
@@ -62,8 +60,6 @@ axiosInstance.interceptors.response.use(
 
 export default axiosInstance;
 
-// ----------------------------------------------------------------------
-
 export const fetcher = async (args: string | [string, AxiosRequestConfig]) => {
   try {
     const [url, config] = Array.isArray(args) ? args : [args];
@@ -76,8 +72,6 @@ export const fetcher = async (args: string | [string, AxiosRequestConfig]) => {
     throw error;
   }
 };
-
-// ----------------------------------------------------------------------
 
 export const endpoints = {
   status: {

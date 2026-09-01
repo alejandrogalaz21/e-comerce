@@ -8,8 +8,6 @@ import { useCopyToClipboard } from 'src/hooks/use-copy-to-clipboard';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   value: string;
   label?: string;
