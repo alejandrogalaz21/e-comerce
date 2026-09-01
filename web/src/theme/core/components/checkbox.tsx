@@ -4,9 +4,6 @@ import type { Theme, Components } from '@mui/material/styles';
 import SvgIcon from '@mui/material/SvgIcon';
 import { checkboxClasses } from '@mui/material/Checkbox';
 
-/**
- * Icons
- */
 export const CheckboxIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
     <path d="M17.9 2.318A5 5 0 0 1 22.895 7.1l.005.217v10a5 5 0 0 1-4.783 4.995l-.217.005h-10a5 5 0 0 1-4.995-4.783l-.005-.217v-10a5 5 0 0 1 4.783-4.996l.217-.004h10Zm-.5 1.5h-9a4 4 0 0 0-4 4v9a4 4 0 0 0 4 4h9a4 4 0 0 0 4-4v-9a4 4 0 0 0-4-4Z" />
@@ -26,9 +23,6 @@ export const CheckboxIndeterminateIcon = (props: SvgIconProps) => (
 );
 
 const MuiCheckbox: Components<Theme>['MuiCheckbox'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: {
     size: 'small',
     icon: <CheckboxIcon />,
@@ -36,9 +30,6 @@ const MuiCheckbox: Components<Theme>['MuiCheckbox'] = {
     indeterminateIcon: <CheckboxIndeterminateIcon />,
   },
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ ownerState, theme }) => ({
       padding: theme.spacing(1),

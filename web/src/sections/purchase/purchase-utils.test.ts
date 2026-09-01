@@ -37,10 +37,6 @@ describe('priceComparison', () => {
     expect(priceComparison(199.99, 199.99).changed).toBe(false);
   });
 
-  /**
-   * A product that could not be read is not evidence that the price held. The
-   * row must fall back to the frozen price and claim nothing.
-   */
   it('says nothing when the catalog price is unavailable', () => {
     expect(priceComparison(199.99, undefined)).toEqual({ changed: false, currentPrice: undefined });
     expect(priceComparison(199.99, null).changed).toBe(false);

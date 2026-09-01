@@ -5,9 +5,6 @@ import { switchClasses } from '@mui/material/Switch';
 import { varAlpha, stylesMode } from '../../styles';
 
 const MuiSwitch: Components<Theme>['MuiSwitch'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: { alignItems: 'center' },
     switchBase: ({ ownerState, theme }) => ({

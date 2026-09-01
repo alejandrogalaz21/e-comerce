@@ -310,8 +310,6 @@ export function ProductListView() {
               },
             }}
             sx={{
-              // The grid sizes to its rows: a short page must not leave a blank block
-              // below the last one. The cap keeps the pagination footer reachable.
               maxHeight: 'calc(100vh - 240px)',
               [`& .${gridClasses.cell}`]: { alignItems: 'center', display: 'inline-flex' },
             }}
@@ -357,11 +355,6 @@ declare module '@mui/x-data-grid' {
   interface ToolbarPropsOverrides extends CustomToolbarProps {}
 }
 
-/**
- * The filters ARE the toolbar. GridToolbarColumnsButton reaches the grid through its
- * apiRef, which only exists inside this slot, so putting the filters here is what lets
- * both share one line instead of the columns button needing a band of its own.
- */
 function CustomToolbar({
   state,
   categories,

@@ -15,12 +15,8 @@ import { formControlLabelClasses } from '@mui/material/FormControlLabel';
 import { paper, varAlpha } from '../../styles';
 
 const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: {
     slots: {
-      /* Column */
       columnSortedAscendingIcon: (props: SvgIconProps) => (
         <DataGridArrowUpIcon sx={{ color: 'text.primary' }} {...props} />
       ),
@@ -41,21 +37,17 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
       columnMenuHideIcon: (props: SvgIconProps) => <DataGridEyeCloseIcon {...props} />,
       columnMenuManageColumnsIcon: (props: SvgIconProps) => <DataGridEyeIcon {...props} />,
       columnSelectorIcon: (props: SvgIconProps) => <DataGridEyeIcon {...props} />,
-      /* Filter */
       filterPanelDeleteIcon: (props: SvgIconProps) => <DataGridCloseIcon {...props} />,
       openFilterButtonIcon: (props: SvgIconProps) => <DataGridFilterIcon {...props} />,
       columnFilteredIcon: (props: SvgIconProps) => (
         <DataGridFilterIcon sx={{ width: 16, color: 'text.primary' }} {...props} />
       ),
-      /* Density */
       densityCompactIcon: (props: SvgIconProps) => <DataGridDensityCompactIcon {...props} />,
       densityStandardIcon: (props: SvgIconProps) => <DataGridDensityStandardIcon {...props} />,
       densityComfortableIcon: (props: SvgIconProps) => (
         <DataGridDensityComfortableIcon {...props} />
       ),
-      /* Export */
       exportIcon: (props: SvgIconProps) => <DataGridExportIcon {...props} />,
-      /*  Quick Filter */
       quickFilterIcon: (props: SvgIconProps) => (
         <DataGridSearchIcon sx={{ width: 24, height: 24, color: 'text.secondary' }} {...props} />
       ),
@@ -72,9 +64,6 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
     },
   },
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       '--unstable_DataGrid-radius': 0,
@@ -88,18 +77,12 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
       '& .MuiDataGrid-topContainer::after': { height: 0 },
     }),
     withBorderColor: { borderColor: 'var(--DataGrid-rowBorderColor)' },
-    /**
-     * Column
-     */
     columnHeader: ({ theme }) => ({
       fontSize: 14,
       color: theme.vars.palette.text.secondary,
       '&--sorted': { color: theme.vars.palette.text.primary },
     }),
     columnSeparator: { color: 'var(--DataGrid-rowBorderColor)' },
-    /**
-     * Row, Cell
-     */
     cell: ({ theme }) => ({
       borderTopStyle: 'dashed',
       '&--editing': {
@@ -107,9 +90,6 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
         backgroundColor: varAlpha(theme.vars.palette.primary.mainChannel, 0.08),
       },
     }),
-    /**
-     * Toolbar
-     */
     toolbarContainer: ({ theme }) => ({
       gap: theme.spacing(2),
       padding: theme.spacing(2),
@@ -123,9 +103,6 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
         [theme.breakpoints.up('md')]: { width: 'unset' },
       },
     }),
-    /**
-     * Paper
-     */
     paper: ({ theme }) => ({
       ...paper({ theme, dropdown: true }),
       padding: 0,
@@ -143,9 +120,6 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
         },
       },
     }),
-    /**
-     * Icons
-     */
     menuIcon: ({ theme }) => ({
       [`& .${iconButtonClasses.root}`]: {
         margin: theme.spacing(0, 1),
@@ -158,17 +132,11 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
         marginLeft: theme.spacing(1),
       },
     }),
-    /**
-     * Footer
-     */
     footerContainer: { minHeight: 'auto', borderTopStyle: 'dashed' },
     selectedRowCount: { display: 'none', whiteSpace: 'nowrap' },
     overlay: ({ theme }) => ({
       [`& .${circularProgressClasses.root}`]: { color: theme.vars.palette.text.primary },
     }),
-    /**
-     * Column panel
-     */
     columnsManagementHeader: ({ theme }) => ({
       padding: theme.spacing(2.5, 2, 0, 2),
       [`& .${inputBaseClasses.input}`]: {
@@ -186,14 +154,10 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
       padding: theme.spacing(1.5),
       [`& .${formControlLabelClasses.root}`]: { gap: 4, marginLeft: 0 },
     }),
-    /**
-     * Filter panel
-     */
     filterForm: ({ theme }) => ({
       alignItems: 'center',
       gap: theme.spacing(1.5),
       padding: theme.spacing(2),
-      /* Fix label with input variant === 'outlined' */
       [`& .${inputLabelClasses.shrink}`]: { transform: 'translate(14px, -9px) scale(0.75)' },
     }),
     filterFormDeleteIcon: ({ theme }) => ({
@@ -208,10 +172,6 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
 
 export const dataGrid = { MuiDataGrid };
 
-/**
- * Icons
- */
-/* https://icon-sets.iconify.design/solar/alt-arrow-up-bold-duotone */
 export const DataGridArrowUpIcon = ({ ...props }: SvgIconProps) => (
   <SvgIcon sx={{ width: 20, height: 20, ...props.sx }} {...props}>
     <path
@@ -226,7 +186,6 @@ export const DataGridArrowUpIcon = ({ ...props }: SvgIconProps) => (
   </SvgIcon>
 );
 
-/* https://icon-sets.iconify.design/solar/alt-arrow-down-bold-duotone */
 export const DataGridArrowDownIcon = ({ ...props }: SvgIconProps) => (
   <SvgIcon sx={{ width: 20, height: 20, ...props.sx }} {...props}>
     <path
@@ -241,7 +200,6 @@ export const DataGridArrowDownIcon = ({ ...props }: SvgIconProps) => (
   </SvgIcon>
 );
 
-/* https://icon-sets.iconify.design/solar/filter-bold */
 export const DataGridFilterIcon = ({ ...props }: SvgIconProps) => (
   <SvgIcon sx={{ width: 20, height: 20, ...props.sx }} {...props}>
     <path
@@ -251,7 +209,6 @@ export const DataGridFilterIcon = ({ ...props }: SvgIconProps) => (
   </SvgIcon>
 );
 
-/* https://icon-sets.iconify.design/solar/export-bold */
 export const DataGridExportIcon = ({ ...props }: SvgIconProps) => (
   <SvgIcon sx={{ width: 20, height: 20, ...props.sx }} {...props}>
     <path
@@ -267,7 +224,6 @@ export const DataGridExportIcon = ({ ...props }: SvgIconProps) => (
   </SvgIcon>
 );
 
-/* https://icon-sets.iconify.design/solar/eye-bold */
 export const DataGridEyeIcon = ({ ...props }: SvgIconProps) => (
   <SvgIcon sx={{ width: 20, height: 20, ...props.sx }} {...props}>
     <path fill="currentColor" d="M9.75 12a2.25 2.25 0 1 1 4.5 0a2.25 2.25 0 0 1-4.5 0" />
@@ -280,7 +236,6 @@ export const DataGridEyeIcon = ({ ...props }: SvgIconProps) => (
   </SvgIcon>
 );
 
-/* https://icon-sets.iconify.design/ph/eye-closed-bold */
 export const DataGridEyeCloseIcon = ({ ...props }: SvgIconProps) => (
   <SvgIcon sx={{ width: 20, height: 20, ...props.sx }} {...props}>
     <path
@@ -292,7 +247,6 @@ export const DataGridEyeCloseIcon = ({ ...props }: SvgIconProps) => (
   </SvgIcon>
 );
 
-/* https://icon-sets.iconify.design/eva/search-fill */
 export const DataGridSearchIcon = ({ ...props }: SvgIconProps) => (
   <SvgIcon sx={{ width: 20, height: 20, ...props.sx }} {...props}>
     <path
@@ -302,7 +256,6 @@ export const DataGridSearchIcon = ({ ...props }: SvgIconProps) => (
   </SvgIcon>
 );
 
-/* https://icon-sets.iconify.design/eva/close-fill */
 export const DataGridCloseIcon = ({ ...props }: SvgIconProps) => (
   <SvgIcon sx={{ width: 20, height: 20, ...props.sx }} {...props}>
     <path
@@ -312,7 +265,6 @@ export const DataGridCloseIcon = ({ ...props }: SvgIconProps) => (
   </SvgIcon>
 );
 
-/* https://icon-sets.iconify.design/mingcute/more-1-fill */
 export const DataGridMoreIcon = ({ ...props }: SvgIconProps) => (
   <SvgIcon sx={{ width: 20, height: 20, ...props.sx }} {...props}>
     <g fill="none">
@@ -325,7 +277,6 @@ export const DataGridMoreIcon = ({ ...props }: SvgIconProps) => (
   </SvgIcon>
 );
 
-/* https://icon-sets.iconify.design/material-symbols/table-rows-narrow-rounded */
 export const DataGridDensityCompactIcon = ({ ...props }: SvgIconProps) => (
   <SvgIcon sx={{ width: 20, height: 20, ...props.sx }} {...props}>
     <path
@@ -335,7 +286,6 @@ export const DataGridDensityCompactIcon = ({ ...props }: SvgIconProps) => (
   </SvgIcon>
 );
 
-/* https://icon-sets.iconify.design/mingcute/rows-2-fill */
 export const DataGridDensityComfortableIcon = ({ ...props }: SvgIconProps) => (
   <SvgIcon sx={{ width: 20, height: 20, ...props.sx }} {...props}>
     <g fill="none" fillRule="evenodd">
@@ -348,7 +298,6 @@ export const DataGridDensityComfortableIcon = ({ ...props }: SvgIconProps) => (
   </SvgIcon>
 );
 
-/* https://icon-sets.iconify.design/mingcute/rows-4-fill */
 export const DataGridDensityStandardIcon = ({ ...props }: SvgIconProps) => (
   <SvgIcon sx={{ width: 20, height: 20, ...props.sx }} {...props}>
     <g fill="none">

@@ -57,11 +57,6 @@ export function PurchaseDetailsItems({ items }: Props) {
   );
 }
 
-/**
- * The frozen price is the order's own data and always renders. The current
- * catalog price is a second, optional read: when it is unavailable the row
- * simply shows what was paid, which is what the order guarantees.
- */
 function PurchaseDetailsItemRow({ item }: { item: IPurchaseItem }) {
   const { product, productError } = useGetProduct(item.productId);
 

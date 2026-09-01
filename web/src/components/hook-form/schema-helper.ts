@@ -1,8 +1,6 @@
 import dayjs from 'dayjs';
 import { z as zod } from 'zod';
 
-// const isSsr = typeof window === 'undefined';
-
 type InputProps = {
   message?: {
     required_error?: string;
@@ -13,10 +11,6 @@ type InputProps = {
 };
 
 export const schemaHelper = {
-  /**
-   * Phone number
-   * defaultValue === null
-   */
   phoneNumber: (props?: InputProps) =>
     zod
       .string()
@@ -24,10 +18,6 @@ export const schemaHelper = {
       .refine((data) => props?.isValidPhoneNumber?.(data), {
         message: props?.message?.invalid_type_error ?? 'Invalid phone number!',
       }),
-  /**
-   * date
-   * defaultValue === null
-   */
   date: (props?: InputProps) =>
     zod.coerce
       .date()
@@ -55,16 +45,8 @@ export const schemaHelper = {
         return date;
       })
       .pipe(zod.union([zod.number(), zod.string(), zod.date(), zod.null()])),
-  /**
-   * editor
-   * defaultValue === '' | <p></p>
-   */
   editor: (props?: InputProps) =>
     zod.string().min(8, { message: props?.message?.required_error ?? 'Editor is required!' }),
-  /**
-   * object
-   * defaultValue === null
-   */
   objectOrNull: <T>(props?: InputProps) =>
     zod
       .custom<T>()
@@ -74,18 +56,10 @@ export const schemaHelper = {
       .refine((data) => data !== '', {
         message: props?.message?.required_error ?? 'Field is required!',
       }),
-  /**
-   * boolean
-   * defaultValue === false
-   */
   boolean: (props?: InputProps) =>
     zod.coerce.boolean().refine((bool) => bool === true, {
       message: props?.message?.required_error ?? 'Switch is required!',
     }),
-  /**
-   * file
-   * defaultValue === '' || null
-   */
   file: (props?: InputProps) =>
     zod.custom<File | string | null>().transform((data, ctx) => {
       const hasFile = data instanceof File || (typeof data === 'string' && !!data.length);
@@ -100,10 +74,6 @@ export const schemaHelper = {
 
       return data;
     }),
-  /**
-   * files
-   * defaultValue === []
-   */
   files: (props?: InputProps) =>
     zod.array(zod.custom<File | string>()).transform((data, ctx) => {
       const minFiles = props?.minFiles ?? 2;

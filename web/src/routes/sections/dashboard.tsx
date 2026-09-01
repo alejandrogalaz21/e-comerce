@@ -8,7 +8,6 @@ import { LoadingScreen } from 'src/components/loading-screen';
 
 import { AuthGuard } from 'src/auth/guard';
 
-// Product
 const ProductDetailsPage = lazy(() => import('src/pages/dashboard/product/details'));
 const ProductListPage = lazy(() => import('src/pages/dashboard/product/list'));
 const ProductCreatePage = lazy(() => import('src/pages/dashboard/product/new'));
@@ -18,10 +17,8 @@ const ProductImportBatchesPage = lazy(() => import('src/pages/dashboard/product/
 const ProductImportBatchDetailPage = lazy(
   () => import('src/pages/dashboard/product/import-batch-detail')
 );
-// Order
 const OrderListPage = lazy(() => import('src/pages/dashboard/order/list'));
 const OrderDetailsPage = lazy(() => import('src/pages/dashboard/order/details'));
-// Status
 const StatusPage = lazy(() => import('src/pages/dashboard/status'));
 
 const layoutContent = (

@@ -5,9 +5,6 @@ import { listClasses } from '@mui/material/List';
 import { paper } from '../../styles';
 
 const MuiPopover: Components<Theme>['MuiPopover'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     paper: ({ theme }) => ({
       ...paper({ theme, dropdown: true }),

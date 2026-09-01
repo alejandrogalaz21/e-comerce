@@ -10,7 +10,6 @@ import { IMPORT_STATUS_META, importStatusTextColor } from '../import-utils';
 
 import type { IImportStatus } from '../import-utils';
 
-/** Card label and value per status; icon, color and hint come from the shared map. */
 const CARDS: { status: IImportStatus; label: string; pick: (s: IImportSummary) => number }[] = [
   { status: 'total', label: 'Total rows', pick: (s) => s.totalRows },
   { status: 'created', label: 'Created', pick: (s) => s.inserted },

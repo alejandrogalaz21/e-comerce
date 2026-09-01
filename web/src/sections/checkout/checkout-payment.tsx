@@ -26,12 +26,6 @@ import { CheckoutBillingInfo } from './checkout-billing-info';
 import { useCartRevalidation } from './hooks/use-cart-revalidation';
 import { CheckoutPaymentMethods } from './checkout-payment-methods';
 
-/**
- * Cash on delivery is deliberately absent: the order would be charged through the
- * simulated provider and stored as PAID with a payment reference, claiming money
- * nobody handed over. Offering it needs a status for an order that is placed but
- * not yet paid, and a way to move it once it is.
- */
 const PAYMENT_OPTIONS: ICheckoutPaymentOption[] = [
   {
     value: 'paypal',
@@ -48,7 +42,6 @@ const PAYMENT_OPTIONS: ICheckoutPaymentOption[] = [
 export type PaymentSchemaType = zod.infer<typeof PaymentSchema>;
 
 export const PaymentSchema = zod.object({
-  // The value travels to the API, which accepts exactly these two.
   payment: zod.enum(['card', 'paypal'], { required_error: 'Payment is required!' }),
 });
 
@@ -57,8 +50,6 @@ export function CheckoutPayment() {
 
   const placePurchase = usePlacePurchase();
 
-  // The last moment the visitor can react: whatever moved in the catalog since
-  // the cart step is shown here, before the charge.
   const { unverified } = useCartRevalidation();
 
   const [failure, setFailure] = useState<PlacePurchaseError | null>(null);
@@ -82,8 +73,6 @@ export function CheckoutPayment() {
 
     const { billing } = checkout;
 
-    // The API refuses an order it cannot deliver. Catching it here means the
-    // customer is told what to fix instead of meeting a validation error.
     if (!billing) {
       checkout.onGotoStep(1);
       return;
@@ -116,8 +105,6 @@ export function CheckoutPayment() {
       const placeError = error as PlacePurchaseError;
       setFailure(placeError);
 
-      // A declined charge closes that key: the API replays the same decline for
-      // it, so a retry has to be a new attempt.
       if (placeError.kind === 'payment') {
         checkout.onRenewIdempotencyKey();
       }
@@ -185,7 +172,6 @@ export function CheckoutPayment() {
   );
 }
 
-/** The API names the product it could not find by id; the cart knows what it was called. */
 function nameOf(items: { id: string; name: string }[], productId?: string): string | undefined {
   return items.find((item) => item.id === productId)?.name;
 }
@@ -196,11 +182,6 @@ type FailureProps = {
   onEditCart: () => void;
 };
 
-/**
- * Four outcomes that need four answers: drop a product that no longer exists, fix
- * a quantity, try the charge again, or try the request again. A single generic
- * error would hide which one applies.
- */
 function PurchaseFailure({ failure, missingName, onEditCart }: FailureProps) {
   if (failure.kind === 'missing') {
     return (

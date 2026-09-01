@@ -33,10 +33,6 @@ type Props = {
   onSearchChange: (value: string) => void;
   onApply: (changes: Partial<IProductListState>) => void;
   onReset: () => void;
-  /**
-   * Controls that act on the grid itself. They live here rather than in a band of
-   * their own, and they must render inside the grid toolbar slot to reach its apiRef.
-   */
   gridControls?: ReactNode;
 };
 

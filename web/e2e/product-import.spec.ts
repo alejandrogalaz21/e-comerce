@@ -20,23 +20,13 @@ async function expectStat(page: Page, label: string, value: number) {
   await expect(statCard(page, label).getByRole('heading')).toHaveText(String(value));
 }
 
-/** Products that appear in an order survive the wipe; the counts must allow for them. */
 let survivors = 0;
 
-/** Marks a surviving product's sku as out of play, so the fixture can claim its own. */
 const PARKED_SKU_PREFIX = 'PARKED-';
 
 test.beforeAll(async () => {
-  // Wipe all products so the import numbers are deterministic regardless of prior runs.
   const api = await createAuthenticatedApiContext();
 
-  // Products that appear in an order cannot be deleted — the RESTRICT foreign key
-  // refuses, which is correct. What matters for the import numbers is that no SKU
-  // from the fixture survives: one that did would be *updated* by the import
-  // instead of created, moving every count asserted below. The suite never buys a
-  // fixture sku, but a person using the app might, so the sku is parked out of the
-  // way rather than assumed free. The order keeps its own snapshot of sku and
-  // name, so nothing already sold changes.
   const undeletable = await deleteAllProducts(api);
   survivors = undeletable.length;
 
@@ -83,7 +73,6 @@ test.describe('product CSV import', () => {
     await expect(importButton).toBeEnabled();
     await importButton.click();
 
-    // The summary cards render once the batch finishes.
     await expect(page.getByText('Total rows')).toBeVisible({ timeout: 30_000 });
 
     await expectStat(page, 'Total rows', 97);
@@ -93,10 +82,6 @@ test.describe('product CSV import', () => {
     await expectStat(page, 'Rejected', 10);
     await expectStat(page, 'Skipped empty', 2);
 
-    // Issues table: 5 rows rejected by validation plus the 5 occurrences of the two
-    // duplicated skus (lines 2/36 RS-001 and 11/56/89 BS-021). Nothing is updated,
-    // because a duplicate sku is rejected instead of overwriting.
-    // Ten rejected plus the two blank rows, which are now listed instead of only counted.
     const issues = page.getByTestId('import-issues');
     await expect(issues.getByText('Rows to review (12)')).toBeVisible();
     await expect(issues.locator('tbody tr')).toHaveCount(12);
@@ -127,12 +112,9 @@ test.describe('product CSV import', () => {
     await expect(line36).toContainText('Rejected row');
     await expect(line36).toContainText('duplicate sku in the file');
 
-    // Created rows table: one row per inserted product.
     const created = page.getByTestId('import-created');
     await expect(created.getByText('Created rows (85)')).toBeVisible();
     await expect(created.locator('tbody tr')).toHaveCount(85);
-    // RS-001 heads the file but is rejected as a duplicate, so the first created
-    // row is line 3. Its cells carry the stored, normalized values.
     const firstCreated = created.locator('tbody tr').first();
     await expect(firstCreated).toContainText('CB-010');
     await expect(firstCreated).toContainText('Organic Coffee Beans');
@@ -150,7 +132,6 @@ test.describe('product CSV import', () => {
     await page.getByRole('button', { name: 'Import' }).click();
     await expect(page.getByText('Total rows')).toBeVisible({ timeout: 30_000 });
 
-    // Second import over the same data: everything already exists, nothing new.
     await expectStat(page, 'Created', 0);
 
     await page.getByRole('link', { name: 'Go to products' }).click();
@@ -159,17 +140,10 @@ test.describe('product CSV import', () => {
     const grid = page.getByRole('grid');
     await expect(grid).toBeVisible();
 
-    // 85 from the fixture, plus anything a previous spec sold and therefore
-    // could not delete.
     await expect(page.getByText(`of ${85 + survivors}`)).toBeVisible({
       timeout: 15_000,
     });
 
-    // The grid virtualizes its rows, so paging through 85 of them only proves what
-    // happens to fit the viewport. Ask the server for each sku instead: the list
-    // state lives in the URL, so a query param is the same code path as typing.
-    // RS-001 is rejected as a duplicate sku, so the only 'Running Shoes' in the
-    // catalog is RS-050 — the row the import created from line 55.
     for (const [sku, name] of [
       ['RS-050', 'Running Shoes'],
       ['CB-010', 'Organic Coffee Beans'],
@@ -185,8 +159,6 @@ test.describe('product CSV import', () => {
 
     await page.locator('input[type=file]').setInputFiles(TXT_FIXTURE);
 
-    // react-dropzone filters by accept (*.csv), so the file lands in the
-    // rejection list and the Import button never enables.
     await expect(page.getByText('not-a-csv.txt', { exact: false })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Import' })).toBeDisabled();
   });

@@ -48,7 +48,6 @@ export const Default: Story = {
   },
 };
 
-/** Batches imported before the extra fields existed still render, with placeholders. */
 export const HistoricalBatch: Story = {
   args: {
     rows: [
@@ -58,7 +57,6 @@ export const HistoricalBatch: Story = {
   },
 };
 
-/** With no matching term the table says so instead of going silently blank. */
 export const NoFilterMatch: Story = {
   args: {
     rows: [

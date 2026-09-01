@@ -4,7 +4,6 @@ import { avatarGroupClasses } from '@mui/material/AvatarGroup';
 
 import { varAlpha } from '../../styles';
 
-// NEW VARIANT
 declare module '@mui/material/AvatarGroup' {
   interface AvatarGroupPropsVariantOverrides {
     compact: true;
@@ -45,14 +44,8 @@ const avatarColors: Record<string, ComponentsVariants<Theme>['MuiAvatar']> = {
 };
 
 const MuiAvatar: Components<Theme>['MuiAvatar'] = {
-  /** **************************************
-   * VARIANTS
-   *************************************** */
   variants: [...[...avatarColors.defaultColor!, ...avatarColors.colors!]],
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     rounded: ({ theme }) => ({ borderRadius: theme.shape.borderRadius * 1.5 }),
     colorDefault: ({ ownerState, theme }) => {
@@ -76,14 +69,8 @@ const MuiAvatar: Components<Theme>['MuiAvatar'] = {
 };
 
 const MuiAvatarGroup: Components<Theme>['MuiAvatarGroup'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: { max: 4 },
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ ownerState }) => ({
       justifyContent: 'flex-end',

@@ -79,11 +79,6 @@ export type IImportSummary = {
   skippedEmpty: number;
 };
 
-/**
- * The API always sends sku and name, using an empty string for a blank cell.
- * They stay optional here on purpose: batches stored before that contract
- * existed omit them, and their detail must keep opening.
- */
 export type IImportRejectedRow = {
   line: number;
   sku?: string;
@@ -98,12 +93,10 @@ export type IImportWarning = {
   message: string;
 };
 
-/** A fully blank row: there is nothing to report about it beyond where it was. */
 export type IImportSkippedRow = {
   line: number;
 };
 
-/** Fields beyond line/sku/name are optional: batches stored before they existed lack them. */
 export type IImportCreatedRow = {
   line: number;
   sku: string;
@@ -119,7 +112,6 @@ export type IImportReport = {
   rejected: IImportRejectedRow[];
   warnings: IImportWarning[];
   created: IImportCreatedRow[];
-  /** Absent on batches stored before skipped lines were recorded. */
   skipped?: IImportSkippedRow[];
 };
 

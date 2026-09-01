@@ -39,7 +39,6 @@ export function PurchaseDetailsAddress({ address }: Props) {
             </Typography>
           </>
         ) : (
-          // Saying so beats an empty block, which reads as a failed load.
           <Typography variant="body2" sx={{ color: 'text.disabled' }}>
             No delivery address was recorded for this order.
           </Typography>

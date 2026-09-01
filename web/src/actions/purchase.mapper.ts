@@ -6,10 +6,6 @@ import type {
   IShippingAddress,
 } from 'src/types/purchase';
 
-/**
- * Money crosses the wire as a string so decimal precision survives Postgres and
- * JSON. It becomes a number only here, at the edge that renders it.
- */
 export function toPurchaseItem(item: ApiPurchaseItem): IPurchaseItem {
   const unitPrice = Number(item.unitPriceSnapshot);
 
@@ -24,11 +20,6 @@ export function toPurchaseItem(item: ApiPurchaseItem): IPurchaseItem {
   };
 }
 
-/**
- * Orders placed before deliveries were recorded have no address. Null is the
- * honest answer there; an object of empty strings would read as an address that
- * happens to be blank.
- */
 function toShippingAddress(purchase: ApiPurchase): IShippingAddress | null {
   if (!purchase.shipName) return null;
 

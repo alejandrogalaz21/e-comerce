@@ -24,12 +24,10 @@ export function toProductItem(dto: ApiProduct): IProductItem {
   };
 }
 
-/** Batches created before import attribution existed carry no `importedBy`. */
 export function toImportBatch(dto: IImportBatch): IImportBatch {
   return { ...dto, importedBy: dto.importedBy ?? null };
 }
 
-/** Batches stored before a report section existed carry it as null or partial. */
 export function toImportReport(report: Partial<IImportReport> | null | undefined): IImportReport {
   return {
     rejected: report?.rejected ?? [],

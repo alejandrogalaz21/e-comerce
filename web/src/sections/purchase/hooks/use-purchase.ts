@@ -58,7 +58,6 @@ export function usePlacePurchase() {
   return useMutation<IPurchase, PlacePurchaseError, IPlacePurchasePayload>({
     mutationFn: placePurchase,
     onSuccess: () => {
-      // Stock just changed for what was bought, so anything showing it is stale.
       queryClient.invalidateQueries({ queryKey: productKeys.all });
       queryClient.invalidateQueries({ queryKey: purchaseKeys.lists() });
     },

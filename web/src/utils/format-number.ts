@@ -1,10 +1,5 @@
 import { formatNumberLocale } from 'src/locales';
 
-/*
- * Locales code
- * https://gist.github.com/raushankrjha/d1c7e35cf87e69aa8b4208a8171a8416
- */
-
 export type InputNumberValue = string | number | null | undefined;
 
 type Options = Intl.NumberFormatOptions | undefined;

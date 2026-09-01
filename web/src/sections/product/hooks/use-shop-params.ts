@@ -6,10 +6,6 @@ import { parseShopState, serializeShopState } from '../shop-params';
 
 import type { IShopState } from '../shop-params';
 
-/**
- * The same pattern the dashboard uses: the address is the state, so back works
- * and a filtered link can be shared.
- */
 export function useShopParams() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -28,8 +24,6 @@ export function useShopParams() {
 
   const apply = useCallback(
     (changes: Partial<IShopState>) => {
-      // Anything but paging returns to page one: page 5 of a new result set is
-      // usually empty.
       const next = { ...state, ...changes };
 
       if (!('page' in changes)) next.page = 1;

@@ -13,7 +13,6 @@ test.describe.configure({ mode: 'serial' });
 let api: APIRequestContext;
 const createdIds: string[] = [];
 
-/** Prices climb with the index, so the cheapest product is also the oldest one. */
 function priceFor(index: number): number {
   return 10 + index * 5;
 }
@@ -55,7 +54,6 @@ function totalResults(page: Page) {
   return page.getByTestId('filters-result-total');
 }
 
-/** Reads the parsed value so the assertion does not depend on how spaces are encoded. */
 function categoryParam(page: Page): string | null {
   return new URL(page.url()).searchParams.get('category');
 }
@@ -80,7 +78,6 @@ test.describe('product list filters', () => {
 
     await expect(page.getByRole('columnheader', { name: 'Updated at' })).toBeVisible();
 
-    // The cheapest product was created first, so default ordering pushes it off page one.
     await expect(firstDataRow(page)).not.toContainText(skuFor(0));
 
     await page.goto(
@@ -105,7 +102,6 @@ test.describe('product list filters', () => {
     await page.getByLabel('Maximum price').fill('20');
     await page.getByRole('button', { name: 'Apply' }).click();
 
-    // Prices 10, 15 and 20 fall inside the range.
     await expect(totalResults(page)).toHaveText('3');
 
     const priceChip = page.locator('.MuiChip-root').filter({ hasText: '10 - 20' });
@@ -179,8 +175,6 @@ test.describe('product list filters', () => {
     const after = await api.get(`/api/v1/products/${product.id}`);
     const afterBody = (await after.json()) as { createdAt: string; updatedAt: string };
 
-    // The upsert must move updatedAt while leaving createdAt untouched: that is exactly
-    // why sorting by creation date cannot show what an import touched.
     expect(afterBody.createdAt).toBe(product.createdAt);
     expect(new Date(afterBody.updatedAt).getTime()).toBeGreaterThan(
       new Date(product.updatedAt).getTime()
@@ -204,8 +198,6 @@ test.describe('product list filters', () => {
 
     const search = page.getByLabel('Search products');
 
-    // Indices 4 and 5 are used because a low index like 1 is a prefix of 10..13,
-    // and a substring search would then match five products instead of one.
     await search.fill(skuFor(4));
     await search.press('Enter');
     await expect(totalResults(page)).toHaveText('1');
@@ -213,7 +205,6 @@ test.describe('product list filters', () => {
     await search.fill(skuFor(5));
     await search.press('Enter');
 
-    // Union, not intersection: no product matches both SKUs at once.
     await expect(totalResults(page)).toHaveText('2');
     await expect(page.locator('.MuiDataGrid-row')).toHaveCount(2);
 

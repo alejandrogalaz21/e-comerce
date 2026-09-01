@@ -8,11 +8,6 @@ import Box from '@mui/material/Box';
 
 import { borderGradient } from 'src/theme/styles';
 
-/**
- * Source:
- * https://gradientborder.framer.website/
- */
-
 export type AnimateBorderProps = BoxProps & {
   animate?: {
     outline?: string;

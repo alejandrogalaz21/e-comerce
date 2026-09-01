@@ -1,12 +1,5 @@
 /* eslint-disable no-bitwise */
 
-/**
- * The checkout's idempotency key is one of these, and replaying a key returns
- * that order with its shipping address. So the value has to be unguessable, and
- * `Math.random()` is not: it is a fast PRNG whose state can be recovered from
- * its own output. It stays only as the last resort for a browser without the
- * Web Crypto API.
- */
 export function uuidv4() {
   const webCrypto = typeof globalThis !== 'undefined' ? globalThis.crypto : undefined;
 

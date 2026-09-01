@@ -55,13 +55,11 @@ export function NavList({
     <NavItem
       ref={navItemRef}
       render={render}
-      // slots
       title={data.title}
       path={data.path}
       icon={data.icon}
       info={data.info}
       caption={data.caption}
-      // state
       depth={depth}
       active={active}
       disabled={data.disabled}
@@ -69,22 +67,18 @@ export function NavList({
       open={data.children && openMenu}
       externalLink={isExternalLink(data.path)}
       enabledRootRedirect={enabledRootRedirect}
-      // styles
       slotProps={depth === 1 ? slotProps?.rootItem : slotProps?.subItem}
-      // actions
       onMouseEnter={handleOpenMenu}
       onMouseLeave={handleCloseMenu}
     />
   );
 
-  // Hidden item by role
   if (data.roles && slotProps?.currentRole) {
     if (!data?.roles?.includes(slotProps?.currentRole)) {
       return null;
     }
   }
 
-  // Has children
   if (data.children) {
     return (
       <NavLi disabled={data.disabled}>
@@ -139,7 +133,6 @@ export function NavList({
     );
   }
 
-  // Default
   return <NavLi disabled={data.disabled}>{renderNavItem}</NavLi>;
 }
 

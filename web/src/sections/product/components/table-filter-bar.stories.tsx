@@ -36,7 +36,6 @@ export const Filtered: Story = {
   },
 };
 
-/** A table with a dimension of its own passes it as a child of the shared bar. */
 export const WithExtraFilter: Story = {
   args: {
     value: '',

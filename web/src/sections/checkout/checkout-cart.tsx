@@ -22,8 +22,6 @@ import { CheckoutCartProductList } from './checkout-cart-product-list';
 export function CheckoutCart() {
   const checkout = useCheckoutContext();
 
-  // The catalog may have moved while the cart waited, and this is the last place
-  // the visitor reads prices before committing to them.
   const { unverified } = useCartRevalidation();
 
   const empty = !checkout.items.length;

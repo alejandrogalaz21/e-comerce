@@ -22,7 +22,6 @@ export const NavItem = forwardRef<HTMLButtonElement, NavItemProps>(
       info,
       title,
       caption,
-      //
       open,
       depth,
       render,
@@ -138,9 +137,6 @@ const StyledNavItem = styled(ButtonBase, {
   } as const;
 
   return {
-    /**
-     * Root item
-     */
     ...(rootItem && {
       ...baseStyles.item,
       padding: 'var(--nav-item-root-padding)',
@@ -156,7 +152,6 @@ const StyledNavItem = styled(ButtonBase, {
       },
       [`& .${navSectionClasses.item.arrow}`]: { ...baseStyles.arrow },
       [`& .${navSectionClasses.item.info}`]: { ...baseStyles.info },
-      // State
       ...(active && {
         color: 'var(--nav-item-root-active-color)',
         backgroundColor: 'var(--nav-item-root-active-bg)',
@@ -173,9 +168,6 @@ const StyledNavItem = styled(ButtonBase, {
       }),
     }),
 
-    /**
-     * Sub item
-     */
     ...(subItem && {
       ...baseStyles.item,
       padding: 'var(--nav-item-sub-padding)',
@@ -192,7 +184,6 @@ const StyledNavItem = styled(ButtonBase, {
         marginRight: theme.spacing(-0.5),
       },
       [`& .${navSectionClasses.item.info}`]: { ...baseStyles.info },
-      // State
       ...(active && {
         color: 'var(--nav-item-sub-active-color)',
         backgroundColor: 'var(--nav-item-sub-active-bg)',
@@ -203,7 +194,6 @@ const StyledNavItem = styled(ButtonBase, {
       }),
     }),
 
-    /* Disabled */
     ...(disabled && sharedStyles.disabled),
   };
 });

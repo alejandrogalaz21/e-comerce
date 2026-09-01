@@ -21,9 +21,6 @@ export function SimpleLayout({ sx, children, content }: SimpleLayoutProps) {
 
   return (
     <LayoutSection
-      /** **************************************
-       * Header
-       *************************************** */
       headerSection={
         <HeaderBase
           layoutQuery={layoutQuery}
@@ -34,13 +31,7 @@ export function SimpleLayout({ sx, children, content }: SimpleLayoutProps) {
           slotProps={{ container: { maxWidth: false } }}
         />
       }
-      /** **************************************
-       * Footer
-       *************************************** */
       footerSection={null}
-      /** **************************************
-       * Style
-       *************************************** */
       cssVars={{
         '--layout-simple-content-compact-width': '448px',
       }}

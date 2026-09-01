@@ -68,9 +68,6 @@ const StyledNavItem = styled(ButtonBase, {
   };
 
   return {
-    /**
-     * Root item
-     */
     ...(rootItem && {
       ...baseStyles.item,
       height: '100%',
@@ -83,9 +80,6 @@ const StyledNavItem = styled(ButtonBase, {
       ...(open && { opacity: 0.64, '&::before': baseStyles.dot }),
     }),
 
-    /**
-     * Sub item
-     */
     ...(subItem && {
       ...baseStyles.item,
       justifyContent: 'flex-start',

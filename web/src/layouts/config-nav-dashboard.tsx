@@ -15,9 +15,6 @@ const ICONS = {
 };
 
 export const navData = [
-  /**
-   * Management
-   */
   {
     subheader: 'Management',
     items: [

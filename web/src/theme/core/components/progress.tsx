@@ -19,9 +19,6 @@ function styleColors(ownerState: LinearProgressProps, styles: (val: ColorType) =
 }
 
 const MuiLinearProgress: Components<Theme>['MuiLinearProgress'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme, ownerState }) => {
       const styled = {

@@ -8,11 +8,6 @@ type Props = {
   address: IShippingAddress | null;
 };
 
-/**
- * The street on one line and the rest of the address on another. Five narrow
- * columns would truncate all five; one cell with two lines keeps the address
- * readable and still aligned between rows.
- */
 export function PurchaseAddress({ address }: Props) {
   const street = address?.address ?? '';
   const place = address

@@ -14,10 +14,6 @@ type Props = {
   display?: string;
 };
 
-/**
- * A value that is only useful when it can be pasted somewhere else — an order id
- * to look up, an idempotency key to replay.
- */
 export function CopyableValue({ value, label, display }: Props) {
   const { copy } = useCopyToClipboard();
 

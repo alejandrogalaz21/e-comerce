@@ -10,7 +10,6 @@ export const varSlide = (props?: VariantsType) => {
   const easeOut = props?.easeOut;
 
   return {
-    // IN
     inUp: {
       initial: { y: distance },
       animate: { y: 0, transition: varTranEnter({ durationIn, easeIn }) },
@@ -32,7 +31,6 @@ export const varSlide = (props?: VariantsType) => {
       exit: { x: distance, transition: varTranExit({ durationOut, easeOut }) },
     },
 
-    // OUT
     outUp: {
       initial: { y: 0 },
       animate: { y: -distance, transition: varTranEnter({ durationIn, easeIn }) },

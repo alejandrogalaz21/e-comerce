@@ -73,8 +73,6 @@ export function PurchaseDetailsEvidence({ purchase }: Props) {
           {purchase.paymentMethod ? (
             <Typography variant="body2">{paymentMethodLabel(purchase.paymentMethod)}</Typography>
           ) : (
-            // Orders placed before the checkout sent it have none, and guessing
-            // one would invent a fact about a charge.
             <Typography variant="body2" sx={{ color: 'text.disabled' }}>
               Not recorded
             </Typography>

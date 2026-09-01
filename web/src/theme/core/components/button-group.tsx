@@ -5,7 +5,6 @@ import { buttonGroupClasses } from '@mui/material/ButtonGroup';
 
 import { varAlpha, stylesMode } from '../../styles';
 
-// NEW VARIANT
 declare module '@mui/material/ButtonGroup' {
   interface ButtonGroupPropsVariantOverrides {
     soft: true;
@@ -73,28 +72,11 @@ const softVariant: Record<string, ComponentsVariants<Theme>['MuiButtonGroup']> =
 };
 
 const MuiButtonGroup: Components<Theme>['MuiButtonGroup'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: { disableElevation: true },
 
-  /** **************************************
-   * VARIANTS
-   *************************************** */
-  variants: [
-    /**
-     * @variant soft
-     */
-    ...[...softVariant.base!, ...softVariant.colors!],
-  ],
+  variants: [...[...softVariant.base!, ...softVariant.colors!]],
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
-    /**
-     * @variant contained
-     */
     contained: ({ theme, ownerState }) => {
       const styled = {
         colors: styleColors(ownerState, (color) => ({
@@ -118,9 +100,6 @@ const MuiButtonGroup: Components<Theme>['MuiButtonGroup'] = {
 
       return { ...styled.inheritColor, ...styled.colors, ...styled.disabled };
     },
-    /**
-     * @variant text
-     */
     text: ({ theme, ownerState }) => {
       const styled = {
         colors: styleColors(ownerState, (color) => ({

@@ -25,10 +25,6 @@ export const CONFIG: ConfigValue = {
     basePath: import.meta.env.VITE_BASE_PATH ?? '',
     version: packageJson.version,
   },
-  /**
-   * Auth
-   * @method jwt
-   */
   auth: {
     method: 'jwt',
     skip: false,

@@ -9,9 +9,6 @@ import { SplashScreen } from 'src/components/loading-screen';
 
 import { GuestGuard } from 'src/auth/guard';
 
-/** **************************************
- * Jwt
- *************************************** */
 const Jwt = {
   SignInPage: lazy(() => import('src/pages/auth/jwt/sign-in')),
 };
@@ -29,9 +26,6 @@ const authJwt = {
         </GuestGuard>
       ),
     },
-    // Sign-up is hidden, not deleted: the project runs on one seeded user, so
-    // offering registration invites a path that leads nowhere useful. The view,
-    // the declared path and the API endpoint all remain.
     { path: 'sign-up', element: <Navigate to={paths.auth.jwt.signIn} replace /> },
   ],
 };

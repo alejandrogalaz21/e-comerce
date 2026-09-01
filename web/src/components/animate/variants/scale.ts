@@ -9,7 +9,6 @@ export const varScale = (props?: VariantsType) => {
   const easeOut = props?.easeOut;
 
   return {
-    // IN
     in: {
       initial: { scale: 0, opacity: 0 },
       animate: { scale: 1, opacity: 1, transition: varTranEnter({ durationIn, easeIn }) },
@@ -26,7 +25,6 @@ export const varScale = (props?: VariantsType) => {
       exit: { scaleY: 0, opacity: 0, transition: varTranExit({ durationOut, easeOut }) },
     },
 
-    // OUT
     out: {
       initial: { scale: 1, opacity: 1 },
       animate: { scale: 0, opacity: 0, transition: varTranEnter({ durationIn, easeIn }) },

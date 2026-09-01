@@ -15,7 +15,6 @@ type Props = {
   label: string;
   visibleCount: number;
   totalCount: number;
-  /** Filters specific to one table, rendered between the search field and the counter. */
   children?: ReactNode;
 };
 

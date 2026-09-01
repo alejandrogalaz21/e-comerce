@@ -32,7 +32,6 @@ export type SettingsContextValue = SettingsState & {
     name: keyof SettingsState,
     updateValue: SettingsState[keyof SettingsState]
   ) => void;
-  // Drawer
   openDrawer: boolean;
   onCloseDrawer: () => void;
   onToggleDrawer: () => void;

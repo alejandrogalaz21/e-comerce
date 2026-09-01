@@ -81,18 +81,10 @@ describe('toPurchase', () => {
     });
   });
 
-  /**
-   * Orders placed before deliveries were recorded have none. Null says that;
-   * an object of empty strings would read as a blank address.
-   */
   it('reports no address for an order placed before they were recorded', () => {
     expect(toPurchase({ ...apiPurchase, shipName: null }).shippingAddress).toBeNull();
   });
 
-  /**
-   * The email arrived later than the address, so an order can have one and not
-   * the other. Its absence must not take the rest of the delivery down with it.
-   */
   it('keeps the address of an order placed before the email was asked for', () => {
     expect(toPurchase({ ...apiPurchase, shipEmail: null }).shippingAddress).toMatchObject({
       name: 'Ada Lovelace',
@@ -102,12 +94,6 @@ describe('toPurchase', () => {
 });
 
 describe('toPlacePurchaseError', () => {
-  /**
-   * The axios response interceptor rejects with `error.response.data`, so this is
-   * the shape that actually reaches the caller. The previous version of this test
-   * built an AxiosError, which never occurs at runtime — it passed while the code
-   * classified every failure as generic.
-   */
   const rejected = (statusCode: number, extra: Record<string, unknown> = {}) => ({
     statusCode,
     error: 'X',

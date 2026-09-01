@@ -9,9 +9,6 @@ dayjs.extend(relativeTime);
 
 export type DatePickerFormat = Dayjs | Date | string | number | null | undefined;
 
-/**
- * Docs: https://day.js.org/docs/en/display/format
- */
 export const formatStr = {
   dateTime: 'DD MMM YYYY h:mm a', // 17 Apr 2022 12:00 am
   date: 'DD MMM YYYY', // 17 Apr 2022
@@ -30,8 +27,6 @@ export function today(format?: string) {
   return dayjs(new Date()).startOf('day').format(format);
 }
 
-/** output: 17 Apr 2022 12:00 am
- */
 export function fDateTime(date: DatePickerFormat, format?: string) {
   if (!date) {
     return null;
@@ -42,8 +37,6 @@ export function fDateTime(date: DatePickerFormat, format?: string) {
   return isValid ? dayjs(date).format(format ?? formatStr.dateTime) : 'Invalid time value';
 }
 
-/** output: 17 Apr 2022
- */
 export function fDate(date: DatePickerFormat, format?: string) {
   if (!date) {
     return null;
@@ -54,8 +47,6 @@ export function fDate(date: DatePickerFormat, format?: string) {
   return isValid ? dayjs(date).format(format ?? formatStr.date) : 'Invalid time value';
 }
 
-/** output: 12:00 am
- */
 export function fTime(date: DatePickerFormat, format?: string) {
   if (!date) {
     return null;
@@ -66,8 +57,6 @@ export function fTime(date: DatePickerFormat, format?: string) {
   return isValid ? dayjs(date).format(format ?? formatStr.time) : 'Invalid time value';
 }
 
-/** output: 1713250100
- */
 export function fTimestamp(date: DatePickerFormat) {
   if (!date) {
     return null;
@@ -78,8 +67,6 @@ export function fTimestamp(date: DatePickerFormat) {
   return isValid ? dayjs(date).valueOf() : 'Invalid time value';
 }
 
-/** output: a few seconds, 2 years
- */
 export function fToNow(date: DatePickerFormat) {
   if (!date) {
     return null;
@@ -90,8 +77,6 @@ export function fToNow(date: DatePickerFormat) {
   return isValid ? dayjs(date).toNow(true) : 'Invalid time value';
 }
 
-/** output: boolean
- */
 export function fIsBetween(
   inputDate: DatePickerFormat,
   startDate: DatePickerFormat,
@@ -112,14 +97,10 @@ export function fIsBetween(
   return false;
 }
 
-/** output: boolean
- */
 export function fIsAfter(startDate: DatePickerFormat, endDate: DatePickerFormat) {
   return dayjs(startDate).isAfter(endDate);
 }
 
-/** output: boolean
- */
 export function fIsSame(
   startDate: DatePickerFormat,
   endDate: DatePickerFormat,
@@ -138,12 +119,6 @@ export function fIsSame(
   return dayjs(startDate).isSame(endDate, units ?? 'year');
 }
 
-/** output:
- * Same day: 26 Apr 2024
- * Same month: 25 - 26 Apr 2024
- * Same month: 25 - 26 Apr 2024
- * Same year: 25 Apr - 26 May 2024
- */
 export function fDateRangeShortLabel(
   startDate: DatePickerFormat,
   endDate: DatePickerFormat,
@@ -188,8 +163,6 @@ export type DurationProps = {
   milliseconds?: number;
 };
 
-/** output: '2024-05-28T05:55:31+00:00'
- */
 export function fAdd({
   years = 0,
   months = 0,
@@ -216,8 +189,6 @@ export function fAdd({
   return result;
 }
 
-/** output: '2024-05-28T05:55:31+00:00'
- */
 export function fSub({
   years = 0,
   months = 0,

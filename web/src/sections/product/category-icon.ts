@@ -1,12 +1,3 @@
-/**
- * `category` is free text with a default of `Uncategorized`, so any value can
- * arrive. The map is normalised and the fallback is not optional: an unknown
- * category must still render a correct-looking card.
- *
- * Deriving an icon from the text — hashing it, say — would give every category
- * something distinct but unrelated to its meaning, which is worse than one
- * honest neutral icon.
- */
 const ICONS: Record<string, string> = {
   accessories: 'solar:bag-4-bold-duotone',
   beauty: 'solar:cosmetic-bold-duotone',
@@ -29,7 +20,6 @@ const ICONS: Record<string, string> = {
 
 export const FALLBACK_CATEGORY_ICON = 'solar:box-bold-duotone';
 
-/** Trimmed and lowercased, so the same category written differently maps the same. */
 export function categoryIcon(category: string | null | undefined): string {
   if (!category) return FALLBACK_CATEGORY_ICON;
 

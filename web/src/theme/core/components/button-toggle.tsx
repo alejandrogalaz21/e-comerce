@@ -21,9 +21,6 @@ function styleColors(ownerState: ToggleButtonProps, styles: (val: ColorType) => 
 }
 
 const MuiToggleButton: Components<Theme>['MuiToggleButton'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme, ownerState }) => {
       const styled = {
@@ -59,9 +56,6 @@ const MuiToggleButton: Components<Theme>['MuiToggleButton'] = {
 };
 
 const MuiToggleButtonGroup: Components<Theme>['MuiToggleButtonGroup'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       gap: 4,

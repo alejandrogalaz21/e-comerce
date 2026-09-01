@@ -3,18 +3,12 @@ import type { Theme, Components } from '@mui/material/styles';
 import { tabClasses } from '@mui/material/Tab';
 
 const MuiTabs: Components<Theme>['MuiTabs'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: {
     textColor: 'inherit',
     variant: 'scrollable',
     allowScrollButtonsMobile: true,
   },
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     flexContainer: ({ ownerState, theme }) => ({
       ...(ownerState.variant !== 'fullWidth' && {
@@ -29,14 +23,8 @@ const MuiTabs: Components<Theme>['MuiTabs'] = {
 };
 
 const MuiTab: Components<Theme>['MuiTab'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: { disableRipple: true, iconPosition: 'start' },
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       opacity: 1,

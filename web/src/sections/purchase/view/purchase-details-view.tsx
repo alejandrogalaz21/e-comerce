@@ -33,9 +33,6 @@ type Props = {
 export function PurchaseDetailsView({ id }: Props) {
   const { purchase, purchaseLoading, purchaseError } = useGetPurchase(id);
 
-  // The PDF generator is loaded on demand, so between the click and the file
-  // there is a chunk to download and a document to render: without this the
-  // button would look inert for seconds.
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = useCallback(async () => {

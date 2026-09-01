@@ -61,9 +61,6 @@ export function DashboardLayout({ sx, children, data }: DashboardLayoutProps) {
       />
 
       <LayoutSection
-        /** **************************************
-         * Header
-         *************************************** */
         headerSection={
           <HeaderBase
             layoutQuery={layoutQuery}
@@ -122,9 +119,6 @@ export function DashboardLayout({ sx, children, data }: DashboardLayoutProps) {
             }}
           />
         }
-        /** **************************************
-         * Sidebar
-         *************************************** */
         sidebarSection={
           isNavHorizontal ? null : (
             <NavVertical
@@ -141,13 +135,7 @@ export function DashboardLayout({ sx, children, data }: DashboardLayoutProps) {
             />
           )
         }
-        /** **************************************
-         * Footer
-         *************************************** */
         footerSection={null}
-        /** **************************************
-         * Style
-         *************************************** */
         cssVars={{
           ...navColorVars.layout,
           '--layout-transition-easing': 'linear',
@@ -219,18 +207,13 @@ function useNavColorVars(
             },
           },
           section: {
-            // caption
             '--nav-item-caption-color': palette.grey[600],
-            // subheader
             '--nav-subheader-color': palette.grey[600],
             '--nav-subheader-hover-color': palette.common.white,
-            // item
             '--nav-item-color': palette.grey[500],
             '--nav-item-root-active-color': palette.primary.light,
             '--nav-item-root-open-color': palette.common.white,
-            // bullet
             '--nav-bullet-light-color': bulletColor.dark,
-            // sub
             ...(settings.navLayout === 'vertical' && {
               '--nav-item-sub-active-color': palette.common.white,
               '--nav-item-sub-open-color': palette.common.white,

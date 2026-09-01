@@ -4,21 +4,6 @@ import type { Page, APIRequestContext } from '@playwright/test';
 
 import { API_URL, deleteProducts, createAuthenticatedApiContext } from './support/auth';
 
-/**
- * The purchase flow in a browser. Everything here goes through the real API, so
- * the fake payment provider is live and declines roughly one charge in ten.
- *
- * A test that simply buys would fail ~10% of runs, which would be the suite
- * lying rather than the system misbehaving. So the happy paths retry a bounded
- * number of times — a decline is a legitimate outcome and retrying is exactly
- * what the UI tells the customer to do — while the decline itself is forced by
- * intercepting the response, which keeps it deterministic.
- *
- * The file is named to sort last on purpose. Buying leaves permanent residue:
- * a product that appears in an order cannot be deleted, by design, so any spec
- * that counts the catalog must run before this one.
- */
-
 const runId = Date.now();
 const STOCK = 40;
 
@@ -65,16 +50,9 @@ async function setStock(id: string, stock: number): Promise<void> {
   await api.patch(`/api/v1/products/${id}`, { data: { stock } });
 }
 
-/**
- * Adds the product to the cart from its detail page and lands on the cart step.
- * The shop grid's add button is a hover-revealed Fab; the detail page has an
- * explicit "Add to cart", which is both the realistic journey and a stable target.
- */
 async function addToCartAndOpenCheckout(page: Page, id: string): Promise<void> {
   await page.goto(`/product/${id}`);
 
-  // A finished checkout stays completed in storage and would otherwise show the
-  // confirmation instead of the cart on the next run through.
   await page.evaluate(() => window.localStorage.removeItem('app-checkout'));
   await page.reload();
 
@@ -86,10 +64,6 @@ async function addToCartAndOpenCheckout(page: Page, id: string): Promise<void> {
   await expect(page.getByRole('button', { name: 'Check out' })).toBeEnabled();
 }
 
-/**
- * The billing step no longer ships a book of sample addresses, so the delivery
- * address is the one the visitor types.
- */
 async function fillDeliveryAddress(page: Page): Promise<void> {
   const deliver = page.getByRole('button', { name: 'Deliver to this address' });
 
@@ -115,14 +89,11 @@ async function fillDeliveryAddress(page: Page): Promise<void> {
   await deliver.first().click();
 }
 
-/** Walks cart -> billing -> payment and presses Complete order once. */
 async function completeOrder(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Check out' }).click();
 
   await fillDeliveryAddress(page);
 
-  // The payment method is required by the form schema; without it the submit
-  // never reaches the API.
   await page.getByText('Cash', { exact: false }).first().click();
 
   await expect(page.getByRole('button', { name: 'Complete order' })).toBeVisible();
@@ -134,10 +105,6 @@ const ORDERS_ENDPOINT = /\/api\/v1\/orders$/;
 const confirmation = (page: Page) => page.getByText('Thank you for your purchase!');
 const declineAlert = (page: Page) => page.getByText('Payment declined');
 
-/**
- * Buys until the charge is approved. Each attempt is a fresh checkout, which is
- * also what the app does: a decline closes that idempotency key.
- */
 async function buyUntilApproved(page: Page, id: string, attempts = 6): Promise<void> {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     // eslint-disable-next-line no-await-in-loop
@@ -188,11 +155,6 @@ test.describe('checkout', () => {
 
     await addToCartAndOpenCheckout(page, productId);
 
-    // The provider declines about one charge in ten at random. Forcing the
-    // response makes this deterministic and keeps the test on the layer it is
-    // meant to cover: how the browser presents a decline. That the catalog is
-    // actually rolled back is proven against a real database in
-    // orders.concurrency.spec.ts.
     await page.route(ORDERS_ENDPOINT, (route) =>
       route.fulfill({
         status: 402,
@@ -228,8 +190,6 @@ test.describe('checkout', () => {
 
     await addToCartAndOpenCheckout(page, scarceId);
 
-    // Sold out between adding to the cart and confirming — the race the stock
-    // check exists for.
     await setStock(scarceId, 0);
 
     await completeOrder(page);
@@ -249,7 +209,6 @@ test.describe('checkout', () => {
     await setStock(outId, 0);
     await completeOrder(page);
 
-    // The two failures need different answers, so they must not share a message.
     await expect(page.getByText('Not enough stock')).toBeVisible();
     await expect(declineAlert(page)).toBeHidden();
   });
@@ -261,7 +220,6 @@ test.describe('checkout', () => {
     await fillDeliveryAddress(page);
     await page.getByText('Cash', { exact: false }).first().click();
 
-    // Hold the response so the in-flight state is observable rather than a race.
     await page.route(ORDERS_ENDPOINT, async (route) => {
       await new Promise((resolve) => {
         setTimeout(resolve, 2000);
@@ -272,7 +230,6 @@ test.describe('checkout', () => {
     const confirm = page.getByRole('button', { name: 'Complete order' });
     await confirm.click();
 
-    // A second press must not reach the API: one checkout, one order.
     await expect(confirm).toBeDisabled();
 
     await page.unroute(ORDERS_ENDPOINT);
@@ -310,10 +267,6 @@ test.describe('checkout', () => {
     expect(res.status()).toBe(401);
   });
 
-  /**
-   * Closes the loop the challenge describes: what was bought in the shop has to
-   * be findable in the dashboard, and its detail has to agree with the record.
-   */
   test('the purchase shows up in the orders dashboard with its lines and total', async ({
     page,
   }) => {
@@ -343,12 +296,9 @@ test.describe('checkout', () => {
 
     await page.goto(`/dashboard/order/${order.id}`);
 
-    // The lines, as sold.
     await expect(page.getByText(sku).first()).toBeVisible();
     await expect(page.getByText(productName).first()).toBeVisible();
 
-    // The evidence a reviewer checks: the charge was simulated, and replaying
-    // the key would return this same order instead of charging again.
     await expect(page.getByText(order.idempotencyKey)).toBeVisible();
     if (order.paymentReference) {
       await expect(page.getByText(order.paymentReference)).toBeVisible();
@@ -361,11 +311,6 @@ test.describe('checkout', () => {
     await expect(page.getByText('Order not found')).toBeVisible();
   });
 
-  /**
-   * Buying is the fourth thing that changes stock and was the only one not
-   * clearing the cached catalog, so the shop kept serving the old number for up
-   * to five minutes and the app looked like it never discounted inventory.
-   */
   test('the stock the shop shows drops as soon as something is bought', async ({ page }) => {
     const stockOf = async (): Promise<number> => {
       const res = await api.get('/api/v1/products', { params: { page: 1, limit: 100 } });
@@ -373,7 +318,6 @@ test.describe('checkout', () => {
       return body.data.find((product) => product.id === productId)!.stock;
     };
 
-    // Read once so the listing is cached before anything changes it.
     const before = await stockOf();
 
     await buyUntilApproved(page, productId);
@@ -392,12 +336,9 @@ test.describe('checkout', () => {
 
     await expect(page).toHaveURL(new RegExp(`q=${sku}`));
 
-    // The table has no product column, so what proves the search worked is that
-    // orders survived it: the earlier tests bought exactly this SKU.
     await expect(page.getByText('No orders match these filters')).toBeHidden();
     await expect(page.getByRole('row').filter({ hasText: 'PAID' }).first()).toBeVisible();
 
-    // A term no order carries must empty the table, not fall back to everything.
     await search.fill('NO-SUCH-ORDER-ANYWHERE');
     await search.press('Enter');
 

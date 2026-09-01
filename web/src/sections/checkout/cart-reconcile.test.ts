@@ -36,10 +36,6 @@ describe('reconcileCart', () => {
     expect(items[0].addedPrice).toBeUndefined();
   });
 
-  /**
-   * The whole point of the ticket: the server prices the order from the catalog,
-   * so a stale price is a screen that disagrees with the charge.
-   */
   it('adopts the current price and remembers the one that was accepted', () => {
     const { items, changes } = reconcileCart([line], found(catalog({ price: 9.99 })));
 
@@ -76,10 +72,6 @@ describe('reconcileCart', () => {
     expect(changes[0].kinds).toEqual(['quantity']);
   });
 
-  /**
-   * Stock zero is not a quantity to adjust: the line drops to nothing buyable,
-   * and the cart must say so rather than offering a purchase of zero units.
-   */
   it('leaves a sold-out line at zero and unbuyable', () => {
     const { items } = reconcileCart([line], found(catalog({ stock: 0 })));
 
@@ -104,10 +96,6 @@ describe('reconcileCart', () => {
     expect(isPurchasable(items[0])).toBe(false);
   });
 
-  /**
-   * A dropped connection must not look like a deleted catalog: the line is kept
-   * as it was and the caller is told the cart could not be verified.
-   */
   it('keeps the line as it was when the catalog could not be reached', () => {
     const { items, changes, unverified } = reconcileCart([line], {
       'product-1': { status: 'unverified' },

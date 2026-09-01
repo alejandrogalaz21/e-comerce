@@ -49,7 +49,6 @@ function parseBoolean(raw: string | null): boolean | undefined {
   return undefined;
 }
 
-/** Search terms travel as repeated params, since a term may itself contain a comma. */
 function parseTerms(raw: string[]): string[] {
   const terms = raw.map((value) => value.trim()).filter(Boolean);
   return Array.from(new Set(terms));

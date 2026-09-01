@@ -118,11 +118,9 @@ export function useTable(props?: UseTableProps): UseTableReturn {
     page,
     orderBy,
     rowsPerPage,
-    //
     selected,
     onSelectRow,
     onSelectAllRows,
-    //
     onSort,
     onChangePage,
     onChangeDense,
@@ -130,7 +128,6 @@ export function useTable(props?: UseTableProps): UseTableReturn {
     onChangeRowsPerPage,
     onUpdatePageDeleteRow,
     onUpdatePageDeleteRows,
-    //
     setPage,
     setDense,
     setOrder,

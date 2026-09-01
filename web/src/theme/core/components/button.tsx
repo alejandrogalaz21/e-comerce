@@ -6,7 +6,6 @@ import { loadingButtonClasses } from '@mui/lab/LoadingButton';
 
 import { varAlpha, stylesMode } from '../../styles';
 
-// NEW VARIANT
 declare module '@mui/material/Button' {
   interface ButtonPropsVariantOverrides {
     soft: true;
@@ -29,9 +28,6 @@ function styleColors(ownerState: ButtonProps, styles: (val: ColorType) => CSSObj
 }
 
 const MuiButtonBase: Components<Theme>['MuiButtonBase'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: { root: ({ theme }) => ({ fontFamily: theme.typography.fontFamily }) },
 };
 
@@ -67,28 +63,11 @@ const softVariant: Record<string, ComponentsVariants<Theme>['MuiButton']> = {
 };
 
 const MuiButton: Components<Theme>['MuiButton'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: { color: 'inherit', disableElevation: true },
 
-  /** **************************************
-   * VARIANTS
-   *************************************** */
-  variants: [
-    /**
-     * @variant soft
-     */
-    ...[...softVariant.base!, ...softVariant.colors!],
-  ],
+  variants: [...[...softVariant.base!, ...softVariant.colors!]],
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
-    /**
-     * @variant contained
-     */
     contained: ({ theme, ownerState }) => {
       const styled = {
         colors: styleColors(ownerState, (color) => ({
@@ -113,9 +92,6 @@ const MuiButton: Components<Theme>['MuiButton'] = {
       };
       return { ...styled.inheritColor, ...styled.colors };
     },
-    /**
-     * @variant outlined
-     */
     outlined: ({ theme, ownerState }) => {
       const styled = {
         colors: styleColors(ownerState, (color) => ({
@@ -134,9 +110,6 @@ const MuiButton: Components<Theme>['MuiButton'] = {
       };
       return { ...styled.base, ...styled.inheritColor, ...styled.colors };
     },
-    /**
-     * @variant text
-     */
     text: ({ ownerState, theme }) => {
       const styled = {
         inheritColor: {
@@ -148,9 +121,6 @@ const MuiButton: Components<Theme>['MuiButton'] = {
       };
       return { ...styled.inheritColor };
     },
-    /**
-     * @size
-     */
     sizeSmall: ({ ownerState }) => ({
       height: 30,
       ...(ownerState.variant === 'text'

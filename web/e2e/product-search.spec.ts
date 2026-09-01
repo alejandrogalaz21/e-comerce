@@ -34,8 +34,6 @@ function rowBySku(page: Page, value: string) {
 test.beforeAll(async () => {
   api = await createAuthenticatedApiContext();
 
-  // The target is created first so that, with the newest-first ordering, the fillers
-  // created after it fill the whole first page and push it onto a later one.
   await createProduct(targetSku, targetName);
 
   for (let index = 0; index < FILLER_COUNT; index += 1) {
@@ -75,7 +73,6 @@ test.describe('product search', () => {
 
     await expect(page.getByText(`No results found for "no-such-product-${runId}"`)).toBeVisible();
 
-    // The term became a chip, so clearing it means removing the chip.
     await page
       .locator('.MuiChip-root')
       .filter({ hasText: `no-such-product-${runId}` })
