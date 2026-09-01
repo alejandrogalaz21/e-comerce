@@ -71,5 +71,37 @@ services:
     depends_on:
       - api
 
+  # Development-only consoles: the devtools profile keeps them out of the default `up`
+  adminer:
+    image: adminer:4-standalone
+    container_name: ecommerce-adminer
+    profiles: [devtools]
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - '8081:8080'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: ecommerce-redisinsight
+    profiles: [devtools]
+    environment:
+      RI_REDIS_HOST0: redis
+      RI_REDIS_PORT0: 6379
+      RI_REDIS_ALIAS0: ecommerce-redis
+      # Required for the pre-registered connection above to be created headlessly
+      RI_ACCEPT_TERMS_AND_CONDITIONS: 'true'
+    ports:
+      - '5540:5540'
+    volumes:
+      - redisinsight_data:/data
+    depends_on:
+      redis:
+        condition: service_healthy
+
 volumes:
   postgres_data:
+  redisinsight_data:

@@ -89,6 +89,26 @@ cd api && cp .env.example .env && npm install && npm run dev
 cd web && cp .env.example .env && npm install && npm run dev
 ```
 
+### Inspecting the data stores (optional)
+
+Two web consoles ship with the stack behind the `devtools` profile, so `docker compose up -d`
+still starts only the four application services. Ask for them explicitly:
+
+```bash
+docker compose --profile devtools up -d
+```
+
+| Console | URL | Connects to | Credentials |
+| --- | --- | --- | --- |
+| Adminer | http://localhost:8081 | server `db`, PostgreSQL | `DB_USER` / `DB_PASSWORD` / `DB_NAME` from `.env` |
+| RedisInsight | http://localhost:5540 | `redis:6379` (pre-registered) | none |
+
+These are development tools with full read/write access to real data and no authentication of
+their own — never expose them outside your machine. The RedisInsight service sets
+`RI_ACCEPT_TERMS_AND_CONDITIONS`, which accepts Redis' terms on your behalf so the connection is
+registered without any manual step; drop that variable if you prefer to accept them yourself on
+first launch.
+
 ## How to run the tests
 
 **521 automated tests.** Every level runs green; the browser suite needs the stack up.
