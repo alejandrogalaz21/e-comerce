@@ -72,6 +72,7 @@ async function fillDeliveryAddress(page: Page): Promise<void> {
 
     await page.getByLabel('Full name').fill('Test Buyer');
     await page.getByPlaceholder('Enter phone number').fill('+14155552671');
+    await page.getByLabel('Email').fill('test.buyer@example.com');
     await page.getByLabel('Address', { exact: true }).fill('1 Test Street');
     await page.getByLabel('Town/city').fill('Springfield');
     await page.getByLabel('State').fill('IL');
@@ -94,7 +95,7 @@ async function completeOrder(page: Page): Promise<void> {
 
   await fillDeliveryAddress(page);
 
-  await page.getByText('Cash', { exact: false }).first().click();
+  await page.getByText('Credit / Debit card', { exact: true }).click();
 
   await expect(page.getByRole('button', { name: 'Complete order' })).toBeVisible();
   await page.getByRole('button', { name: 'Complete order' }).click();
@@ -180,7 +181,7 @@ test.describe('checkout', () => {
     expect(await stockOf(productId)).toBe(before);
   });
 
-  test('not enough stock names the line and does not create an order', async ({ page }) => {
+  test('a line that sold out while the cart sat there blocks the order', async ({ page }) => {
     const scarceName = `Scarce Product ${runId}`;
     const scarceId = await createProduct({
       sku: `SCARCE-${runId}`,
@@ -192,24 +193,27 @@ test.describe('checkout', () => {
 
     await setStock(scarceId, 0);
 
-    await completeOrder(page);
+    await page.getByRole('button', { name: 'Check out' }).click();
+    await fillDeliveryAddress(page);
 
-    await expect(page.getByText('Not enough stock')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Edit cart' })).toBeVisible();
+    await expect(page.getByText('Remove what cannot be bought to continue')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Complete order' })).toBeDisabled();
     await expect(confirmation(page)).toBeHidden();
 
     expect(await stockOf(scarceId)).toBe(0);
   });
 
-  test('a stock conflict reads differently from a declined payment', async ({ page }) => {
+  test('the blocked cart reads as a cart problem, not a declined card', async ({ page }) => {
     const outName = `Sold Out Product ${runId}`;
     const outId = await createProduct({ sku: `OUT-${runId}`, name: outName, stock: 3 });
 
     await addToCartAndOpenCheckout(page, outId);
     await setStock(outId, 0);
-    await completeOrder(page);
 
-    await expect(page.getByText('Not enough stock')).toBeVisible();
+    await page.getByRole('button', { name: 'Check out' }).click();
+    await fillDeliveryAddress(page);
+
+    await expect(page.getByText('Remove what cannot be bought to continue')).toBeVisible();
     await expect(declineAlert(page)).toBeHidden();
   });
 
@@ -218,7 +222,7 @@ test.describe('checkout', () => {
 
     await page.getByRole('button', { name: 'Check out' }).click();
     await fillDeliveryAddress(page);
-    await page.getByText('Cash', { exact: false }).first().click();
+    await page.getByText('Credit / Debit card', { exact: true }).click();
 
     await page.route(ORDERS_ENDPOINT, async (route) => {
       await new Promise((resolve) => {
@@ -330,7 +334,9 @@ test.describe('checkout', () => {
   }) => {
     await page.goto('/dashboard/order');
 
-    const search = page.getByPlaceholder('Order id, SKU or product name, then Enter...');
+    const search = page.getByPlaceholder(
+      'Order id, delivery details, SKU or product, then Enter...'
+    );
     await search.fill(sku);
     await search.press('Enter');
 
