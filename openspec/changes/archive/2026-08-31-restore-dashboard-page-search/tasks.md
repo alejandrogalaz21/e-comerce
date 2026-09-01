@@ -57,4 +57,4 @@
 - [x] 6.1 Añadir el caso nuevo a `docs/testing/MATRIX.md`
 - [x] 6.2 Anotar en TK-027 y TK-036 de `docs/backlog.md` que TK-052 revierte esa decisión, para
       que el historial no se contradiga en silencio
-- [ ] 6.3 Cerrar TK-052 y enlazar el change archivado al archivar
+- [x] 6.3 Cerrar TK-052 y enlazar el change archivado al archivar
