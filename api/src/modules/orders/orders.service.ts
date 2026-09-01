@@ -202,11 +202,14 @@ export class OrdersService {
     if (filters.q) {
       const term = filters.q.trim()
 
-      // An order has no customer, so what identifies it is its id and what it
-      // contains. EXISTS rather than a join: joining the lines would multiply
-      // the order by them and break the count that drives pagination.
+      // An order is looked up by whatever the person at the counter has at hand:
+      // its id, who it ships to, or what it contains. EXISTS rather than a join:
+      // joining the lines would multiply the order by them and break the count
+      // that drives pagination.
       query.andWhere(
         `(o.id::text ILIKE :prefix
+          OR o.ship_name ILIKE :contains
+          OR o.ship_phone ILIKE :contains
           OR EXISTS (
             SELECT 1 FROM order_items i
             WHERE i.order_id = o.id
@@ -225,11 +228,7 @@ export class OrdersService {
     }
 
     if (filters.dateTo) {
-      // Half-open on the next day: `<= dateTo` would cut the range at midnight
-      // and drop every order placed during that day.
-      query.andWhere(`o.createdAt < (CAST(:dateTo AS date) + INTERVAL '1 day')`, {
-        dateTo: filters.dateTo
-      })
+      query.andWhere('o.createdAt <= :dateTo', { dateTo: endOfRange(filters.dateTo) })
     }
 
     const [data, total] = await query.getManyAndCount()
@@ -381,6 +380,16 @@ function toShippingColumns(address: ShippingAddressDto) {
     shipZipCode: address.zipCode,
     shipCountry: address.country
   }
+}
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+
+/**
+ * A date-only bound covers that whole UTC day; an instant already carries the
+ * caller's own day boundary, so it travels to the query untouched.
+ */
+function endOfRange(dateTo: string): string {
+  return DATE_ONLY.test(dateTo) ? `${dateTo}T23:59:59.999Z` : dateTo
 }
 
 /**

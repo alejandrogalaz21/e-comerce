@@ -14,11 +14,14 @@ export const purchaseKeys = {
   detail: (id: string) => [...purchaseKeys.all, 'detail', id] as const,
 };
 
-export function useGetPurchases(params: IPurchaseListParams) {
+export function useGetPurchases(params: IPurchaseListParams, options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
+
   const query = useQuery({
     queryKey: purchaseKeys.list(params),
     queryFn: () => getPurchases(params),
     placeholderData: keepPreviousData,
+    enabled,
   });
 
   const purchases = query.data?.purchases ?? [];
@@ -29,7 +32,7 @@ export function useGetPurchases(params: IPurchaseListParams) {
     purchasesLoading: query.isLoading,
     purchasesError: query.error,
     purchasesValidating: query.isFetching,
-    purchasesEmpty: !query.isLoading && !query.error && !purchases.length,
+    purchasesEmpty: enabled && !query.isLoading && !query.error && !purchases.length,
     refetchPurchases: query.refetch,
   };
 }

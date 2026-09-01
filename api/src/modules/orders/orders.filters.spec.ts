@@ -192,6 +192,33 @@ describe('Filtering orders against a real database', () => {
   })
 
   /**
+   * An order id is a UUID nobody reads out loud. Whoever answers the phone has
+   * the recipient's name or number instead, so both have to find the order.
+   */
+  maybe('finds an order by the recipient name or phone', async () => {
+    const source = dataSource as DataSource
+    const service = serviceFor(source)
+    const productId = await seedProduct(source, 'SHIP', 'Shipped Product')
+
+    await service.create({
+      items: [{ productId, quantity: 1 }],
+      idempotencyKey: `${PREFIX}ada`,
+      shippingAddress: SHIPPING
+    })
+    await service.create({
+      items: [{ productId, quantity: 1 }],
+      idempotencyKey: `${PREFIX}grace`,
+      shippingAddress: { ...SHIPPING, name: 'Grace Hopper', phone: '+13125550143' }
+    })
+
+    const byName = await service.findAll({ page: 1, limit: 20, q: 'hopper' })
+    const byPhone = await service.findAll({ page: 1, limit: 20, q: '5552671' })
+
+    expect(mine(byName).map(order => order.shipName)).toEqual(['Grace Hopper'])
+    expect(mine(byPhone).map(order => order.shipName)).toEqual(['Ada Lovelace'])
+  })
+
+  /**
    * The lines store the SKU and name as sold. Searching the catalog instead
    * would make renaming a product lose the orders that bought it, which is the
    * opposite of what a snapshot is for.

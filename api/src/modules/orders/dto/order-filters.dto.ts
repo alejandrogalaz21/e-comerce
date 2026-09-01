@@ -32,7 +32,7 @@ export class OrderFiltersDto {
   @ApiPropertyOptional({
     example: 'PRJ-001',
     description:
-      'Matches the start of an order id, or a SKU or product name among its lines. An order has no customer, so these are what identify it'
+      'Matches the start of an order id, or the recipient name, phone, or a SKU or product name among its lines'
   })
   @IsOptional()
   @IsString()

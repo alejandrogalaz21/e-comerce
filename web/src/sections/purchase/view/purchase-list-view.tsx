@@ -8,6 +8,7 @@ import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import { DataGrid, gridClasses } from '@mui/x-data-grid';
 
@@ -27,13 +28,20 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { countItems } from '../purchase-utils';
 import { useGetPurchases } from '../hooks/use-purchase';
 import { usePurchaseParams } from '../hooks/use-purchase-params';
-import { toPurchaseQuery, hasPurchaseFilters } from '../purchase-params';
-import { PurchaseId, PurchaseStatusLabel, PurchaseTableToolbar } from '../components';
+import { toPurchaseQuery, hasInvertedRange, hasPurchaseFilters } from '../purchase-params';
+import {
+  PurchaseId,
+  PurchaseCustomer,
+  PurchaseStatusLabel,
+  PurchaseTableToolbar,
+} from '../components';
 
 export function PurchaseListView() {
   const router = useRouter();
 
   const { state, apply, reset } = usePurchaseParams();
+
+  const inverted = hasInvertedRange(state);
 
   const {
     purchases,
@@ -42,7 +50,7 @@ export function PurchaseListView() {
     purchasesError,
     purchasesEmpty,
     refetchPurchases,
-  } = useGetPurchases(toPurchaseQuery(state));
+  } = useGetPurchases(toPurchaseQuery(state), { enabled: !inverted });
 
   const filtered = hasPurchaseFilters(state);
 
@@ -57,10 +65,18 @@ export function PurchaseListView() {
       {
         field: 'id',
         headerName: 'Order',
-        flex: 1,
-        minWidth: 130,
+        width: 140,
         sortable: false,
         renderCell: (params) => <PurchaseId id={params.row.id} />,
+      },
+      {
+        field: 'customer',
+        headerName: 'Customer',
+        flex: 1,
+        minWidth: 200,
+        sortable: false,
+        valueGetter: (_value, row) => row.shippingAddress?.name ?? '',
+        renderCell: (params) => <PurchaseCustomer address={params.row.shippingAddress} />,
       },
       {
         field: 'createdAt',
@@ -173,47 +189,58 @@ export function PurchaseListView() {
         sx={{ mb: { xs: 3, md: 5 } }}
       />
 
-      {purchasesError ? (
-        <Alert
-          severity="error"
-          action={
-            <Button color="inherit" size="small" onClick={() => refetchPurchases()}>
-              Retry
-            </Button>
-          }
-        >
-          The orders could not be loaded.
-        </Alert>
-      ) : (
-        <Card sx={{ display: 'flex', flexDirection: 'column' }}>
-          {toolbar}
+      {/* The failure is shown under the filters rather than in their place: a bad
+          range is the usual cause, and retrying it only repeats the error. */}
+      <Card sx={{ display: 'flex', flexDirection: 'column' }}>
+        {toolbar}
 
-          <Divider />
+        <Divider />
 
-          {purchasesEmpty ? (
-            renderEmpty
-          ) : (
-            <DataGrid
-              disableRowSelectionOnClick
-              disableColumnMenu
-              onRowClick={(params) => router.push(paths.dashboard.order.details(String(params.id)))}
-              rows={purchases}
-              columns={columns}
-              loading={purchasesLoading}
-              pageSizeOptions={[10, 20, 50]}
-              paginationMode="server"
-              rowCount={pagination?.total ?? 0}
-              paginationModel={{ page: state.page - 1, pageSize: state.limit }}
-              onPaginationModelChange={handlePaginationModelChange}
-              sx={{
-                maxHeight: 'calc(100vh - 300px)',
-                [`& .${gridClasses.row}`]: { cursor: 'pointer' },
-                [`& .${gridClasses.cell}`]: { alignItems: 'center', display: 'inline-flex' },
-              }}
-            />
-          )}
-        </Card>
-      )}
+        {inverted ? (
+          <Typography sx={{ p: 5, textAlign: 'center', color: 'text.secondary' }}>
+            The date range starts after it ends. Correct From or To to see the orders.
+          </Typography>
+        ) : purchasesError ? (
+          <Alert
+            severity="error"
+            sx={{ m: 2.5 }}
+            action={
+              <Button color="inherit" size="small" onClick={() => refetchPurchases()}>
+                Retry
+              </Button>
+            }
+          >
+            The orders could not be loaded.
+          </Alert>
+        ) : (
+          <>
+            {purchasesEmpty ? (
+              renderEmpty
+            ) : (
+              <DataGrid
+                disableRowSelectionOnClick
+                disableColumnMenu
+                onRowClick={(params) =>
+                  router.push(paths.dashboard.order.details(String(params.id)))
+                }
+                rows={purchases}
+                columns={columns}
+                loading={purchasesLoading}
+                pageSizeOptions={[10, 20, 50]}
+                paginationMode="server"
+                rowCount={pagination?.total ?? 0}
+                paginationModel={{ page: state.page - 1, pageSize: state.limit }}
+                onPaginationModelChange={handlePaginationModelChange}
+                sx={{
+                  maxHeight: 'calc(100vh - 300px)',
+                  [`& .${gridClasses.row}`]: { cursor: 'pointer' },
+                  [`& .${gridClasses.cell}`]: { alignItems: 'center', display: 'inline-flex' },
+                }}
+              />
+            )}
+          </>
+        )}
+      </Card>
     </DashboardContent>
   );
 }

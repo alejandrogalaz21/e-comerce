@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import {
   toPurchaseQuery,
+  hasInvertedRange,
   hasPurchaseFilters,
   parsePurchaseFilters,
   serializePurchaseFilters,
@@ -78,6 +79,18 @@ describe('hasPurchaseFilters', () => {
   );
 });
 
+describe('hasInvertedRange', () => {
+  it('accepts a range that is empty, half open, or in order', () => {
+    expect(hasInvertedRange(parse(''))).toBe(false);
+    expect(hasInvertedRange(parse('dateFrom=2026-09-06'))).toBe(false);
+    expect(hasInvertedRange(parse('dateFrom=2026-09-01&dateTo=2026-09-02'))).toBe(false);
+  });
+
+  it('catches a From later than the To, which the API answers with a 400', () => {
+    expect(hasInvertedRange(parse('dateFrom=2026-09-06&dateTo=2026-09-02'))).toBe(true);
+  });
+});
+
 describe('toPurchaseQuery', () => {
   /**
    * Empty criteria are omitted rather than sent blank: `status=` would fail the
@@ -93,7 +106,18 @@ describe('toPurchaseQuery', () => {
       limit: 20,
       q: 'RS-001',
       status: 'PAID',
-      dateTo: '2026-08-31',
+      dateTo: new Date('2026-08-31T23:59:59.999').toISOString(),
     });
+  });
+
+  /**
+   * An order placed on the evening of the 31st is stored on the 1st in UTC, so
+   * the day has to reach the API as the visitor's own local range.
+   */
+  it('sends the picked days as local instants, not bare dates', () => {
+    const query = toPurchaseQuery(parse('dateFrom=2026-08-20&dateTo=2026-08-31'));
+
+    expect(query.dateFrom).toBe(new Date('2026-08-20T00:00:00.000').toISOString());
+    expect(query.dateTo).toBe(new Date('2026-08-31T23:59:59.999').toISOString());
   });
 });

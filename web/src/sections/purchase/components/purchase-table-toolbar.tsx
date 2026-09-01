@@ -11,7 +11,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import { Iconify } from 'src/components/iconify';
 import { chipProps, FiltersBlock, FiltersResult } from 'src/components/filters-result';
 
-import { PURCHASE_STATUSES, hasPurchaseFilters } from '../purchase-params';
+import { hasInvertedRange, PURCHASE_STATUSES, hasPurchaseFilters } from '../purchase-params';
 
 import type { IPurchaseFilters } from '../purchase-params';
 
@@ -29,6 +29,7 @@ export function PurchaseTableToolbar({ state, totalResults, onApply, onReset }: 
   useEffect(() => setTerm(state.q), [state.q]);
 
   const hasFilters = hasPurchaseFilters(state);
+  const inverted = hasInvertedRange(state);
 
   const handleClearSearch = useCallback(() => {
     setTerm('');
@@ -44,7 +45,7 @@ export function PurchaseTableToolbar({ state, totalResults, onApply, onReset }: 
           onKeyDown={(event) => {
             if (event.key === 'Enter') onApply({ q: term.trim() });
           }}
-          placeholder="Order id, SKU or product name, then Enter..."
+          placeholder="Order id, name, phone, SKU or product, then Enter..."
           inputProps={{ 'aria-label': 'Search orders' }}
           sx={{ width: { xs: 1, md: 320 } }}
           InputProps={{
@@ -71,12 +72,16 @@ export function PurchaseTableToolbar({ state, totalResults, onApply, onReset }: 
           ))}
         </TextField>
 
+        {/* The pickers bound each other, so an inverted range takes deliberate
+            typing; `inverted` is what catches that case. */}
         <TextField
           type="date"
           label="From"
           value={state.dateFrom}
           onChange={(event) => onApply({ dateFrom: event.target.value })}
           InputLabelProps={{ shrink: true }}
+          inputProps={{ max: state.dateTo || undefined }}
+          error={inverted}
           sx={{ width: { xs: 1, md: 170 } }}
         />
 
@@ -86,6 +91,10 @@ export function PurchaseTableToolbar({ state, totalResults, onApply, onReset }: 
           value={state.dateTo}
           onChange={(event) => onApply({ dateTo: event.target.value })}
           InputLabelProps={{ shrink: true }}
+          inputProps={{ min: state.dateFrom || undefined }}
+          error={inverted}
+          helperText={inverted ? 'To must not be earlier than From' : undefined}
+          FormHelperTextProps={{ sx: { position: 'absolute', top: '100%', m: 0 } }}
           sx={{ width: { xs: 1, md: 170 } }}
         />
       </Stack>

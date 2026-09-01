@@ -44,18 +44,41 @@ export function serializePurchaseFilters(state: IPurchaseFilters): URLSearchPara
   return params;
 }
 
+/**
+ * An inverted range is answered with a 400 by the API, and an error screen the
+ * visitor cannot argue with. Catching it here keeps the filters on screen so the
+ * dates can be corrected.
+ */
+export function hasInvertedRange(state: IPurchaseFilters): boolean {
+  return Boolean(state.dateFrom && state.dateTo && state.dateFrom > state.dateTo);
+}
+
 export function hasPurchaseFilters(state: IPurchaseFilters): boolean {
   return Boolean(state.q || state.status || state.dateFrom || state.dateTo);
 }
 
+/**
+ * The address keeps the plain day the visitor picked, but the API compares
+ * instants: an order placed on the evening of the 31st is stored on the 1st in
+ * UTC, so the day has to be bounded in the visitor's own zone before it travels.
+ */
+function localInstant(date: string, time: string): string | undefined {
+  const parsed = new Date(`${date}T${time}`);
+
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+}
+
 /** What actually travels to the API: empty criteria are omitted, not sent blank. */
 export function toPurchaseQuery(state: IPurchaseFilters) {
+  const dateFrom = state.dateFrom ? localInstant(state.dateFrom, '00:00:00.000') : undefined;
+  const dateTo = state.dateTo ? localInstant(state.dateTo, '23:59:59.999') : undefined;
+
   return {
     page: state.page,
     limit: state.limit,
     ...(state.q && { q: state.q }),
     ...(state.status && { status: state.status }),
-    ...(state.dateFrom && { dateFrom: state.dateFrom }),
-    ...(state.dateTo && { dateTo: state.dateTo }),
+    ...(dateFrom && { dateFrom }),
+    ...(dateTo && { dateTo }),
   };
 }
