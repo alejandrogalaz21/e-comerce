@@ -157,6 +157,8 @@ Shopping is open to everyone; managing the catalog is not.
 | Open to anyone | Requires signing in |
 |---|---|
 | Browsing the catalog, product detail, and completing a purchase | Creating, editing and deleting products |
+| | Taking a product off the catalog and putting it back on sale |
+| | Reading a product's change history |
 | | Creating an account: an account only grants catalog administration |
 | `GET /health` (monitoring) | CSV import and its batch history |
 | | Infrastructure status and diagnostics |
