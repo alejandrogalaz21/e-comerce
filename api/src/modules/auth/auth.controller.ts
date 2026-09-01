@@ -5,23 +5,21 @@ import {
   UnauthorizedException,
   Get
 } from '@nestjs/common'
+import { ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags
-} from '@nestjs/swagger'
-import { AuthService } from './auth.service'
-import { UsersService } from '../users/users.service'
-import { CreateUserDto } from '../users/dto/create-user.dto'
-import { SignInDto } from './dto/sign-in.dto'
-import { Public } from '@/common/decorators/public.decorator'
-import { THROTTLE } from '@/config'
+
 import {
   AuthenticatedUser,
   CurrentUser
 } from '@/common/decorators/current-user.decorator'
+import { Public } from '@/common/decorators/public.decorator'
+import { THROTTLE } from '@/config'
+
+import { CreateUserDto } from '../users/dto/create-user.dto'
+import { UsersService } from '../users/users.service'
+import { AuthService } from './auth.service'
+import { ApiCurrentUser, ApiSignIn, ApiSignUp } from './docs/auth.api-docs'
+import { SignInDto } from './dto/sign-in.dto'
 
 @ApiTags('auth')
 @Controller('auth')
@@ -32,9 +30,7 @@ export class AuthController {
   ) {}
 
   @Post('sign-up')
-  @ApiBearerAuth('jwt')
-  @ApiOperation({ summary: 'Create an account (requires an existing session)' })
-  @ApiResponse({ status: 401, description: 'Missing or invalid access token' })
+  @ApiSignUp()
   async signup(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto)
   }
@@ -42,11 +38,7 @@ export class AuthController {
   @Post('sign-in')
   @Public()
   @Throttle({ default: THROTTLE.signIn })
-  @ApiResponse({
-    status: 200,
-    description: 'Access token and public user data'
-  })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiSignIn()
   async signin(@Body() body: SignInDto) {
     const user = await this.authService.validateUser(body.email, body.password)
     if (!user) {
@@ -56,8 +48,7 @@ export class AuthController {
   }
 
   @Get('me')
-  @ApiBearerAuth('jwt')
-  @ApiResponse({ status: 401, description: 'Missing or invalid access token' })
+  @ApiCurrentUser()
   async getProfile(@CurrentUser() user: AuthenticatedUser) {
     return this.usersService.findOne(user.userId)
   }

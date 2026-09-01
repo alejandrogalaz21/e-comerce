@@ -198,10 +198,11 @@ api/src/
 │   ├── redis/                #   ioredis client provider (cache-ready)
 │   ├── migrations/           #   versioned schema + demo-user data, run automatically at boot
 │   └── data-source.ts        #   typeorm CLI entry (migration:generate|run|revert)
-├── common/                   # CROSS-CUTTING — pagination system, sanitizers, logger middleware
+├── common/                   # CROSS-CUTTING — pagination, sanitizers, logger middleware, shared OpenAPI responses
 └── modules/<name>/           # TOP-LEVEL feature modules (no nested submodules):
     │                         #   products, import (CSV), users, auth, health, status
-    ├── controller            #   HTTP only (routes, pipes, Swagger) — zero business logic
+    ├── controller            #   HTTP only (routes, pipes, status codes) — zero business logic
+    ├── docs/                 #   OpenAPI, one composed decorator per endpoint
     ├── service               #   business rules + repositories
     ├── entities/  dto/       #   DB contract (constraints) / wire contract (validation + examples)
 ```

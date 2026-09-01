@@ -1,8 +1,10 @@
 import { Controller, Get } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger'
+import { ApiTags } from '@nestjs/swagger'
 import { PgHealthService } from '@/database/postgres/pg-health.service'
 import { Public } from '@/common/decorators/public.decorator'
+
+import { ApiHealthCheck, ApiRoot } from './docs/health.api-docs'
 import { performance } from 'perf_hooks'
 import * as os from 'os'
 
@@ -15,7 +17,7 @@ export class HealthController {
   ) {}
 
   @Public()
-  @ApiExcludeEndpoint()
+  @ApiRoot()
   @Get('/')
   root() {
     return {
@@ -27,6 +29,7 @@ export class HealthController {
   }
 
   @Public()
+  @ApiHealthCheck()
   @Get('health')
   async healthCheck() {
     const startedAt = Number(process.env.APP_STARTED_AT || Date.now())

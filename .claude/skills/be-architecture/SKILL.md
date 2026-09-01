@@ -32,7 +32,8 @@ api/src/
     │                          #   health, status
     ├── <name>.module.ts       #   every feature is its own Nest module — NO submodules nested
     │                          #   inside another feature's folder
-    ├── <name>.controller.ts   #   HTTP only: routes, pipes, status codes, Swagger — zero business logic
+    ├── <name>.controller.ts   #   HTTP only: routes, pipes, status codes — zero business logic
+    ├── docs/                  #   OpenAPI: one composed decorator per endpoint (applyDecorators)
     ├── <name>.service.ts      #   business logic + persistence via injected repositories
     ├── entities/              #   TypeORM entities = DB contract (constraints live here AND in migrations)
     └── dto/                   #   wire contract: class-validator rules + @ApiProperty examples
@@ -63,6 +64,7 @@ LoggerMiddleware → (Guard) → ValidationPipe (DTO: transform + whitelist + fo
 | Initial/bootstrap data | `database/migrations/` | Minimal data migrations only (the demo login user, idempotent ON CONFLICT). Business data is NEVER pre-seeded — the app starts with an empty catalog and users create everything through the UI. |
 | Reusable domain-agnostic logic | `common/` | If two domains need it (pagination, sanitizers), it lives here. If it knows about a domain, it does not. |
 | Business rules | `modules/<domain>/*.service.ts` | Controllers never contain logic; services never touch HTTP concepts beyond throwing HttpExceptions. |
+| Endpoint documentation | `modules/<domain>/docs/<domain>.api-docs.ts` | One exported `applyDecorators` composition per endpoint (`ApiCreateProduct`, `ApiListOrders`), applied as a single line in the controller. Responses shared across modules (401, validation, invalid UUID, pagination) come from `common/swagger/api-responses.ts`. Keeps the controller readable at a glance; `products.controller.ts` was a third documentation by line count before this. |
 | Wire contracts | `modules/<domain>/dto/` | class-validator + `@Transform` sanitizers + `@ApiProperty` with realistic examples on every field. |
 | DB contracts | `modules/<domain>/entities/` | Constraints (`UNIQUE`, `@Check`) declared on the entity and mirrored in the migration. DECIMAL columns are typed `string` (wire format preserves precision; the FE mapper converts). |
 | Growing capability | `modules/<capability>/` | A NEW top-level module importing what it needs from sibling modules (see `import`, which uses the Product repository). Never nest a module inside another module's folder. |
@@ -94,4 +96,5 @@ LoggerMiddleware → (Guard) → ValidationPipe (DTO: transform + whitelist + fo
 3. DTOs in `dto/` with validation + Swagger examples (reuse `common/transformers`).
 4. Service with business logic; list endpoints use `PaginationHelper` + `PaginationResponseBuilder`.
 5. Controller: routes + pipes (`ParseUUIDPipe` on ids) + `@ApiTags`/`@ApiResponse`.
-6. Register in `app.module.ts`. Specs for service + DTO. Document the endpoints with Swagger decorators — the generated `/api/v1/docs` is the API reference.
+6. Register in `app.module.ts`. Specs for service + DTO.
+7. Document each endpoint in `docs/<domain>.api-docs.ts` and apply it as one decorator on the route — the generated `/api/v1/docs` is the API reference.
