@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Optional } from '@nestjs/common'
+import {
+  Injectable,
+  NotFoundException,
+  Optional,
+  UnauthorizedException
+} from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DeepPartial, Repository } from 'typeorm'
 
@@ -9,7 +14,8 @@ import {
   DEFAULT_PRODUCT_SORT_FIELD,
   DEFAULT_PRODUCT_STATUS,
   ProductFiltersDto,
-  ProductSortField
+  ProductSortField,
+  ProductStatus
 } from './dto/product-filters.dto'
 import { ProductCategoryDto } from './dto/product-category.dto'
 import { PaginationDTO } from '@/common/dto/pagination.dto'
@@ -66,7 +72,9 @@ export class ProductsService {
     }
   }
 
-  async findAll(filters: ProductFiltersDto = {}) {
+  async findAll(filters: ProductFiltersDto = {}, canSeeDiscontinued = false) {
+    this.assertMaySee(filters.status, canSeeDiscontinued)
+
     const cacheKey = CacheService.buildKey(
       `${ProductsService.CACHE_PREFIX}:list`,
       filters as Record<string, unknown>
@@ -177,13 +185,35 @@ export class ProductsService {
     return categories
   }
 
-  async findOne(id: string): Promise<Product> {
-    const product = await this.productRepository.findOneBy({ id })
+  async findOne(
+    id: string,
+    status: ProductStatus = DEFAULT_PRODUCT_STATUS,
+    canSeeDiscontinued = false
+  ): Promise<Product> {
+    this.assertMaySee(status, canSeeDiscontinued)
 
-    if (!product || product.discontinuedAt)
+    const product = await this.productRepository.findOneBy({ id })
+    const missing =
+      !product ||
+      (status === 'active' && !!product.discontinuedAt) ||
+      (status === 'discontinued' && !product.discontinuedAt)
+
+    if (missing)
       throw new NotFoundException(`Product with id '${id}' not found`)
 
     return product
+  }
+
+  private assertMaySee(
+    status: ProductStatus | undefined,
+    canSeeDiscontinued: boolean
+  ): void {
+    if (!status || status === DEFAULT_PRODUCT_STATUS) return
+    if (canSeeDiscontinued) return
+
+    throw new UnauthorizedException(
+      'Reading discontinued products requires a session'
+    )
   }
 
   private async findOneWhateverItsStatus(id: string): Promise<Product> {
@@ -239,7 +269,7 @@ export class ProductsService {
     id: string,
     updateProductDto: UpdateProductDto
   ): Promise<Product> {
-    const product = await this.findOne(id)
+    const product = await this.findOneWhateverItsStatus(id)
     this.productRepository.merge(product, this.toEntityData(updateProductDto))
 
     try {

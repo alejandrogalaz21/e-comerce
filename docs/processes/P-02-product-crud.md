@@ -125,14 +125,23 @@ instead of rewriting history, and restoring one that never left succeeds without
 **A retired product answers `404`, not `200` with a flag.** `GET /products/:id` is public and the
 cart revalidation already reads `404` as "no longer available" ([P-04](P-04-order-placement.md)).
 Returning `200 { discontinued: true }` would oblige every present and future consumer to learn a
-third state and remember to check it; the `404` does the right thing by default. The accepted cost
-is that the edit screen of a retired product does not load — restore first, then edit.
+third state and remember to check it; the `404` does the right thing by default.
+
+**Seeing what was retired takes a session, and asking for it on purpose.** `?status=discontinued`
+or `?status=all` — on the listing or on a single product — answers `401` without a token. The
+dashboard passes `?status=all`, which is how it opens a retired product to review its history and
+put it back on sale.
+
+The condition is the explicit parameter, not merely holding a token, and the difference matters:
+the browser attaches the token to every request, so inferring "this is an administrator" from the
+token alone would show retired products **in the shop** to a signed-in administrator. With the
+explicit opt-in the shop behaves identically for everyone, and only the dashboard, which does ask,
+sees more.
 
 **The default listing is unchanged.** `GET /products` without `status` returns only what is on sale,
-so a caller written before this feature sees exactly what it saw before. `?status=discontinued` and
-`?status=all` are opt-in; anything else is a `400` naming the valid values. Retired products also
-drop out of `GET /products/categories`, so a category that only held retired products stops being
-offered as a filter.
+so a caller written before this feature sees exactly what it saw before. An unknown value is a `400`
+naming the valid ones. Retired products also drop out of `GET /products/categories`, so a category
+that only held retired products stops being offered as a filter.
 
 **A CSV import brings a retired SKU back.** The file is a catalog correction and whoever uploads it
 is re-adding the product on purpose, so the row is reported as *updated* — never as *unchanged*,
@@ -165,7 +174,8 @@ lose a race between two concurrent creates.
 | Product not found | `404` | |
 | SKU already exists | `409` | Use a different SKU, or update the existing product |
 | Deleting a product that appears in an order | `409 RESOURCE_IN_USE` | Discontinue it instead — an order is a historical record, see [P-04](P-04-order-placement.md) |
-| Reading, editing or buying a retired product | `404` | Restore it first |
+| Buying a retired product, or opening it in the shop | `404` | It is not for sale |
+| Asking for a retired product without a session | `401` | Sign in — this is administrative |
 | An unknown `?status=` value | `400` naming the valid values | Use `active`, `discontinued` or `all` |
 
 ## Verify it yourself
@@ -223,8 +233,16 @@ curl -s -o /dev/null -w "public read: %{http_code}
 " http://localhost:4000/api/v1/products/$ID
 # expect 404
 
-curl -s "http://localhost:4000/api/v1/products?status=discontinued&limit=1" | head -c 200
+curl -s -o /dev/null -w "no token: %{http_code}
+" "http://localhost:4000/api/v1/products?status=discontinued"
+# expect 401 -- what a shopper can see never depends on a parameter they could guess
+
+curl -s "http://localhost:4000/api/v1/products?status=discontinued&limit=1" -H "Authorization: Bearer $TOKEN" | head -c 200
 # the product is here, with its discontinuedAt
+
+curl -s -o /dev/null -w "admin detail: %{http_code}
+" "http://localhost:4000/api/v1/products/$ID?status=all"   -H "Authorization: Bearer $TOKEN"
+# expect 200 -- this is what lets the dashboard show a retired product and its history
 
 curl -s -o /dev/null -w "bad status: %{http_code}
 " "http://localhost:4000/api/v1/products?status=nonsense"

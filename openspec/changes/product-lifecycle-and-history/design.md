@@ -92,11 +92,17 @@ como "ya no está disponible". Devolver `200` con `discontinued: true` obligarí
 para entender un tercer estado, y a que cada consumidor futuro recuerde comprobarlo — mientras que
 el `404` hace lo correcto por omisión.
 
-El administrador no necesita ese `GET`: ve los retirados por el listado con `?status=discontinued`,
-y restaura por `PATCH /products/:id/restore`, que busca ignorando el estado.
+Ese `404` es la respuesta para quien compra, no para quien administra. El administrador pide
+explícitamente otro estado con `?status=all`, y **pedirlo exige sesión**: sin token la respuesta es
+`401`. Lo mismo vale para el listado, donde `?status=discontinued|all` también exige sesión.
 
-Coste aceptado: la pantalla de edición de un producto retirado no carga. Restaurar primero y editar
-después es un flujo razonable, y evita que el detalle público tenga dos comportamientos.
+La condición es el parámetro explícito y no la mera presencia del token, y esa distinción importa:
+el navegador manda el token en todas las peticiones, así que inferir "es admin" del token haría que
+un administrador logueado viese productos retirados **en la tienda**. Con el opt-in explícito la
+tienda se comporta igual para todo el mundo, y solo el dashboard, que sí pide otro estado, ve más.
+
+Sin esto el historial de un producto retirado sería inalcanzable, que es justo la pantalla donde
+vive.
 
 ### 5. `DELETE` no cambia de significado
 

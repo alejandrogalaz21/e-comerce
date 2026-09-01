@@ -158,6 +158,7 @@ Shopping is open to everyone; managing the catalog is not.
 |---|---|
 | Browsing the catalog, product detail, and completing a purchase | Creating, editing and deleting products |
 | | Taking a product off the catalog and putting it back on sale |
+| | Listing or opening a product that was taken off the catalog |
 | | Reading a product's change history |
 | | Creating an account: an account only grants catalog administration |
 | `GET /health` (monitoring) | CSV import and its batch history |
@@ -584,7 +585,8 @@ every validation and where it lives, the failure modes, and commands to verify t
 | **Reject HTML in product text** rather than stripping it | Stripping guesses at intent and leaves the caller believing their input was accepted. The sample file's `<script>` payload is reported back verbatim as the reason for rejection | [P-08](docs/processes/P-08-security-hardening.md) |
 | **`JWT_SECRET` ships empty** | A placeholder committed to a compose file is a published signing key. Unset generates one per boot — sessions die on restart, which is loud and harmless. A weak value stops the boot on purpose | [P-08](docs/processes/P-08-security-hardening.md) |
 | **Products are retired, not deleted** | Deleting a sold product would destroy the line that proves the sale, so `DELETE` still refuses it with `409`. Retiring sets `discontinued_at` — a timestamp, not a boolean, because it answers *since when* at the same cost — and the product leaves the shop while every order that contains it stays intact. It is reversible; deleting is not | [P-02](docs/processes/P-02-product-crud.md) |
-| **A retired product answers `404`**, not `200` with a flag | The cart revalidation already reads `404` as "no longer available", so a retired product behaves like a deleted one without the client learning a third state. The accepted cost is that its edit screen does not load — restore first, then edit | [P-02](docs/processes/P-02-product-crud.md) |
+| **A retired product answers `404`**, not `200` with a flag | The cart revalidation already reads `404` as "no longer available", so a retired product behaves like a deleted one without the client learning a third state | [P-02](docs/processes/P-02-product-crud.md) |
+| **Seeing what was retired takes a session, and asking for it** | `?status=discontinued\|all` answers `401` without a token. The gate is the explicit parameter rather than merely holding one: the browser attaches the token to every request, so inferring "administrator" from it would show retired products in the shop to signed-in staff | [P-02](docs/processes/P-02-product-crud.md) |
 | **The change history is written by a database trigger**, not by the service | The service is not the only thing that writes to `products`: the CSV import upserts, and somebody with `psql` can fix a price by hand. A history recorded in the service documents exactly the writes that were never in doubt | [P-11](docs/processes/P-11-product-history.md) |
 | **AI as a spec-guided tool** | Every feature was proposed, argued and specified in writing before it was code. The proposals are in `openspec/` | [How this was built](#how-this-was-built) |
 

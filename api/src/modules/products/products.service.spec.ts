@@ -1,6 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
-import { ConflictException, NotFoundException } from '@nestjs/common'
+import {
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException
+} from '@nestjs/common'
 
 import { ProductsService } from './products.service'
 import { Product } from './entities/product.entity'
@@ -388,7 +392,7 @@ describe('ProductsService', () => {
     })
 
     it('shows only discontinued products when asked for them', async () => {
-      await service.findAll({ status: 'discontinued' })
+      await service.findAll({ status: 'discontinued' }, true)
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'product.discontinued_at IS NOT NULL'
@@ -396,7 +400,7 @@ describe('ProductsService', () => {
     })
 
     it('applies no status condition when asked for all', async () => {
-      await service.findAll({ status: 'all' })
+      await service.findAll({ status: 'all' }, true)
 
       const statusCalls = mockQueryBuilder.andWhere.mock.calls.filter(([sql]) =>
         String(sql).includes('discontinued_at')
@@ -414,6 +418,42 @@ describe('ProductsService', () => {
       await expect(service.findOne(productEntity.id)).rejects.toBeInstanceOf(
         NotFoundException
       )
+    })
+
+    it('lets a signed-in caller reach a discontinued product by id', async () => {
+      const retired = {
+        ...productEntity,
+        discontinuedAt: new Date('2026-09-01T10:00:00.000Z')
+      }
+      mockRepository.findOneBy.mockResolvedValue(retired)
+
+      await expect(
+        service.findOne(productEntity.id, 'all', true)
+      ).resolves.toBe(retired)
+    })
+
+    it('refuses to list discontinued products without a session', async () => {
+      await expect(
+        service.findAll({ status: 'discontinued' })
+      ).rejects.toBeInstanceOf(UnauthorizedException)
+
+      await expect(service.findAll({ status: 'all' })).rejects.toBeInstanceOf(
+        UnauthorizedException
+      )
+    })
+
+    it('refuses to reach a discontinued product by id without a session', async () => {
+      await expect(
+        service.findOne(productEntity.id, 'all')
+      ).rejects.toBeInstanceOf(UnauthorizedException)
+    })
+
+    it('never queries the catalog when the caller may not ask', async () => {
+      mockQueryBuilder.getManyAndCount.mockClear()
+
+      await expect(service.findAll({ status: 'all' })).rejects.toThrow()
+
+      expect(mockQueryBuilder.getManyAndCount).not.toHaveBeenCalled()
     })
 
     it('counts only products on sale among the categories', async () => {

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 import type { Page, APIRequestContext } from '@playwright/test';
 
-import { deleteProducts, createAuthenticatedApiContext } from './support/auth';
+import { API_URL, deleteProducts, createAuthenticatedApiContext } from './support/auth';
 
 const runId = Date.now();
 
@@ -124,6 +124,48 @@ test.describe('product lifecycle', () => {
     );
 
     await api.patch(`/api/v1/products/${id}/restore`);
+  });
+
+  test('the dashboard opens a discontinued product and shows its history', async ({ page }) => {
+    const id = await createProduct('ADMIN');
+
+    const updated = await api.patch(`/api/v1/products/${id}`, { data: { price: 77.5 } });
+    expect(updated.ok()).toBe(true);
+    await api.patch(`/api/v1/products/${id}/discontinue`);
+
+    await page.goto(`/dashboard/product/${id}`);
+
+    await expect(page.getByText('Taken off the catalog on')).toBeVisible();
+    await expect(page.getByText('Product not found!')).toHaveCount(0);
+    await expect(page.getByText('History', { exact: true })).toBeVisible();
+    await expect(page.getByText('Taken off the catalog', { exact: true })).toBeVisible();
+
+    await page.goto(`/product/${id}`);
+    await expect(page.getByText('Product not found!')).toBeVisible();
+  });
+
+  test('an anonymous visitor cannot ask the catalog for what was retired', async ({ browser }) => {
+    const id = await createProduct('LEAK');
+    await api.patch(`/api/v1/products/${id}/discontinue`);
+
+    const anonymous = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const guest = await anonymous.request;
+
+    for (const status of ['discontinued', 'all']) {
+      // eslint-disable-next-line no-await-in-loop
+      const res = await guest.get(`${API_URL}/api/v1/products`, { params: { status } });
+      expect(res.status()).toBe(401);
+    }
+
+    const detail = await guest.get(`${API_URL}/api/v1/products/${id}`, {
+      params: { status: 'all' },
+    });
+    expect(detail.status()).toBe(401);
+
+    const shop = await guest.get(`${API_URL}/api/v1/products`);
+    expect(shop.ok()).toBe(true);
+
+    await anonymous.close();
   });
 
   test('the detail shows the history after the price changes', async ({ page }) => {

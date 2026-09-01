@@ -9,11 +9,14 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  ParseUUIDPipe
+  ParseUUIDPipe,
+  Req,
+  UseGuards
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
 import { Public } from '@/common/decorators/public.decorator'
+import { OptionalJwtAuthGuard } from '@/common/guards/optional-jwt-auth.guard'
 
 import { PaginationDTO } from '@/common/dto/pagination.dto'
 
@@ -29,6 +32,7 @@ import {
   ApiUpdateProduct
 } from './docs/products.api-docs'
 import { CreateProductDto } from './dto/create-product.dto'
+import { ProductDetailQueryDto } from './dto/product-detail-query.dto'
 import { ProductFiltersDto } from './dto/product-filters.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
 import { ProductsService } from './products.service'
@@ -46,9 +50,10 @@ export class ProductsController {
 
   @Get()
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiListProducts()
-  findAll(@Query() filters: ProductFiltersDto) {
-    return this.productsService.findAll(filters)
+  findAll(@Query() filters: ProductFiltersDto, @Req() request: SignedRequest) {
+    return this.productsService.findAll(filters, isSignedIn(request))
   }
 
   @Get('categories')
@@ -81,9 +86,14 @@ export class ProductsController {
 
   @Get(':id')
   @Public()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiGetProduct()
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.productsService.findOne(id)
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: ProductDetailQueryDto,
+    @Req() request: SignedRequest
+  ) {
+    return this.productsService.findOne(id, query.status, isSignedIn(request))
   }
 
   @Patch(':id')
@@ -101,4 +111,10 @@ export class ProductsController {
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.productsService.remove(id)
   }
+}
+
+type SignedRequest = { user?: unknown }
+
+function isSignedIn(request: SignedRequest): boolean {
+  return !!request.user
 }

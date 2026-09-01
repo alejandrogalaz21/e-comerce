@@ -82,6 +82,9 @@ Full process: [P-02](../processes/P-02-product-crud.md)
 | P-02.16 | A cart holding a retired product behaves exactly like one holding a deleted product | Add to cart, retire it through the API, open the checkout | "No longer available — remove it to continue" and the checkout is blocked — no new state for the client to learn | ✅ e2e `product-lifecycle.spec.ts` |
 | P-02.17 | A CSV import brings a retired SKU back, and says so | Retire a product, re-import a file containing its SKU | Back on sale, reported as **updated** — never as unchanged, even when every other field matches | ✅ `import.service.spec.ts` |
 | P-02.18 | Retiring did not take hard delete away | Retire a product that was never sold, then delete it | `204`; the row is gone | ✅ `products.service.spec.ts` |
+| P-02.19 | What was retired is not readable by guessing a parameter | Without a token: `GET /products?status=discontinued`, `?status=all`, and `GET /products/:id?status=all` | `401` on all three; the plain listing still `200` | ✅ `products.service.spec.ts` · e2e `product-lifecycle.spec.ts` |
+| P-02.20 | The administrator reaches what the shop hides | Retire a product, open it at `/dashboard/product/:id` | It opens, says when it was taken off the catalog, and shows its history — the shop URL still says not found | ✅ e2e `product-lifecycle.spec.ts` |
+| P-02.21 | A signed-in administrator sees the same shop as anyone | While signed in, open the shop page of a retired product | `404`. Seeing more depends on asking for it, not on holding a token — otherwise the shop would change for staff | ✅ `products.controller.spec.ts` · e2e `product-lifecycle.spec.ts` |
 
 ---
 
@@ -276,7 +279,7 @@ Full process: [P-11](../processes/P-11-product-history.md)
 | Process | Cases | Automated | Manual only |
 |---|---|---|---|
 | P-01 CSV import | 12 | 11 | 1 |
-| P-02 Product CRUD and lifecycle | 18 | 18 | 0 |
+| P-02 Product CRUD and lifecycle | 21 | 21 | 0 |
 | P-03 Search and filters | 11 | 11 | 0 |
 | P-04 Order placement | 27 | 24 | 3 |
 | P-05 Payment processing | 9 | 7 | 2 |
@@ -286,7 +289,7 @@ Full process: [P-11](../processes/P-11-product-history.md)
 | P-09 Status and observability | 8 | 1 | 7 |
 | P-10 Page search | 10 | 10 | 0 |
 | P-11 Product change history | 9 | 9 | 0 |
-| **Total** | **131** | **115** | **16** |
+| **Total** | **134** | **118** | **16** |
 
 ## What stays manual only
 

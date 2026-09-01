@@ -74,8 +74,8 @@ igual que uno borrado sin que el cliente necesite aprender un estado nuevo.
 #### Scenario: Pedirlo por identificador
 
 - **GIVEN** un producto retirado
-- **WHEN** se solicita ese producto por su identificador
-- **THEN** la respuesta es 404
+- **WHEN** se solicita ese producto por su identificador sin pedir otro estado
+- **THEN** la respuesta es 404, aunque quien pregunte tenga sesión abierta
 
 #### Scenario: Un carrito que lo contiene
 
@@ -89,13 +89,42 @@ igual que uno borrado sin que el cliente necesite aprender un estado nuevo.
 - **WHEN** se intenta crear una orden que lo incluye
 - **THEN** la respuesta es 404 y no se crea ninguna orden
 
-### Requirement: El administrador ve lo retirado y lo distingue
+### Requirement: Ver lo retirado exige sesión y pedirlo a propósito
 
-El sistema SHALL permitir al administrador listar los productos retirados, los activos, o todos,
-sin que ninguna de esas opciones sea el comportamiento por defecto de un consumidor que no la pide.
+El sistema SHALL exigir una sesión para devolver productos retirados, tanto en el listado como al
+pedir uno por identificador. Sin sesión la respuesta SHALL ser 401.
+
+Ver lo retirado SHALL depender de que se pida explícitamente, no de que quien pregunte tenga
+sesión: un administrador con sesión abierta que navegue la tienda SHALL ver exactamente lo que ve
+un visitante anónimo, porque la tienda no pide otro estado.
+
+El sistema SHALL permitir al administrador listar los productos retirados, los activos, o todos, y
+abrir uno retirado por identificador para revisarlo y devolverlo al catálogo.
 
 El valor por defecto SHALL ser "solo activos", de modo que un cliente existente que no conozca el
 filtro siga viendo exactamente lo que veía antes.
+
+#### Scenario: Un anónimo pide los retirados
+
+- **WHEN** un visitante sin sesión lista el catálogo pidiendo los retirados o todos
+- **THEN** la respuesta es 401 y no se revela ningún producto retirado
+
+#### Scenario: Un anónimo pide un retirado por identificador
+
+- **WHEN** un visitante sin sesión pide un producto indicando otro estado
+- **THEN** la respuesta es 401
+
+#### Scenario: Un administrador navegando la tienda
+
+- **GIVEN** un administrador con sesión abierta
+- **WHEN** abre la ficha pública de un producto retirado
+- **THEN** ve un 404, igual que un visitante anónimo
+
+#### Scenario: El administrador abre un producto retirado
+
+- **GIVEN** un producto retirado
+- **WHEN** el administrador lo abre desde el dashboard
+- **THEN** lo ve, con su fecha de retirada y su historial completo
 
 #### Scenario: Por defecto solo activos
 

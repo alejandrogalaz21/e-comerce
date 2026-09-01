@@ -40,7 +40,14 @@ export const ApiCreateProduct = () =>
 export const ApiListProducts = () =>
   applyDecorators(
     ApiOperation({
-      summary: 'List products with pagination, search and filters'
+      summary: 'List products with pagination, search and filters',
+      description:
+        'Public, and limited to products on sale unless a status is asked for. Listing discontinued products requires a session, so what a shopper can see never depends on a parameter they could guess'
+    }),
+    ApiResponse({
+      status: 401,
+      description:
+        'A catalog status other than active was asked for without a session: UNAUTHORIZED'
     }),
     ApiPaginationQuery(10),
     ApiQuery({
@@ -116,9 +123,26 @@ export const ApiListProductCategories = () =>
 
 export const ApiGetProduct = () =>
   applyDecorators(
-    ApiOperation({ summary: 'Get a product by id' }),
+    ApiOperation({
+      summary: 'Get a product by id',
+      description:
+        'Public by default and limited to products on sale, which is what the shop asks for: a discontinued product answers 404 so the cart treats it exactly like a deleted one. Asking for another catalog status requires a session'
+    }),
+    ApiQuery({
+      name: 'status',
+      required: false,
+      enum: [...PRODUCT_STATUSES],
+      example: 'all',
+      description:
+        'Catalog states the caller is asking about. Omit it for the shop behaviour. Any other value requires a session and is how the dashboard reaches a discontinued product'
+    }),
     ApiResponse({ status: 200, description: 'Product found', type: Product }),
     ApiInvalidUuidResponse(),
+    ApiResponse({
+      status: 401,
+      description:
+        'A catalog status other than active was asked for without a session: UNAUTHORIZED'
+    }),
     ApiResponse({ status: 404, description: 'Product not found: NOT_FOUND' })
   )
 

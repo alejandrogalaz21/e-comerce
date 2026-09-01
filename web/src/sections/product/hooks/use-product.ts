@@ -13,6 +13,7 @@ import {
   getProductHistory,
   discontinueProduct,
   getProductCategories,
+  getProductWhateverItsStatus,
 } from 'src/actions/product';
 
 import { toast } from 'src/components/snackbar';
@@ -24,6 +25,7 @@ export const productKeys = {
   lists: () => [...productKeys.all, 'list'] as const,
   list: (params: IProductListParams) => [...productKeys.lists(), params] as const,
   detail: (id: string) => [...productKeys.all, 'detail', id] as const,
+  adminDetail: (id: string) => [...productKeys.all, 'detail', id, 'any-status'] as const,
   categories: () => [...productKeys.all, 'categories'] as const,
   history: (id: string) => [...productKeys.all, 'history', id] as const,
 };
@@ -74,6 +76,26 @@ export function useGetProduct(productId: string) {
   const query = useQuery({
     queryKey: productKeys.detail(productId),
     queryFn: () => getProduct(productId),
+    enabled: !!productId,
+  });
+
+  return {
+    product: query.data,
+    productLoading: query.isLoading,
+    productError: query.error,
+    productValidating: query.isFetching,
+  };
+}
+
+/**
+ * The dashboard reaches a product whatever its catalog status, so a discontinued
+ * one can still be reviewed and restored. Its own key keeps the shop's cache,
+ * which must keep seeing the 404, out of it.
+ */
+export function useGetProductForAdmin(productId: string) {
+  const query = useQuery({
+    queryKey: productKeys.adminDetail(productId),
+    queryFn: () => getProductWhateverItsStatus(productId),
     enabled: !!productId,
   });
 

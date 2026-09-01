@@ -5,14 +5,14 @@ import { useParams } from 'src/routes/hooks';
 import { CONFIG } from 'src/config-global';
 
 import { ProductDetailsView } from 'src/sections/product/view';
-import { useGetProduct } from 'src/sections/product/hooks/use-product';
+import { useGetProductForAdmin } from 'src/sections/product/hooks/use-product';
 
 const metadata = { title: `Product details | Dashboard - ${CONFIG.site.name}` };
 
 export default function Page() {
   const { id = '' } = useParams();
 
-  const { product, productLoading, productError } = useGetProduct(id);
+  const { product, productLoading, productError } = useGetProductForAdmin(id);
 
   return (
     <>

@@ -6,6 +6,7 @@ import { HealthController } from '@/modules/health/health.controller'
 import { ImportController } from '@/modules/import/import.controller'
 import { OrdersController } from '@/modules/orders/orders.controller'
 import { ProductsController } from '@/modules/products/products.controller'
+import { OptionalJwtAuthGuard } from './optional-jwt-auth.guard'
 import { StatusController } from '@/modules/status/status.controller'
 
 type ControllerClass = new (...args: never[]) => unknown
@@ -60,6 +61,22 @@ describe('public/protected boundary', () => {
     '%s requires a session',
     (_route, controller, method) => {
       expect(isPublic(controller, method)).toBe(false)
+    }
+  )
+
+  it.each([
+    ['GET /products', 'findAll'],
+    ['GET /products/:id', 'findOne']
+  ])(
+    '%s authenticates the caller without demanding it, so asking for discontinued products can be refused',
+    (_route, method) => {
+      const guards: unknown[] =
+        Reflect.getMetadata(
+          '__guards__',
+          ProductsController.prototype[method]
+        ) ?? []
+
+      expect(guards).toContain(OptionalJwtAuthGuard)
     }
   )
 

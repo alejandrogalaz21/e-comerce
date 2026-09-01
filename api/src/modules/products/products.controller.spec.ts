@@ -2,6 +2,8 @@ import { INestApplication, ValidationPipe } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
 import * as request from 'supertest'
 
+import { OptionalJwtAuthGuard } from '@/common/guards/optional-jwt-auth.guard'
+
 import { ProductsController } from './products.controller'
 import { ProductsService } from './products.service'
 
@@ -26,7 +28,10 @@ describe('ProductsController routing', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [ProductsController],
       providers: [{ provide: ProductsService, useValue: productsService }]
-    }).compile()
+    })
+      .overrideGuard(OptionalJwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile()
 
     app = moduleFixture.createNestApplication()
     app.useGlobalPipes(
@@ -92,7 +97,8 @@ describe('ProductsController routing', () => {
         inStock: true,
         sortBy: 'updatedAt',
         sortDir: 'desc'
-      })
+      }),
+      false
     )
   })
 

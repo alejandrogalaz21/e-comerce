@@ -55,6 +55,13 @@ export async function getProduct(productId: string): Promise<IProductItem> {
   return toProductItem(res.data);
 }
 
+export async function getProductWhateverItsStatus(productId: string): Promise<IProductItem> {
+  const res = await axiosInstance.get<ApiProduct>(endpoints.product.details(productId), {
+    params: { status: 'all' },
+  });
+  return toProductItem(res.data);
+}
+
 export async function createProduct(payload: IProductPayload): Promise<IProductItem> {
   const res = await axiosInstance.post<ApiProduct>(endpoints.product.create, payload);
   return toProductItem(res.data);
