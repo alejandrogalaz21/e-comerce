@@ -33,7 +33,7 @@ document that explains how.
 | 9 | Runnable as a Docker container | [`docker-compose.yml`](docker-compose.yml) · [`api/Dockerfile`](api/Dockerfile) · [`web/Dockerfile`](web/Dockerfile) | One command, no `.env` needed — [How to run](#how-to-run) |
 | 10 | README: decisions, approach, alternatives | this file | [Key decisions](#key-decisions-summary) · [Alternatives considered](#alternatives-considered) · [What is not built](#what-is-not-built-and-why) |
 | 11 | Date the sample CSV was downloaded | top of this file: **2026-08-26** | — |
-| 12 | Instructions to run it locally | [How to run](#how-to-run) | Docker and manual paths, both verified |
+| 12 | Instructions to run it locally | [Quick start](#quick-start) — one command, or the same four steps by hand | Docker and manual paths, both verified |
 | 13 | AI allowed, comments removed from the code | the source carries no comments; only lint and compiler directives remain | [How AI was used](#how-ai-was-used-and-where-the-reasoning-lives) |
 | 14 | Public GitHub repository | [alejandrogalaz21/e-commerce](https://github.com/alejandrogalaz21/e-commerce) | — |
 
@@ -87,6 +87,70 @@ five places that judgement is visible, each with something you can run:
 | **Saying no** | [What is not built, and why](#what-is-not-built-and-why) and [Alternatives considered](#alternatives-considered) — including the one real limit of this design: the charge runs inside the database transaction, which is right for a local provider and wrong for a remote one |
 
 ## How to run
+
+### Quick start
+
+Docker only. No Node, no Postgres and no `.env` on your machine.
+
+```bash
+git clone https://github.com/alejandrogalaz21/e-commerce.git
+cd e-commerce
+./start.sh
+```
+
+[`start.sh`](start.sh) is a convenience, not a dependency: it writes a `.env` with a generated
+signing key the first time (so you are not signed out after each rebuild), builds, waits until the
+API reports healthy, and prints where to go. It never overwrites a `.env` you already have. On
+Windows run it from Git Bash, or follow the four steps below, which are exactly what it does.
+
+<details>
+<summary><b>The same thing by hand</b></summary>
+
+**1.** Start the stack:
+
+```bash
+docker compose up --build -d
+```
+
+**2.** Wait for the line that says the API is ready — the front waits for it too, so the page is
+never up before the API answers:
+
+```
+Container ecommerce-api  Healthy
+```
+
+**3.** Open **http://localhost:3000** and sign in with the account the migrations seed:
+
+| | |
+|---|---|
+| Email | `demo@demo.com` |
+| Password | `demo` |
+
+**4.** **The catalog is empty on purpose** — nothing is pre-seeded except that login. Fill it from
+*Dashboard → Product → Import CSV* with the file the challenge provided, committed here so the run
+is reproducible:
+
+```
+docs/csv/LoanPro Code Challenge E-Commerce.csv
+```
+
+Expect **85 created, 10 rejected, 2 skipped**: the file is hostile on purpose and the report names
+every rejection with its line and reason.
+
+</details>
+
+Either way you land on the same place: **sign in with `demo@demo.com` / `demo`, then fill the empty
+catalog** from *Dashboard → Product → Import CSV* with the file the challenge provided, committed
+here so the run is reproducible:
+
+```
+docs/csv/LoanPro Code Challenge E-Commerce.csv
+```
+
+From here, [Verifying it in five minutes](#verifying-it-in-five-minutes) walks through what to
+click to see the rest. If the stack does not come up, [If something does not
+start](#if-something-does-not-start) lists the four things that usually cause it — a taken port
+being the common one.
 
 ### Before you start
 
@@ -143,12 +207,8 @@ sessions across restarts; a known placeholder like `changeme` stops the boot on 
 
 The application starts with an **empty catalog** on purpose — you create everything through the
 UI (product CRUD, or CSV import at *Dashboard → Product → Import CSV* using the challenge sample
-file). Migrations run automatically at boot and seed a single **demo login**:
-
-| | |
-|---|---|
-| Email | `demo@demo.com` |
-| Password | `demo` |
+file). Migrations run automatically at boot and seed a single **demo login**, `demo@demo.com` /
+`demo` — the same one the [Quick start](#quick-start) uses.
 
 ### What needs a session
 
