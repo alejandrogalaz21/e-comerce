@@ -73,32 +73,32 @@ demostraría que el mock devuelve lo que se le puso. Este archivo va al mismo gr
 
 ## 7. Frontend — contratos y datos
 
-- [ ] 7.1 `types/product.ts`: `discontinuedAt` en `IProductItem`, y los tipos del historial
-- [ ] 7.2 `actions/product.ts`: `discontinueProduct`, `restoreProduct`, `getProductHistory`, con sus mappers
-- [ ] 7.3 `lib/axios.ts`: los tres endpoints nuevos
-- [ ] 7.4 Hooks de React Query junto a los existentes, con `invalidateQueries` sobre la lista tras retirar o restaurar
+- [x] 7.1 `types/product.ts`: `discontinuedAt` en `IProductItem`, y los tipos del historial
+- [x] 7.2 `actions/product.ts`: `discontinueProduct`, `restoreProduct`, `getProductHistory`, con sus mappers
+- [x] 7.3 `lib/axios.ts`: los tres endpoints nuevos
+- [x] 7.4 Hooks de React Query junto a los existentes, con `invalidateQueries` sobre la lista tras retirar o restaurar
 
 ## 8. Frontend — pantallas
 
-- [ ] 8.1 Filtro de estado en la toolbar del listado, como chip reversible, con "a la venta" por defecto
-- [ ] 8.2 Distinguir visualmente un producto retirado en la tabla, y que no se confunda con agotado
-- [ ] 8.3 Acciones de fila: retirar / restaurar, y borrar marcado como permanente
-- [ ] 8.4 Cuando el borrado falle con 409, explicar que tiene ventas y ofrecer retirarlo
-- [ ] 8.5 Línea de tiempo del historial en el detalle del producto, con "de → a" en los cambios de valor
-- [ ] 8.6 Estado vacío explícito para un producto sin historial registrado
+- [x] 8.1 Filtro de estado en la toolbar del listado, como chip reversible, con "a la venta" por defecto
+- [x] 8.2 Distinguir visualmente un producto retirado en la tabla, y que no se confunda con agotado
+- [x] 8.3 Acciones de fila: retirar / restaurar, y borrar marcado como permanente
+- [x] 8.4 Cuando el borrado falle con 409, explicar que tiene ventas y ofrecer retirarlo
+- [x] 8.5 Línea de tiempo del historial en el detalle del producto, con "de → a" en los cambios de valor
+- [x] 8.6 Estado vacío explícito para un producto sin historial registrado
 
 ## 9. Tests de frontend
 
-- [ ] 9.1 Unitarios de los mappers del historial y del parámetro de estado en la URL
-- [ ] 9.2 e2e: retirar un producto vendido lo saca de la tienda y lo deja restaurable
-- [ ] 9.3 e2e: un producto retirado con el carrito abierto bloquea el checkout como uno borrado
-- [ ] 9.4 e2e: el detalle muestra el historial tras editar el precio
+- [x] 9.1 Unitarios de los mappers del historial y del parámetro de estado en la URL
+- [x] 9.2 e2e: retirar un producto vendido lo saca de la tienda y lo deja restaurable
+- [x] 9.3 e2e: un producto retirado con el carrito abierto bloquea el checkout como uno borrado
+- [x] 9.4 e2e: el detalle muestra el historial tras editar el precio
 
 ## 10. Documentación y cierre
 
-- [ ] 10.1 `docs/processes/P-02-product-crud.md`: el ciclo de vida y por qué borrar y retirar son distintos
-- [ ] 10.2 Nuevo proceso o sección para el historial, con el argumento del trigger
-- [ ] 10.3 `docs/testing/MATRIX.md`: casos nuevos y el resumen de cobertura recalculado
-- [ ] 10.4 README: entrada en "Alternatives considered" (borrado duro vs retirar) y en las decisiones clave
-- [ ] 10.5 `docs/backlog.md`: TK-058 cerrado con enlace al change archivado
-- [ ] 10.6 Verificar en verde: `tsc`, `eslint`, las cuatro suites y un arranque limpio de Docker
+- [x] 10.1 `docs/processes/P-02-product-crud.md`: el ciclo de vida y por qué borrar y retirar son distintos
+- [x] 10.2 Nuevo proceso o sección para el historial, con el argumento del trigger
+- [x] 10.3 `docs/testing/MATRIX.md`: casos nuevos y el resumen de cobertura recalculado
+- [x] 10.4 README: entrada en "Alternatives considered" (borrado duro vs retirar) y en las decisiones clave
+- [x] 10.5 `docs/backlog.md`: TK-058 cerrado con enlace al change archivado
+- [x] 10.6 Verificar en verde: `tsc`, `eslint`, las cuatro suites y un arranque limpio de Docker

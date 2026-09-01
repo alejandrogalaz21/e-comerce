@@ -3,14 +3,14 @@
 | | |
 |---|---|
 | **Challenge requirement** | "CRUD for Products" + "UI is required for: CRUD for Products" |
-| **Entry points** | `POST /products` · `GET /products/:id` · `PATCH /products/:id` · `DELETE /products/:id` |
+| **Entry points** | `POST /products` · `GET /products/:id` · `PATCH /products/:id` · `PATCH /products/:id/discontinue` · `PATCH /products/:id/restore` · `DELETE /products/:id` |
 | **Access** | Reads public · writes require a JWT |
-| **Tickets** | TK-006, TK-007, TK-015 |
+| **Tickets** | TK-006, TK-007, TK-015, TK-058 |
 
 ## Use case
 
 An administrator maintains the catalog by hand: adds a product the supplier file did not carry,
-corrects a price, adjusts stock, removes something discontinued. The same validation rules the CSV
+corrects a price, adjusts stock, takes a discontinued line off the shop. The same validation rules the CSV
 import applies per row apply here — they are literally the same DTO, so the two entry points cannot
 drift apart.
 
@@ -40,12 +40,22 @@ graph TD
         R3 -- found --> OK1[200 - product]
     end
 
+    subgraph Retire["Discontinue / Restore - JWT required"]
+        T1[PATCH :id/discontinue] --> T2[find ignoring status]
+        T2 -- none --> E404
+        T2 -- already retired --> OK4[200 - date unchanged]
+        T2 -- on sale --> T3[(SET discontinued_at = now)]
+        T3 --> OK4
+        T4[PATCH :id/restore] --> T5[(SET discontinued_at = NULL)]
+        T5 --> OK5[200 - back on sale]
+    end
+
     subgraph Delete["Delete - JWT required"]
-        D1[DELETE /products/:id] --> D2[findOne]
+        D1[DELETE /products/:id] --> D2[find ignoring status]
         D2 -- none --> E404
         D2 -- found --> D3[(DELETE)]
-        D3 -- referenced by an order line --> E500r[FK RESTRICT - deletion refused]
-        D3 -- ok --> OK3[200]
+        D3 -- referenced by an order line --> E409r[409 RESOURCE_IN_USE]
+        D3 -- ok --> OK3[204]
     end
 ```
 
@@ -62,6 +72,7 @@ graph TD
 | Update DTO | [update-product.dto.ts](../../api/src/modules/products/dto/update-product.dto.ts) | `PartialType(CreateProductDto)` — same rules, all optional |
 | Validator | [no-html.validator.ts](../../api/src/common/validators/no-html.validator.ts) | `@NoHtml` |
 | Migration | [1787702400000-initial-schema.ts](../../api/src/database/migrations/1787702400000-initial-schema.ts) | The constraints, mirrored where they are actually enforced |
+| Migration | [1788480000000-product-discontinued-at.ts](../../api/src/database/migrations/1788480000000-product-discontinued-at.ts) | `discontinued_at`, nullable — `NULL` is on sale |
 
 ### Frontend
 
@@ -70,7 +81,8 @@ graph TD
 | Views | [product-create-view.tsx](../../web/src/sections/product/view/product-create-view.tsx) · [product-edit-view.tsx](../../web/src/sections/product/view/product-edit-view.tsx) · [product-details-view.tsx](../../web/src/sections/product/view/product-details-view.tsx) | Composition |
 | Form | [product-new-edit-form.tsx](../../web/src/sections/product/product-new-edit-form.tsx) | Shared create/edit form |
 | Schema | [product-schema.ts](../../web/src/sections/product/product-schema.ts) | Zod rules mirroring the DTO, for immediate feedback |
-| Hooks | [use-product.ts](../../web/src/sections/product/hooks/use-product.ts) | `useCreateProduct`, `useUpdateProduct`, `useDeleteProduct`; cache invalidation |
+| Hooks | [use-product.ts](../../web/src/sections/product/hooks/use-product.ts) | `useCreateProduct`, `useUpdateProduct`, `useDeleteProduct`, `useDiscontinueProduct`, `useRestoreProduct`; cache invalidation |
+| List params | [product-list-params.ts](../../web/src/sections/product/product-list-params.ts) | The `status` filter as a reversible chip, defaulting to on-sale |
 | Actions | [product.ts](../../web/src/actions/product.ts) | Axios calls |
 | Mapper | [product.mapper.ts](../../web/src/actions/product.mapper.ts) | `numeric` strings → numbers at the render edge |
 
@@ -90,6 +102,42 @@ Identical to the per-row rules in [P-01](P-01-csv-import.md), because they are t
 
 **Unknown fields are rejected**, not ignored: the global pipe runs with `forbidNonWhitelisted`.
 That is what makes `POST /orders` refuse a client-supplied `total` in [P-04](P-04-order-placement.md).
+
+## The lifecycle: retiring is not deleting
+
+A product has two ways to leave the shop, and they answer different questions.
+
+| | **Discontinue** (`PATCH :id/discontinue`) | **Delete** (`DELETE :id`) |
+|---|---|---|
+| What happens to the row | Stays, with `discontinued_at` set | Gone |
+| Orders that contain it | Untouched, still resolvable | Would lose their product — so this is refused with `409` |
+| Visible in the shop | No — `GET /products/:id` answers `404` | No |
+| Visible to the administrator | Yes, via `?status=discontinued` | No |
+| Reversible | Yes, `PATCH :id/restore` | No |
+| When to use it | Almost always | A product created by mistake that never sold |
+
+`discontinued_at` is a timestamp rather than an `active` boolean because the boolean answers *whether*
+and the timestamp answers *whether and since when*, at the same storage cost. `NULL` means on sale.
+
+Both operations are idempotent: discontinuing an already-retired product keeps the original date
+instead of rewriting history, and restoring one that never left succeeds without touching anything.
+
+**A retired product answers `404`, not `200` with a flag.** `GET /products/:id` is public and the
+cart revalidation already reads `404` as "no longer available" ([P-04](P-04-order-placement.md)).
+Returning `200 { discontinued: true }` would oblige every present and future consumer to learn a
+third state and remember to check it; the `404` does the right thing by default. The accepted cost
+is that the edit screen of a retired product does not load — restore first, then edit.
+
+**The default listing is unchanged.** `GET /products` without `status` returns only what is on sale,
+so a caller written before this feature sees exactly what it saw before. `?status=discontinued` and
+`?status=all` are opt-in; anything else is a `400` naming the valid values. Retired products also
+drop out of `GET /products/categories`, so a category that only held retired products stops being
+offered as a filter.
+
+**A CSV import brings a retired SKU back.** The file is a catalog correction and whoever uploads it
+is re-adding the product on purpose, so the row is reported as *updated* — never as *unchanged*,
+even when every other field matches, because the status did change and saying "unchanged" would hide
+exactly what happened. See [P-01](P-01-csv-import.md).
 
 ## Three decisions worth knowing
 
@@ -116,7 +164,9 @@ lose a race between two concurrent creates.
 | `:id` is not a UUID | `400` | Check the id |
 | Product not found | `404` | |
 | SKU already exists | `409` | Use a different SKU, or update the existing product |
-| Deleting a product that appears in an order | Refused by `RESTRICT` | An order is a historical record — see [P-04](P-04-order-placement.md) |
+| Deleting a product that appears in an order | `409 RESOURCE_IN_USE` | Discontinue it instead — an order is a historical record, see [P-04](P-04-order-placement.md) |
+| Reading, editing or buying a retired product | `404` | Restore it first |
+| An unknown `?status=` value | `400` naming the valid values | Use `active`, `discontinued` or `all` |
 
 ## Verify it yourself
 
@@ -159,5 +209,29 @@ curl -s -o /dev/null -w "again: %{http_code}\n" -X POST http://localhost:4000/ap
 | Decimals survive the round trip | `numeric` on the entity, `string` type, mapper converts at the edge |
 | Create and import share their rules | Both use `CreateProductDto` |
 
+```bash
+# Retiring a sold product succeeds where deleting it is refused
+curl -s -o /dev/null -w "delete: %{http_code}
+" -X DELETE http://localhost:4000/api/v1/products/$ID   -H "Authorization: Bearer $TOKEN"
+# expect 409
+
+curl -s -o /dev/null -w "discontinue: %{http_code}
+" -X PATCH http://localhost:4000/api/v1/products/$ID/discontinue   -H "Authorization: Bearer $TOKEN"
+# expect 200
+
+curl -s -o /dev/null -w "public read: %{http_code}
+" http://localhost:4000/api/v1/products/$ID
+# expect 404
+
+curl -s "http://localhost:4000/api/v1/products?status=discontinued&limit=1" | head -c 200
+# the product is here, with its discontinuedAt
+
+curl -s -o /dev/null -w "bad status: %{http_code}
+" "http://localhost:4000/api/v1/products?status=nonsense"
+# expect 400
+```
+
 **Automated coverage:** `products.service.spec.ts`, `products.controller.spec.ts`,
-`route-protection.spec.ts` (which endpoints are public), `web/src/sections/product/product-schema.test.ts`.
+`orders.concurrency.spec.ts` (retiring what cannot be deleted), `route-protection.spec.ts`
+(which endpoints are public), `web/src/actions/product.test.ts`,
+`web/src/sections/product/product-list-params.test.ts`, `web/e2e/product-lifecycle.spec.ts`.

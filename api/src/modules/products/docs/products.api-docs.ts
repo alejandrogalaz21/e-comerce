@@ -147,7 +147,7 @@ export const ApiDeleteProduct = () =>
     ApiResponse({
       status: 409,
       description:
-        'The product appears in an order and cannot be removed: RESOURCE_IN_USE'
+        'The product appears in an order and cannot be removed: RESOURCE_IN_USE. Use PATCH /products/{id}/discontinue to take it off the catalog instead'
     })
   )
 

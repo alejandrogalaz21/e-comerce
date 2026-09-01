@@ -58,7 +58,11 @@ describe('applyServerFieldErrors', () => {
   it('returns false and calls nothing for an unknown message', () => {
     const setError = makeSetError();
 
-    const applied = applyServerFieldErrors({ message: 'Internal server error' }, setError, fieldNames);
+    const applied = applyServerFieldErrors(
+      { message: 'Internal server error' },
+      setError,
+      fieldNames
+    );
 
     expect(applied).toBe(false);
     expect(setError).not.toHaveBeenCalled();
@@ -76,7 +80,12 @@ describe('applyServerFieldErrors', () => {
   it('sets shouldFocus true only for the first applied error', () => {
     const setError = makeSetError();
     const error = {
-      message: ['unrelated message', 'stock must be an integer', 'sku is too long', 'name is too long'],
+      message: [
+        'unrelated message',
+        'stock must be an integer',
+        'sku is too long',
+        'name is too long',
+      ],
     };
 
     const applied = applyServerFieldErrors(error, setError, fieldNames);
@@ -84,6 +93,10 @@ describe('applyServerFieldErrors', () => {
     expect(applied).toBe(true);
     expect(setError).toHaveBeenCalledTimes(3);
     const focusFlags = setError.mock.calls.map((call) => call[2]);
-    expect(focusFlags).toEqual([{ shouldFocus: true }, { shouldFocus: false }, { shouldFocus: false }]);
+    expect(focusFlags).toEqual([
+      { shouldFocus: true },
+      { shouldFocus: false },
+      { shouldFocus: false },
+    ]);
   });
 });

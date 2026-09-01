@@ -21,7 +21,10 @@ describe('getAuthErrorMessage', () => {
 
   it('joins the validation message list', () => {
     expect(
-      getAuthErrorMessage({ statusCode: 400, message: ['email is required', 'password is required'] })
+      getAuthErrorMessage({
+        statusCode: 400,
+        message: ['email is required', 'password is required'],
+      })
     ).toBe('email is required password is required');
   });
 

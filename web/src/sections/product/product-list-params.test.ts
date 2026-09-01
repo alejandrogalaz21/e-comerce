@@ -21,12 +21,17 @@ describe('parseProductListState', () => {
   });
 
   it('reads every supported parameter', () => {
-    expect(parse('q=camping&category=Electronics,Tools&minPrice=10&maxPrice=30&inStock=true&sortBy=price&sortDir=asc&page=3&limit=25')).toEqual({
+    expect(
+      parse(
+        'q=camping&category=Electronics,Tools&minPrice=10&maxPrice=30&inStock=true&status=all&sortBy=price&sortDir=asc&page=3&limit=25'
+      )
+    ).toEqual({
       q: ['camping'],
       category: ['Electronics', 'Tools'],
       minPrice: 10,
       maxPrice: 30,
       inStock: true,
+      status: 'all',
       sortBy: 'price',
       sortDir: 'asc',
       page: 3,
@@ -94,6 +99,7 @@ describe('serializeProductListState', () => {
       minPrice: 10,
       maxPrice: 30,
       inStock: false,
+      status: 'discontinued' as const,
       sortBy: 'updatedAt' as const,
       sortDir: 'asc' as const,
       page: 2,
@@ -103,6 +109,20 @@ describe('serializeProductListState', () => {
     const query = serializeProductListState(state).toString();
 
     expect(parseProductListState(new URLSearchParams(query))).toEqual(state);
+  });
+
+  it('keeps the default status out of the URL, so a plain link means "on sale"', () => {
+    expect(serializeProductListState(defaultProductListState).get('status')).toBeNull();
+    expect(parseProductListState(new URLSearchParams()).status).toBe('active');
+  });
+
+  it('falls back to on sale when the status in the URL is not a real one', () => {
+    expect(parseProductListState(new URLSearchParams('status=nope')).status).toBe('active');
+  });
+
+  it('counts the status as an active filter only when it is not the default', () => {
+    expect(countActiveFilters({ ...defaultProductListState, status: 'discontinued' })).toBe(1);
+    expect(countActiveFilters(defaultProductListState)).toBe(0);
   });
 
   it('keeps inStock=false in the URL, since it is a real filter', () => {
@@ -126,9 +146,9 @@ describe('DEFAULT_LIMIT', () => {
   });
 
   it('is kept in the URL when explicitly different from the default', () => {
-    expect(
-      serializeProductListState({ ...defaultProductListState, limit: 50 }).get('limit')
-    ).toBe('50');
+    expect(serializeProductListState({ ...defaultProductListState, limit: 50 }).get('limit')).toBe(
+      '50'
+    );
   });
 });
 

@@ -18,6 +18,7 @@ import { CategoryIcon } from 'src/components/category-icon';
 import { ProductDetailsSkeleton } from '../product-skeleton';
 import { ProductDetailsSummary } from '../product-details-summary';
 import { ProductDetailsToolbar } from '../product-details-toolbar';
+import { ProductHistoryTimeline } from '../components/product-history-timeline';
 
 type Props = {
   product?: IProductItem;
@@ -98,6 +99,8 @@ export function ProductDetailsView({ product, error, loading }: Props) {
           </Typography>
         </Card>
       )}
+
+      {product && <ProductHistoryTimeline productId={product.id} />}
     </DashboardContent>
   );
 }

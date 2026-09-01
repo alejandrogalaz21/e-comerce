@@ -21,7 +21,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import { Iconify } from 'src/components/iconify';
 import { chipProps, FiltersBlock, FiltersResult } from 'src/components/filters-result';
 
-import { isPriceRangeValid } from '../product-list-params';
+import { DEFAULT_STATUS, isPriceRangeValid } from '../product-list-params';
 
 import type { IProductListState } from '../product-list-params';
 
@@ -51,7 +51,8 @@ export function ProductFiltersToolbar({
     !!state.category.length ||
     state.minPrice !== undefined ||
     state.maxPrice !== undefined ||
-    state.inStock !== undefined;
+    state.inStock !== undefined ||
+    state.status !== DEFAULT_STATUS;
 
   const handleRemoveTerm = useCallback(
     (value: string) => {
@@ -162,6 +163,25 @@ export function ProductFiltersToolbar({
     </FormControl>
   );
 
+  // Availability and status answer different questions: sold out is on sale
+  // with no units left, discontinued is no longer sold at all. Merging them
+  // would hide live products among the retired ones.
+  const renderStatus = (
+    <FormControl size="small" sx={{ width: { xs: 1, sm: 150 } }}>
+      <InputLabel id="product-status-filter">Catalog</InputLabel>
+      <Select
+        labelId="product-status-filter"
+        label="Catalog"
+        value={state.status}
+        onChange={(event) => onApply({ status: event.target.value as IProductListState['status'] })}
+      >
+        <MenuItem value="active">On sale</MenuItem>
+        <MenuItem value="discontinued">Discontinued</MenuItem>
+        <MenuItem value="all">Both</MenuItem>
+      </Select>
+    </FormControl>
+  );
+
   return (
     <Stack spacing={1.5} sx={{ p: 2.5, pb: hasFilters ? 0 : 2.5 }}>
       <Stack
@@ -174,6 +194,7 @@ export function ProductFiltersToolbar({
         {renderCategory}
         <PriceRangeFilter state={state} onApply={onApply} />
         {renderStock}
+        {renderStatus}
 
         {gridControls && (
           <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { sm: 'auto' } }}>
@@ -222,6 +243,14 @@ export function ProductFiltersToolbar({
               {...chipProps}
               label={state.inStock ? 'In stock' : 'Sold out'}
               onDelete={() => onApply({ inStock: undefined })}
+            />
+          </FiltersBlock>
+
+          <FiltersBlock label="Catalog:" isShow={state.status !== DEFAULT_STATUS}>
+            <Chip
+              {...chipProps}
+              label={state.status === 'discontinued' ? 'Discontinued' : 'On sale and discontinued'}
+              onDelete={() => onApply({ status: DEFAULT_STATUS })}
             />
           </FiltersBlock>
         </FiltersResult>

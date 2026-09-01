@@ -75,6 +75,13 @@ Full process: [P-02](../processes/P-02-product-crud.md)
 | P-02.9 | Unknown fields are rejected, which is what stops a client dictating a price | `POST /products` with `{"nope": true}` | `400` | ✅ `create-product.dto.spec.ts` |
 | P-02.10 | Writing requires a session; reading does not | `POST /products` without a token | `401`. `GET /products` still gives `200` | ✅ `route-protection.spec.ts` · e2e `auth-session.spec.ts` |
 | P-02.11 | A free product is valid — price 0 is data, not an error | Create with price `0` (line 47 of the CSV) | Created and listed | ✅ e2e `product-csv-cases.spec.ts` |
+| P-02.12 | What cannot be deleted can still be taken off the shop | Buy a product, then **Take off the catalog** from the row actions | Succeeds where `DELETE` answered `409`. The order keeps its line and its frozen price | ✅ `orders.concurrency.spec.ts` *(real database)* · e2e `product-lifecycle.spec.ts` |
+| P-02.13 | For a buyer, a retired product does not exist | Retire a product, then open `/product/:id` and the shop listing | `404` on the detail, absent from the listing and from the category counts | ✅ `products.service.spec.ts` · e2e `product-lifecycle.spec.ts` |
+| P-02.14 | The default listing did not change meaning | `GET /products` with no `status`, then `?status=discontinued`, then `?status=nonsense` | Only on-sale products · only retired ones · `400` naming the valid values | ✅ `products.service.spec.ts` · `product-filters.dto.spec.ts` · `web/src/actions/product.test.ts` |
+| P-02.15 | Retiring is reversible, and doing it twice does not rewrite history | Retire, retire again, then **Put back on sale** | The date does not change on the second retire; the product returns to the shop unchanged | ✅ `products.service.spec.ts` · e2e `product-lifecycle.spec.ts` |
+| P-02.16 | A cart holding a retired product behaves exactly like one holding a deleted product | Add to cart, retire it through the API, open the checkout | "No longer available — remove it to continue" and the checkout is blocked — no new state for the client to learn | ✅ e2e `product-lifecycle.spec.ts` |
+| P-02.17 | A CSV import brings a retired SKU back, and says so | Retire a product, re-import a file containing its SKU | Back on sale, reported as **updated** — never as unchanged, even when every other field matches | ✅ `import.service.spec.ts` |
+| P-02.18 | Retiring did not take hard delete away | Retire a product that was never sold, then delete it | `204`; the row is gone | ✅ `products.service.spec.ts` |
 
 ---
 
@@ -246,12 +253,30 @@ by hand.
 
 ---
 
+## P-11 · Product change history
+
+Full process: [P-11](../processes/P-11-product-history.md)
+
+| ID | Purpose | Steps | Expected | Covered by |
+|---|---|---|---|---|
+| P-11.1 | Creating a product is itself the first entry | Create a product, open its detail | An `INSERT` entry with the whole row | ✅ `product-history.spec.ts` *(real database)* |
+| P-11.2 | A change says what moved, from what, to what | Change the price from the edit form | An entry naming `price`, with both values — and the price stays a **string**, `"20.00" → "33.50"`, never a float | ✅ `product-history.spec.ts` · e2e `product-lifecycle.spec.ts` |
+| P-11.3 | The history covers writes the API never saw — the whole reason it lives in the database | `UPDATE products SET name = ... ` in `psql` | The change is recorded anyway | ✅ `product-history.spec.ts` |
+| P-11.4 | A write that changes nothing records nothing | Save the edit form without touching a field, or re-import an unchanged catalog | No new entry. `updatedAt` alone does not count as a change | ✅ `product-history.spec.ts` |
+| P-11.5 | Taking a product off the shop and putting it back are ordinary recorded changes | Retire, then restore | Two entries on `discontinued_at`, read as "Taken off the catalog" and "Put back on sale" | ✅ `product-history.spec.ts` |
+| P-11.6 | The audit outlives what it audits | Delete a product, then query its history by id | The entries are still there, ending in `DELETE`. No foreign key ties them to the product | ✅ `product-history.spec.ts` |
+| P-11.7 | Reading the history requires a session | `GET /products/:id/history` without a token | `401` | ✅ `route-protection.spec.ts` |
+| P-11.8 | An id that is not a UUID is refused before any query | `GET /products/not-a-uuid/history` | `400` | ✅ `products.controller.spec.ts` |
+| P-11.9 | The administrator sees it without leaving the product | Open a product's detail page | A timeline under the product, newest first; an explicit message when there is nothing yet | ✅ e2e `product-lifecycle.spec.ts` |
+
+---
+
 ## Coverage summary
 
 | Process | Cases | Automated | Manual only |
 |---|---|---|---|
 | P-01 CSV import | 12 | 11 | 1 |
-| P-02 Product CRUD | 11 | 11 | 0 |
+| P-02 Product CRUD and lifecycle | 18 | 18 | 0 |
 | P-03 Search and filters | 11 | 11 | 0 |
 | P-04 Order placement | 27 | 24 | 3 |
 | P-05 Payment processing | 9 | 7 | 2 |
@@ -260,7 +285,8 @@ by hand.
 | P-08 Security hardening | 6 | 5 | 1 |
 | P-09 Status and observability | 8 | 1 | 7 |
 | P-10 Page search | 10 | 10 | 0 |
-| **Total** | **115** | **99** | **16** |
+| P-11 Product change history | 9 | 9 | 0 |
+| **Total** | **131** | **115** | **16** |
 
 ## What stays manual only
 

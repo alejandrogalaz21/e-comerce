@@ -7,6 +7,8 @@ import type {
   IProductPayload,
   IProductFormValues,
   IImportBatchDetail,
+  IProductHistoryEntry,
+  ApiProductHistoryEntry,
 } from 'src/types/product';
 
 export function toProductItem(dto: ApiProduct): IProductItem {
@@ -19,6 +21,7 @@ export function toProductItem(dto: ApiProduct): IProductItem {
     price: Number(dto.price),
     stock: dto.stock,
     weightKg: dto.weightKg === null ? null : Number(dto.weightKg),
+    discontinuedAt: dto.discontinuedAt ?? null,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
   };
@@ -59,4 +62,30 @@ export function toApiPayload(values: IProductFormValues): IProductPayload {
     stock: values.stock,
     ...(weightKg !== '' && { weightKg: Number(weightKg) }),
   };
+}
+
+/**
+ * A history entry carries the whole row before and after. The screen only needs
+ * what moved, and it needs it as "from -> to": "the price changed" does not
+ * answer the question that brings somebody to a history in the first place.
+ */
+export function toProductHistoryEntry(dto: ApiProductHistoryEntry): IProductHistoryEntry {
+  return {
+    id: dto.id,
+    operation: dto.operation,
+    changedAt: dto.changedAt,
+    changes: dto.changedFields.map((field) => ({
+      field,
+      from: readField(dto.oldData, field),
+      to: readField(dto.newData, field),
+    })),
+  };
+}
+
+function readField(data: Record<string, unknown> | null, field: string): string | null {
+  const value = data?.[field];
+
+  if (value === undefined || value === null) return null;
+
+  return String(value);
 }

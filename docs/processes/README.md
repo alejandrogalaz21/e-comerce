@@ -12,13 +12,18 @@ fails — so any step can be checked against the code rather than taken on trust
 | # | Process | What it covers | Entry point |
 |---|---|---|---|
 | [P-01](P-01-csv-import.md) | **CSV import** | Upload, header check, per-row validation, upsert by SKU, duplicate rule, per-row report | `POST /products/import` |
-| [P-02](P-02-product-crud.md) | **Product CRUD** | Create, read, update, delete; SKU uniqueness; XSS rejection; decimal handling | `/products` |
+| [P-02](P-02-product-crud.md) | **Product CRUD and lifecycle** | Create, read, update; SKU uniqueness; XSS rejection; decimal handling; discontinue, restore and why they are not deleting | `/products` |
 | [P-03](P-03-product-search.md) | **Search and filters** | Multi-term OR search, category, price range, availability, sorting, pagination | `GET /products` |
 | [P-04](P-04-order-placement.md) | **Order placement** | Row locking, stock check, server-side total, price snapshot, idempotency | `POST /orders` |
 | [P-05](P-05-payment-processing.md) | **Payment processing** | The provider contract, the fake implementation, decline handling, rollback | inside P-04 |
 | [P-06](P-06-authentication.md) | **Authentication** | Login, JWT, the public/protected boundary, fail-closed guard | `/auth` |
 | [P-07](P-07-error-contract.md) | **Error contract** | The response shape every failure shares, the code catalogue, database error translation | every endpoint |
 | [P-08](P-08-security-hardening.md) | **Security hardening** | Security headers, explicit CORS, rate limiting, input rejection, and the known gaps | every request |
+| [P-11](P-11-product-history.md) | **Product change history** | The Postgres trigger that records every write, why it is not in the service, and the audit that outlives its product | `GET /products/:id/history` |
+
+> `P-09` and `P-10` are not missing: those identifiers belong to two areas that have test-matrix
+> cases but no process document of their own — status and observability, and the dashboard page
+> search. The `P-NN` namespace is shared with [docs/testing/MATRIX.md](../testing/MATRIX.md).
 
 ## How the processes relate
 
@@ -32,8 +37,12 @@ graph TD
     P06 --> P01[P-01 CSV import]
     P06 --> P02[P-02 Product CRUD]
 
+    P06 --> P11[P-11 Product change history]
+
     P01 --> DB[(products)]
     P02 --> DB
+    DB -. trigger .-> HIST[(product_history)]
+    HIST --> P11
     DB --> P03
     P04 --> ORD[(orders / order_items)]
     P04 -. locks and decrements .-> DB

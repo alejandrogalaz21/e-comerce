@@ -7,6 +7,7 @@ export type ApiProduct = {
   price: string;
   stock: number;
   weightKg: string | null;
+  discontinuedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -20,8 +21,35 @@ export type IProductItem = {
   price: number;
   stock: number;
   weightKg: number | null;
+  discontinuedAt: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ProductStatusFilter = 'active' | 'discontinued' | 'all';
+
+export type ApiProductHistoryEntry = {
+  id: string;
+  productId: string;
+  sku: string;
+  operation: 'INSERT' | 'UPDATE' | 'DELETE';
+  changedAt: string;
+  oldData: Record<string, unknown> | null;
+  newData: Record<string, unknown> | null;
+  changedFields: string[];
+};
+
+export type IProductHistoryChange = {
+  field: string;
+  from: string | null;
+  to: string | null;
+};
+
+export type IProductHistoryEntry = {
+  id: string;
+  operation: 'INSERT' | 'UPDATE' | 'DELETE';
+  changedAt: string;
+  changes: IProductHistoryChange[];
 };
 
 export type IProductPayload = {
@@ -61,6 +89,7 @@ export type IProductFilters = {
 export type IProductListParams = IProductFilters & {
   page: number;
   limit: number;
+  status?: ProductStatusFilter;
   sortBy?: IProductSortField;
   sortDir?: IProductSortDirection;
 };

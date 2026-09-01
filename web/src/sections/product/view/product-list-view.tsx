@@ -29,6 +29,7 @@ import { fCurrency } from 'src/utils/format-number';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
+import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
 import { ConfirmDialog } from 'src/components/custom-dialog';
@@ -38,7 +39,13 @@ import { useProductListParams } from '../hooks/use-product-list-params';
 import { useProductListColumns } from '../hooks/use-product-list-columns';
 import { ProductFiltersToolbar } from '../components/product-filters-toolbar';
 import { DEFAULT_SORT_BY, DEFAULT_SORT_DIR, toProductListParams } from '../product-list-params';
-import { useGetProducts, useDeleteProduct, useGetProductCategories } from '../hooks/use-product';
+import {
+  useGetProducts,
+  useDeleteProduct,
+  useRestoreProduct,
+  useDiscontinueProduct,
+  useGetProductCategories,
+} from '../hooks/use-product';
 import {
   RenderCellStock,
   RenderCellProduct,
@@ -65,6 +72,10 @@ export function ProductListView() {
   const { categories } = useGetProductCategories();
 
   const deleteProduct = useDeleteProduct();
+
+  const discontinueProduct = useDiscontinueProduct();
+
+  const restoreProduct = useRestoreProduct();
 
   const [selectedRowIds, setSelectedRowIds] = useState<GridRowSelectionModel>([]);
 
@@ -126,6 +137,22 @@ export function ProductListView() {
 
   const columns: GridColDef[] = [
     { field: 'sku', headerName: 'SKU', width: 120, sortable: false },
+    {
+      field: 'discontinuedAt',
+      headerName: 'Catalog',
+      width: 130,
+      sortable: false,
+      renderCell: (params) =>
+        params.row.discontinuedAt ? (
+          <Label variant="soft" color="default">
+            Discontinued
+          </Label>
+        ) : (
+          <Label variant="soft" color="success">
+            On sale
+          </Label>
+        ),
+    },
     {
       field: 'name',
       headerName: 'Name',
@@ -198,10 +225,25 @@ export function ProductListView() {
           label="Edit"
           onClick={() => handleEditRow(params.row.id)}
         />,
+        params.row.discontinuedAt ? (
+          <GridActionsCellItem
+            showInMenu
+            icon={<Iconify icon="solar:restart-bold" />}
+            label="Put back on sale"
+            onClick={() => restoreProduct.mutate(params.row.id)}
+          />
+        ) : (
+          <GridActionsCellItem
+            showInMenu
+            icon={<Iconify icon="solar:archive-down-minimlistic-bold" />}
+            label="Take off the catalog"
+            onClick={() => discontinueProduct.mutate(params.row.id)}
+          />
+        ),
         <GridActionsCellItem
           showInMenu
           icon={<Iconify icon="solar:trash-bin-trash-bold" />}
-          label="Delete"
+          label="Delete permanently"
           onClick={() => handleOpenConfirm([params.row.id])}
           sx={{ color: 'error.main' }}
         />,
