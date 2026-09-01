@@ -196,6 +196,34 @@ Three files, three scopes:
 | [`api/.env.example`](api/.env.example) | the API when run directly (`npm run dev`) | Every API variable, each documented inline |
 | [`web/.env.example`](web/.env.example) | Vite at build time | Where the browser should call the API |
 
+#### Creating one, if you want to
+
+Nothing here is required to run the project. The one override worth making on a machine you will
+rebuild a few times is `JWT_SECRET`, so signing in survives a restart:
+
+```bash
+cp .env.example .env
+```
+
+Then put a strong value on the `JWT_SECRET=` line — it must be 16+ characters, and a known
+placeholder like `changeme` stops the boot on purpose:
+
+```bash
+openssl rand -base64 36
+```
+
+```bash
+# no openssl at hand
+node -e "console.log(require('crypto').randomBytes(36).toString('base64url'))"
+```
+
+`.env` is git-ignored, which is the whole point: the secret stays on your machine. It is **not**
+committed to `docker-compose.yml`, because a signing key in a public repository is a key anyone can
+use to mint an administrator token — see [Alternatives considered](#alternatives-considered).
+
+Changing `.env` needs `docker compose up -d --build` to take effect, since Compose reads it at
+container creation and the front bakes `VITE_SERVER_URL` in at build time.
+
 The ones worth knowing:
 
 | Variable | Default | What it does |
@@ -219,7 +247,7 @@ The ones worth knowing:
 | `port is already allocated` on **5432** | A Postgres already installed on your machine holds it | `DB_PORT_HOST=5433 docker compose up --build`. Nothing inside the stack changes — the containers still talk to each other on 5432 |
 | Same on **3000**, **4000** or **6379** | Another dev server or a local Redis | `WEB_PORT_HOST=3001 API_PORT_HOST=4001 REDIS_PORT_HOST=6380 docker compose up --build`. If you move the API port, also set `VITE_SERVER_URL=http://localhost:4001` so the browser follows it |
 | The shop loads but shows no products | Expected: **the catalog starts empty on purpose** | Sign in and import the CSV — see step 1 of [Verifying it in five minutes](#verifying-it-in-five-minutes) |
-| Sign-in fails right after a rebuild | `JWT_SECRET` is unset, so the key is regenerated each boot and old tokens stop working | Sign in again, or set `JWT_SECRET` to keep sessions |
+| Sign-in fails right after a rebuild | `JWT_SECRET` is unset, so the key is regenerated each boot and old tokens stop working | Sign in again, or set `JWT_SECRET` — see [Creating one, if you want to](#creating-one-if-you-want-to) |
 | `database "ecommerce" does not exist` | A half-initialised volume from an interrupted first run | `docker compose down -v && docker compose up --build` |
 | The browser suite fails | The stack is not up, or Chromium is missing | `docker compose up -d --build`, then `npx playwright install chromium` |
 
