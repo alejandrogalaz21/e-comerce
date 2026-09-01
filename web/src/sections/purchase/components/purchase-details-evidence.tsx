@@ -9,6 +9,7 @@ import Typography from '@mui/material/Typography';
 import { fDateTime } from 'src/utils/format-time';
 
 import { CopyableValue } from './copyable-value';
+import { paymentMethodLabel } from '../purchase-utils';
 import { PurchaseStatusLabel } from './purchase-status-label';
 
 type RowProps = {
@@ -66,6 +67,18 @@ export function PurchaseDetailsEvidence({ purchase }: Props) {
           hint="Sending this key again returns this same order instead of charging twice."
         >
           <CopyableValue value={purchase.idempotencyKey} label="Idempotency key" />
+        </Row>
+
+        <Row label="Payment method">
+          {purchase.paymentMethod ? (
+            <Typography variant="body2">{paymentMethodLabel(purchase.paymentMethod)}</Typography>
+          ) : (
+            // Orders placed before the checkout sent it have none, and guessing
+            // one would invent a fact about a charge.
+            <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+              Not recorded
+            </Typography>
+          )}
         </Row>
 
         {purchase.paymentReference && (

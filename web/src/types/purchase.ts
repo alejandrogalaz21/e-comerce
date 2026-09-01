@@ -5,6 +5,9 @@
  */
 export type IPurchaseStatus = 'PENDING' | 'PAID' | 'FAILED';
 
+/** How the buyer chose to pay. Null on orders placed before it was recorded. */
+export type IPaymentMethod = 'card' | 'paypal';
+
 export type ApiPurchaseItem = {
   id: string;
   productId: string;
@@ -32,6 +35,7 @@ export type ApiPurchase = {
   status: IPurchaseStatus;
   totalAmount: string;
   idempotencyKey: string;
+  paymentMethod: IPaymentMethod | null;
   paymentReference: string | null;
   declineReason: string | null;
   createdAt: string;
@@ -61,6 +65,7 @@ export type IPurchase = {
   status: IPurchaseStatus;
   total: number;
   createdAt: string;
+  paymentMethod: IPaymentMethod | null;
   paymentReference: string | null;
   declineReason: string | null;
   idempotencyKey: string;
@@ -81,6 +86,7 @@ export type IPurchaseListParams = {
 export type IPlacePurchasePayload = {
   items: { productId: string; quantity: number }[];
   idempotencyKey: string;
+  paymentMethod: IPaymentMethod;
   shippingAddress: IShippingAddress;
 };
 

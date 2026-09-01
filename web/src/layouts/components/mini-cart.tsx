@@ -17,9 +17,11 @@ import { fCurrency } from 'src/utils/format-number';
 
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
+import { CategoryIcon } from 'src/components/logo/CategoryIcons';
 
 import { useCheckoutContext } from 'src/sections/checkout/context';
 import { isPurchasable } from 'src/sections/checkout/cart-reconcile';
+import { IncrementerButton } from 'src/sections/product/components/incrementer-button';
 import { useCartRevalidation } from 'src/sections/checkout/hooks/use-cart-revalidation';
 import { CartLineChanges, CartChangeNotice } from 'src/sections/checkout/cart-change-notice';
 
@@ -62,6 +64,14 @@ export function MiniCart() {
             Cart
           </Typography>
 
+          {!empty && (
+            <Tooltip title="Empty cart">
+              <IconButton onClick={checkout.onEmptyCart} aria-label="Empty cart">
+                <Iconify icon="solar:trash-bin-trash-bold" />
+              </IconButton>
+            </Tooltip>
+          )}
+
           <IconButton onClick={open.onFalse} aria-label="Close cart">
             <Iconify icon="mingcute:close-line" />
           </IconButton>
@@ -80,22 +90,47 @@ export function MiniCart() {
               <Stack spacing={2} sx={{ p: 2.5 }}>
                 <CartChangeNotice items={checkout.items} unverified={unverified} />
 
+                {/* Editable here, not only in the checkout: a line that cannot be
+                    bought blocks the way forward, and sending the visitor to
+                    another screen to remove it is the long way round. */}
                 {checkout.items.map((item) => (
-                  <Stack key={item.id} direction="row" spacing={2} alignItems="flex-start">
+                  <Stack key={item.id} direction="row" spacing={1.5} alignItems="flex-start">
+                    <CategoryIcon category={item.category} size={40} />
+
                     <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                       <Typography variant="subtitle2" noWrap>
                         {item.name}
                       </Typography>
+
                       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                         {`${item.quantity} × ${fCurrency(item.price)}`}
                       </Typography>
 
                       <CartLineChanges item={item} />
+
+                      <IncrementerButton
+                        sx={{ mt: 1 }}
+                        quantity={item.quantity}
+                        onDecrease={() => checkout.onDecreaseQuantity(item.id)}
+                        onIncrease={() => checkout.onIncreaseQuantity(item.id)}
+                        disabledDecrease={item.quantity <= 1}
+                        disabledIncrease={item.unavailable || item.quantity >= item.stock}
+                      />
                     </Box>
 
-                    <Typography variant="subtitle2">
-                      {fCurrency(item.price * item.quantity)}
-                    </Typography>
+                    <Stack alignItems="flex-end" spacing={0.5}>
+                      <Typography variant="subtitle2">
+                        {fCurrency(item.price * item.quantity)}
+                      </Typography>
+
+                      <IconButton
+                        size="small"
+                        aria-label={`Remove ${item.name}`}
+                        onClick={() => checkout.onDeleteCart(item.id)}
+                      >
+                        <Iconify icon="solar:trash-bin-trash-bold" width={18} />
+                      </IconButton>
+                    </Stack>
                   </Stack>
                 ))}
               </Stack>

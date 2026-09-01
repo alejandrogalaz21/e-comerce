@@ -33,7 +33,6 @@ export const NewAddressSchema = zod.object({
     message: { required_error: 'Country is required!' },
   }),
   // Not required
-  primary: zod.boolean(),
   addressType: zod.string(),
 });
 
@@ -52,7 +51,6 @@ export function AddressNewForm({ open, onClose, onCreate }: Props) {
     zipCode: '',
     country: '',
     email: '',
-    primary: true,
     phoneNumber: '',
     addressType: 'Home',
   };
@@ -76,7 +74,6 @@ export function AddressNewForm({ open, onClose, onCreate }: Props) {
         email: data.email,
         fullAddress: `${data.address}, ${data.city}, ${data.state}, ${data.country}, ${data.zipCode}`,
         addressType: data.addressType,
-        primary: data.primary,
         // The one-line form is for display; the order is stored in parts.
         street: data.address,
         city: data.city,
@@ -135,8 +132,6 @@ export function AddressNewForm({ open, onClose, onCreate }: Props) {
             </Box>
 
             <Field.CountrySelect name="country" label="Country" placeholder="Choose a country" />
-
-            <Field.Checkbox name="primary" label="Use this address as default." />
           </Stack>
         </DialogContent>
 

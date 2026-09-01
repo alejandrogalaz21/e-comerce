@@ -4,6 +4,7 @@ import {
   ArrayNotEmpty,
   IsArray,
   IsEmail,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsObject,
@@ -17,6 +18,8 @@ import { ApiProperty } from '@nestjs/swagger'
 
 import { trimText } from '@/common/transformers/sanitize.transformer'
 import { NoHtml } from '@/common/validators/no-html.validator'
+
+import { PaymentMethod } from '../payment-method.enum'
 
 /**
  * Where the order is delivered. Required: recording an order nobody can deliver
@@ -129,6 +132,17 @@ export class CreateOrderDto {
   // somebody else's delivery details.
   @IsUUID()
   idempotencyKey: string
+
+  @ApiProperty({
+    enum: PaymentMethod,
+    example: PaymentMethod.CARD,
+    description:
+      'How the buyer chose to pay. Every method is charged through the same simulated provider; what this decides is what the order records'
+  })
+  @IsEnum(PaymentMethod, {
+    message: `paymentMethod must be one of: ${Object.values(PaymentMethod).join(', ')}`
+  })
+  paymentMethod: PaymentMethod
 
   @ApiProperty({
     type: ShippingAddressDto,

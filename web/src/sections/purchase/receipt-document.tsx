@@ -2,6 +2,8 @@ import type { IPurchase } from 'src/types/purchase';
 
 import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 
+import { paymentMethodLabel } from './purchase-utils';
+
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 11, color: '#212B36' },
   title: { fontSize: 20, marginBottom: 4 },
@@ -31,6 +33,9 @@ export function buildReceiptDocument(purchase: IPurchase) {
         <View style={styles.meta}>
           <Text style={styles.muted}>{`Order ${purchase.id}`}</Text>
           <Text style={styles.muted}>{new Date(purchase.createdAt).toUTCString()}</Text>
+          {purchase.paymentMethod ? (
+            <Text style={styles.muted}>{`Paid by ${paymentMethodLabel(purchase.paymentMethod)}`}</Text>
+          ) : null}
           {purchase.paymentReference ? (
             <Text style={styles.muted}>{`Payment ${purchase.paymentReference}`}</Text>
           ) : null}

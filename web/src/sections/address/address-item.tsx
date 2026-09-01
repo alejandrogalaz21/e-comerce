@@ -6,7 +6,6 @@ import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 
-import { Label } from 'src/components/label';
 
 type Props = PaperProps & {
   action?: React.ReactNode;
@@ -34,12 +33,6 @@ export function AddressItem({ address, action, sx, ...other }: Props) {
               ({address.addressType})
             </Box>
           </Typography>
-
-          {address.primary && (
-            <Label color="info" sx={{ ml: 1 }}>
-              Default
-            </Label>
-          )}
         </Stack>
 
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>

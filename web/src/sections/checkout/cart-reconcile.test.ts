@@ -76,6 +76,17 @@ describe('reconcileCart', () => {
     expect(changes[0].kinds).toEqual(['quantity']);
   });
 
+  /**
+   * Stock zero is not a quantity to adjust: the line drops to nothing buyable,
+   * and the cart must say so rather than offering a purchase of zero units.
+   */
+  it('leaves a sold-out line at zero and unbuyable', () => {
+    const { items } = reconcileCart([line], found(catalog({ stock: 0 })));
+
+    expect(items[0]).toMatchObject({ quantity: 0, stock: 0, adjustedFrom: 2 });
+    expect(isPurchasable(items[0])).toBe(false);
+  });
+
   it('reports every kind of change a single line suffered', () => {
     const { changes } = reconcileCart(
       [line],

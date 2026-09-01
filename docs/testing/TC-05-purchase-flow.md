@@ -41,6 +41,7 @@ Los tres campos son **obligatorios**, y dos de ellos suelen sorprender:
 | `items[].productId` | UUID de un producto existente | `400` o `404` |
 | `items[].quantity` | entero ≥ 1 | `400` |
 | `idempotencyKey` | **UUID**, acuñado al abrir el checkout | `400` — una clave como `pedido-42` es adivinable, y reproducirla devuelve la dirección de envío ajena |
+| `paymentMethod` | `card` o `paypal`. El efectivo no es un método: la orden se cobraría por el proveedor simulado y quedaría como pagada, afirmando un dinero que nadie entregó | `400` |
 | `shippingAddress` | objeto con los **ocho** campos (los siete de la dirección más `email`), sin HTML | `400` |
 | `shippingAddress.email` | correo válido: es el único contacto escrito que queda de la compra | `400` — un correo mal formado se rechaza igual que uno ausente |
 
@@ -57,7 +58,7 @@ uuid() { uuidgen | tr 'A-Z' 'a-z'; }
 pid() { $DB -t -A -c "SELECT id FROM products WHERE sku = '$1';"; }
 
 order() {
-  printf '{"items":[{"productId":"%s","quantity":%s}],"idempotencyKey":"%s","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$1" "${2:-1}" "${3:-$(uuid)}"
+  printf '{"items":[{"productId":"%s","quantity":%s}],"idempotencyKey":"%s","paymentMethod":"card","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$1" "${2:-1}" "${3:-$(uuid)}"
 }
 ```
 
@@ -115,7 +116,7 @@ El navegador nunca fija un precio, y esto lo demuestra.
 ID=$(pid RS-050)
 
 curl -s -w "\nHTTP %{http_code}\n" -X POST "$API/orders" -H 'Content-Type: application/json' \
- -d "$(printf '{"items":[{"productId":"%s","quantity":1,"price":"0.01"}],"total":"0.01","idempotencyKey":"%s","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$ID" "$(uuid)")"
+ -d "$(printf '{"items":[{"productId":"%s","quantity":1,"price":"0.01"}],"total":"0.01","idempotencyKey":"%s","paymentMethod":"card","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$ID" "$(uuid)")"
 ```
 
 ### Resultado esperado

@@ -67,6 +67,7 @@ export function reconcileCart(
       ...item,
       sku: product.sku,
       name: product.name,
+      category: product.category,
       price: product.price,
       stock: product.stock,
       unavailable: false,

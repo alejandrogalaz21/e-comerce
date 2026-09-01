@@ -50,6 +50,7 @@ export function toPurchase(purchase: ApiPurchase): IPurchase {
     status: purchase.status,
     total: Number(purchase.totalAmount),
     createdAt: purchase.createdAt,
+    paymentMethod: purchase.paymentMethod ?? null,
     paymentReference: purchase.paymentReference,
     declineReason: purchase.declineReason,
     idempotencyKey: purchase.idempotencyKey,

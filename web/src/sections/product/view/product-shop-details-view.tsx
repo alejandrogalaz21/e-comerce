@@ -1,5 +1,6 @@
 import type { IProductItem } from 'src/types/product';
 
+import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Unstable_Grid2';
@@ -9,19 +10,15 @@ import Typography from '@mui/material/Typography';
 import { paths } from 'src/routes/paths';
 import { RouterLink } from 'src/routes/components';
 
-import { CONFIG } from 'src/config-global';
-
-import { Image } from 'src/components/image';
 import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
+import { CategoryIcon } from 'src/components/logo/CategoryIcons';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { CartIcon } from '../components/cart-icon';
 import { useCheckoutContext } from '../../checkout/context';
 import { ProductDetailsSkeleton } from '../product-skeleton';
 import { ProductDetailsSummary } from '../product-details-summary';
-
-const PLACEHOLDER_IMAGE = `${CONFIG.site.basePath}/assets/placeholder.svg`;
 
 type Props = {
   product?: IProductItem;
@@ -77,7 +74,20 @@ export function ProductShopDetailsView({ product, error, loading }: Props) {
 
       <Grid container spacing={{ xs: 3, md: 5, lg: 8 }}>
         <Grid xs={12} md={6} lg={7}>
-          <Image alt={product?.name} src={PLACEHOLDER_IMAGE} ratio="1/1" sx={{ borderRadius: 2 }} />
+          {/* The catalog carries no photos: the category icon is the product's
+              face, the same one the gallery and the cart show. */}
+          <Box
+            sx={{
+              display: 'flex',
+              aspectRatio: '1/1',
+              borderRadius: 2,
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'background.neutral',
+            }}
+          >
+            <CategoryIcon category={product?.category} size={220} />
+          </Box>
         </Grid>
 
         <Grid xs={12} md={6} lg={5}>

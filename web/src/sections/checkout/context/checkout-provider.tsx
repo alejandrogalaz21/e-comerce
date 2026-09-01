@@ -191,6 +191,15 @@ function Container({ children }: Props) {
     [setField, state.items]
   );
 
+  /**
+   * Emptying the cart ends that checkout attempt, so the idempotency key goes
+   * with it: a key kept across an emptied cart would tie a brand new purchase to
+   * the attempt the visitor just abandoned.
+   */
+  const onEmptyCart = useCallback(() => {
+    setState({ items: [], idempotencyKey: '' });
+  }, [setState]);
+
   /** Once the visitor has seen what changed and continues, the marks are done. */
   const onClearCartChanges = useCallback(() => {
     if (!state.items.some(hasCartDifference)) return;
@@ -231,6 +240,7 @@ function Container({ children }: Props) {
       onIncreaseQuantity,
       onDecreaseQuantity,
       //
+      onEmptyCart,
       onClearCartChanges,
       onCreateBilling,
       //
@@ -262,6 +272,7 @@ function Container({ children }: Props) {
       onCreateBilling,
       onDecreaseQuantity,
       onIncreaseQuantity,
+      onEmptyCart,
       onClearCartChanges,
     ]
   );

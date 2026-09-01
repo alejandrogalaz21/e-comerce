@@ -8,6 +8,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger'
 
 import { OrderStatus } from '../order-status.enum'
+import { PaymentMethod } from '../payment-method.enum'
 import { OrderItem } from './order-item.entity'
 
 @Entity('orders')
@@ -43,6 +44,16 @@ export class Order {
   })
   @Column('varchar', { name: 'idempotency_key', length: 100, unique: true })
   idempotencyKey: string
+
+  @ApiProperty({
+    enum: PaymentMethod,
+    example: PaymentMethod.CARD,
+    description: 'How the buyer chose to pay. Null on orders placed before it was recorded',
+    nullable: true,
+    required: false
+  })
+  @Column('varchar', { name: 'payment_method', length: 20, nullable: true })
+  paymentMethod: PaymentMethod | null
 
   @ApiProperty({
     example: 'fake_ch_8f3b6d0a1e44',

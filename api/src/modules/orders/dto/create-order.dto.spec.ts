@@ -1,6 +1,8 @@
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 
+import { PaymentMethod } from '../payment-method.enum'
+
 import { CreateOrderDto } from './create-order.dto'
 
 const VALID_KEY = '3f7b1c92-5d2e-4c8a-b1f0-6a9e2d4c8b31'
@@ -20,6 +22,7 @@ function build(overrides: Record<string, unknown> = {}): CreateOrderDto {
   return plainToInstance(CreateOrderDto, {
     items: [{ productId: '0d6cd087-3f2e-4f30-b0aa-cf9c93b1c0d5', quantity: 1 }],
     idempotencyKey: VALID_KEY,
+    paymentMethod: PaymentMethod.CARD,
     shippingAddress: ADDRESS,
     ...overrides
   })
@@ -83,6 +86,31 @@ describe('CreateOrderDto', () => {
       expect(
         await messagesFor({ shippingAddress: { ...ADDRESS, city: '   ' } })
       ).toContain('city')
+    })
+  })
+
+  describe('paymentMethod', () => {
+    it('records how the buyer chose to pay', async () => {
+      expect(
+        await messagesFor({ paymentMethod: PaymentMethod.PAYPAL })
+      ).toBe('[]')
+    })
+
+    it('refuses an order that does not say how it was paid', async () => {
+      expect(await messagesFor({ paymentMethod: undefined })).toContain(
+        'paymentMethod'
+      )
+    })
+
+    /**
+     * Cash on delivery is deliberately not a method: the order would be charged
+     * through the simulated provider and stored as paid, claiming money nobody
+     * handed over.
+     */
+    it.each(['cash', 'crypto', 'CARD'])('refuses %s', async value => {
+      expect(await messagesFor({ paymentMethod: value })).toContain(
+        'paymentMethod must be one of: card, paypal'
+      )
     })
   })
 

@@ -98,7 +98,7 @@ setstock() { $DB -c "UPDATE products SET stock = $2 WHERE sku = '$1';"; }
 uuid() { uuidgen | tr 'A-Z' 'a-z'; }
 
 order() {
-  printf '{"items":[{"productId":"%s","quantity":%s}],"idempotencyKey":"%s","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$1" "${2:-1}" "${3:-$(uuid)}"
+  printf '{"items":[{"productId":"%s","quantity":%s}],"idempotencyKey":"%s","paymentMethod":"card","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$1" "${2:-1}" "${3:-$(uuid)}"
 }
 
 buy() { curl -s -o "/tmp/$1.json" -w "$1: %{http_code}\n" -X POST "$API/orders" -H 'Content-Type: application/json' -d "$2"; }
@@ -281,7 +281,7 @@ setstock WM-042 50
 P1=$(pid RS-050); P2=$(pid WM-042)
 
 dos() {
-  printf '{"items":[{"productId":"%s","quantity":1},{"productId":"%s","quantity":1}],"idempotencyKey":"%s","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$1" "$2" "$(uuid)"
+  printf '{"items":[{"productId":"%s","quantity":1},{"productId":"%s","quantity":1}],"idempotencyKey":"%s","paymentMethod":"card","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$1" "$2" "$(uuid)"
 }
 
 for i in $(seq 1 8); do
@@ -331,7 +331,7 @@ setstock RS-050 5
 ID=$(pid RS-050)
 
 curl -s -w "\nHTTP %{http_code}\n" -X POST "$API/orders" -H 'Content-Type: application/json' \
- -d "$(printf '{"items":[{"productId":"%s","quantity":3},{"productId":"%s","quantity":3}],"idempotencyKey":"%s","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$ID" "$ID" "$(uuid)")"
+ -d "$(printf '{"items":[{"productId":"%s","quantity":3},{"productId":"%s","quantity":3}],"idempotencyKey":"%s","paymentMethod":"card","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$ID" "$ID" "$(uuid)")"
 ```
 
 ### Resultado esperado

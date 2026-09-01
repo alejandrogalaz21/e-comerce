@@ -15,6 +15,8 @@ export type ICheckoutItem = {
    * the first revalidation fills it in.
    */
   sku?: string;
+  /** Drives the category icon that stands in for a product photo. */
+  category?: string;
   /** What the line cost when it was added, kept while the difference is worth showing. */
   addedPrice?: number;
   /** What the product was called when it was added. */
@@ -68,6 +70,9 @@ export type CheckoutContextValue = ICheckoutState & {
   onBackStep: () => void;
   onNextStep: () => void;
   onGotoStep: (step: number) => void;
+  //
+  /** Empties the cart and ends that checkout attempt. */
+  onEmptyCart: () => void;
   //
   /** Drops the "this changed" marks once the visitor has seen them and continues. */
   onClearCartChanges: () => void;

@@ -12,14 +12,10 @@ import { RouterLink } from 'src/routes/components';
 
 import { fCurrency } from 'src/utils/format-number';
 
-import { CONFIG } from 'src/config-global';
-
 import { Iconify } from 'src/components/iconify';
+import { CategoryIcon } from 'src/components/logo/CategoryIcons';
 
-import { categoryIcon } from './category-icon';
 import { useCheckoutContext } from '../checkout/context';
-
-const PLACEHOLDER_IMAGE = `${CONFIG.site.basePath}/assets/placeholder.svg`;
 
 type Props = {
   product: IProductItem;
@@ -40,10 +36,10 @@ export function ProductItem({ product }: Props) {
         id,
         sku,
         name,
+        category,
         price,
         stock,
         quantity: 1,
-        coverUrl: PLACEHOLDER_IMAGE,
       });
     } catch (error) {
       console.error(error);
@@ -86,11 +82,10 @@ export function ProductItem({ product }: Props) {
             alignItems: 'center',
             justifyContent: 'center',
             bgcolor: 'background.neutral',
-            color: 'text.secondary',
             ...(!available && { opacity: 0.48, filter: 'grayscale(1)' }),
           }}
         >
-          <Iconify icon={categoryIcon(category)} width={72} />
+          <CategoryIcon category={category} size={112} />
         </Box>
       </Tooltip>
     </Box>

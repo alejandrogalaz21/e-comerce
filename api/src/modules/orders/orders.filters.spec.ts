@@ -7,6 +7,7 @@ import { ChargeResult } from '@/modules/payment/payment.interface'
 import { Order } from './entities/order.entity'
 import { OrderItem } from './entities/order-item.entity'
 import { OrderStatus } from './order-status.enum'
+import { PaymentMethod } from './payment-method.enum'
 import { OrdersService } from './orders.service'
 
 /**
@@ -147,7 +148,8 @@ describe('Filtering orders against a real database', () => {
     const { order } = await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${PREFIX}by-id`,
-      shippingAddress: SHIPPING
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
 
     const found = await service.findAll({
@@ -170,17 +172,20 @@ describe('Filtering orders against a real database', () => {
     await service.create({
       items: [{ productId: wanted, quantity: 1 }],
       idempotencyKey: `${PREFIX}a`,
-      shippingAddress: SHIPPING
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
     await service.create({
       items: [{ productId: wanted, quantity: 2 }],
       idempotencyKey: `${PREFIX}b`,
-      shippingAddress: SHIPPING
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
     await service.create({
       items: [{ productId: other, quantity: 1 }],
       idempotencyKey: `${PREFIX}c`,
-      shippingAddress: SHIPPING
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
 
     const found = await service.findAll({
@@ -204,12 +209,14 @@ describe('Filtering orders against a real database', () => {
     await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${PREFIX}ada`,
-      shippingAddress: SHIPPING
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
     await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${PREFIX}grace`,
-      shippingAddress: { ...SHIPPING, name: 'Grace Hopper', phone: '+13125550143' }
+      shippingAddress: { ...SHIPPING, name: 'Grace Hopper', phone: '+13125550143' },
+      paymentMethod: PaymentMethod.CARD
     })
 
     const byName = await service.findAll({ page: 1, limit: 20, q: 'hopper' })
@@ -231,11 +238,13 @@ describe('Filtering orders against a real database', () => {
     await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${PREFIX}springfield`,
-      shippingAddress: SHIPPING
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
     await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${PREFIX}hermosillo`,
+      paymentMethod: PaymentMethod.CARD,
       shippingAddress: {
         ...SHIPPING,
         name: 'Grace Hopper',
@@ -284,7 +293,8 @@ describe('Filtering orders against a real database', () => {
     await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${PREFIX}renamed`,
-      shippingAddress: SHIPPING
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
 
     await source.query(
@@ -308,13 +318,15 @@ describe('Filtering orders against a real database', () => {
     await serviceFor(source).create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${PREFIX}paid`,
-      shippingAddress: SHIPPING
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
     await expect(
       serviceFor(source, declining).create({
         items: [{ productId, quantity: 1 }],
         idempotencyKey: `${PREFIX}failed`,
-        shippingAddress: SHIPPING
+        shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
       })
     ).rejects.toBeDefined()
 
@@ -342,7 +354,8 @@ describe('Filtering orders against a real database', () => {
     await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${PREFIX}combo-paid`,
-      shippingAddress: SHIPPING
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
 
     const hit = await service.findAll({
@@ -374,7 +387,8 @@ describe('Filtering orders against a real database', () => {
     const { order } = await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${PREFIX}today`,
-      shippingAddress: SHIPPING
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
 
     const day = order.createdAt.toISOString().slice(0, 10)
@@ -412,12 +426,14 @@ describe('Filtering orders against a real database', () => {
     await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${PREFIX}total-1`,
-      shippingAddress: SHIPPING
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
     await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${PREFIX}total-2`,
-      shippingAddress: SHIPPING
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
 
     const found = await service.findAll({

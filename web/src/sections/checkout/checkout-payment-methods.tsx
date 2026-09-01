@@ -78,14 +78,13 @@ function OptionItem({ option, selected, ...other }: OptionItemProps) {
               {label}
             </Box>
             <Stack spacing={1} direction="row" alignItems="center">
-              {value === 'credit' && (
+              {value === 'card' && (
                 <>
                   <Iconify icon="logos:mastercard" width={24} />
                   <Iconify icon="logos:visa" width={24} />
                 </>
               )}
               {value === 'paypal' && <Iconify icon="logos:paypal" width={24} />}
-              {value === 'cash' && <Iconify icon="solar:wad-of-money-bold" width={32} />}
             </Stack>
           </Stack>
         }

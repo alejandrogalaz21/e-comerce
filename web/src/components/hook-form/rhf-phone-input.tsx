@@ -1,6 +1,6 @@
 import { Controller, useFormContext } from 'react-hook-form';
 
-import { PhoneInput } from '../phone-input';
+import { PhoneInput, normalizePhoneValue } from '../phone-input';
 
 import type { PhoneInputProps } from '../phone-input';
 
@@ -20,7 +20,9 @@ export function RHFPhoneInput({ name, helperText, ...other }: Props) {
           {...field}
           fullWidth
           value={field.value}
-          onChange={(newValue) => setValue(name, newValue, { shouldValidate: true })}
+          onChange={(newValue) =>
+            setValue(name, normalizePhoneValue(newValue), { shouldValidate: true })
+          }
           error={!!error}
           helperText={error ? error?.message : helperText}
           {...other}

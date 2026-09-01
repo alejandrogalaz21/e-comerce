@@ -51,6 +51,18 @@ export function CheckoutCart() {
                 </Typography>
               </Typography>
             }
+            action={
+              !empty && (
+                <Button
+                  size="small"
+                  color="error"
+                  onClick={checkout.onEmptyCart}
+                  startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}
+                >
+                  Empty cart
+                </Button>
+              )
+            }
             sx={{ mb: 3 }}
           />
 

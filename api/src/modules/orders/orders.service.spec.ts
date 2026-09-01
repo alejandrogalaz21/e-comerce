@@ -9,6 +9,7 @@ import { ProductsService } from '@/modules/products/products.service'
 
 import { Order } from './entities/order.entity'
 import { OrderStatus } from './order-status.enum'
+import { PaymentMethod } from './payment-method.enum'
 import { OrdersService } from './orders.service'
 
 const SHIPPING = {
@@ -121,7 +122,8 @@ describe('OrdersService', () => {
   })
 
   const buy = (items: { productId: string; quantity: number }[], key = 'key-1') =>
-    service.create({ items, idempotencyKey: key, shippingAddress: SHIPPING })
+    service.create({ items, idempotencyKey: key, shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD })
 
   describe('placing an order', () => {
     it('charges the server-calculated total and discounts the stock', async () => {
@@ -164,6 +166,7 @@ describe('OrdersService', () => {
         items: [{ productId: SHOES, quantity: 1 }],
         idempotencyKey: 'key-1',
         shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD,
         // A client that tries to set the price must not be believed.
         ...({ total: '0.01', price: '0.01' } as any)
       })
@@ -252,7 +255,8 @@ describe('OrdersService', () => {
       await service.create({
         items: [{ productId: SHOES, quantity: 2 }],
         idempotencyKey: 'key-2',
-        shippingAddress: { ...SHIPPING, city: 'Elsewhere', country: 'Canada' }
+        shippingAddress: { ...SHIPPING, city: 'Elsewhere', country: 'Canada' },
+        paymentMethod: PaymentMethod.CARD
       })
 
       expect(charge.mock.calls[0][0].amountInCents).toBe(withOneAddress)

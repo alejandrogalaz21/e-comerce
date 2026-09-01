@@ -2,7 +2,6 @@ import type { ICheckoutItem } from 'src/types/checkout';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import Avatar from '@mui/material/Avatar';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import IconButton from '@mui/material/IconButton';
@@ -11,6 +10,7 @@ import Typography from '@mui/material/Typography';
 import { fCurrency } from 'src/utils/format-number';
 
 import { Iconify } from 'src/components/iconify';
+import { CategoryIcon } from 'src/components/logo/CategoryIcons';
 
 import { CartLineChanges } from './cart-change-notice';
 import { IncrementerButton } from '../product/components/incrementer-button';
@@ -27,12 +27,7 @@ export function CheckoutCartProduct({ row, onDelete, onDecrease, onIncrease }: P
     <TableRow>
       <TableCell>
         <Stack spacing={2} direction="row" alignItems="center">
-          <Avatar
-            variant="rounded"
-            alt={row.name}
-            src={row.coverUrl}
-            sx={{ width: 64, height: 64 }}
-          />
+          <CategoryIcon category={row.category} size={64} />
 
           <Box sx={{ minWidth: 0 }}>
             <Typography noWrap variant="subtitle2" sx={{ maxWidth: 240 }}>

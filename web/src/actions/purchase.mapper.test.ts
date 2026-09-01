@@ -17,6 +17,7 @@ const apiPurchase = {
   status: 'PAID' as const,
   totalAmount: '179.98',
   idempotencyKey: 'key-1',
+  paymentMethod: 'card' as const,
   paymentReference: 'fake_ch_1',
   declineReason: null,
   createdAt: '2026-08-29T10:00:00.000Z',
@@ -56,6 +57,11 @@ describe('toPurchase', () => {
       paymentReference: 'fake_ch_1',
     });
     expect(purchase.items).toHaveLength(1);
+  });
+
+  it('keeps how the order was paid, and reports its absence on older ones', () => {
+    expect(toPurchase(apiPurchase).paymentMethod).toBe('card');
+    expect(toPurchase({ ...apiPurchase, paymentMethod: null }).paymentMethod).toBeNull();
   });
 
   it('tolerates a response without lines', () => {

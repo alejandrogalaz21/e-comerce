@@ -54,13 +54,14 @@ export function ProductDetailsSummary({
       id,
       sku,
       name,
+      category,
       price,
       stock,
       quantity,
       coverUrl: PLACEHOLDER_IMAGE,
       subtotal: price * quantity,
     }),
-    [id, sku, name, price, stock, quantity]
+    [id, sku, name, category, price, stock, quantity]
   );
 
   const handleAddCart = useCallback(() => {

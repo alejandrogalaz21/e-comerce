@@ -1,3 +1,4 @@
+import type { IPaymentMethod } from 'src/types/purchase';
 import type { PlacePurchaseError } from 'src/actions/purchase';
 import type { ICheckoutPaymentOption } from 'src/types/checkout';
 
@@ -25,6 +26,12 @@ import { CheckoutBillingInfo } from './checkout-billing-info';
 import { useCartRevalidation } from './hooks/use-cart-revalidation';
 import { CheckoutPaymentMethods } from './checkout-payment-methods';
 
+/**
+ * Cash on delivery is deliberately absent: the order would be charged through the
+ * simulated provider and stored as PAID with a payment reference, claiming money
+ * nobody handed over. Offering it needs a status for an order that is placed but
+ * not yet paid, and a way to move it once it is.
+ */
 const PAYMENT_OPTIONS: ICheckoutPaymentOption[] = [
   {
     value: 'paypal',
@@ -32,17 +39,17 @@ const PAYMENT_OPTIONS: ICheckoutPaymentOption[] = [
     description: 'You will be redirected to PayPal website to complete your purchase securely.',
   },
   {
-    value: 'credit',
+    value: 'card',
     label: 'Credit / Debit card',
     description: 'We support Mastercard, Visa, Discover and Stripe.',
   },
-  { value: 'cash', label: 'Cash', description: 'Pay with cash when your order is delivered.' },
 ];
 
 export type PaymentSchemaType = zod.infer<typeof PaymentSchema>;
 
 export const PaymentSchema = zod.object({
-  payment: zod.string().min(1, { message: 'Payment is required!' }),
+  // The value travels to the API, which accepts exactly these two.
+  payment: zod.enum(['card', 'paypal'], { required_error: 'Payment is required!' }),
 });
 
 export function CheckoutPayment() {
@@ -58,7 +65,7 @@ export function CheckoutPayment() {
 
   const blocked = checkout.items.some((item) => !isPurchasable(item));
 
-  const defaultValues = { payment: '' };
+  const defaultValues = { payment: undefined };
 
   const methods = useForm<PaymentSchemaType>({
     resolver: zodResolver(PaymentSchema),
@@ -70,7 +77,7 @@ export function CheckoutPayment() {
     formState: { isSubmitting },
   } = methods;
 
-  const onSubmit = handleSubmit(async () => {
+  const onSubmit = handleSubmit(async (data) => {
     setFailure(null);
 
     const { billing } = checkout;
@@ -89,6 +96,7 @@ export function CheckoutPayment() {
           quantity: item.quantity,
         })),
         idempotencyKey: checkout.idempotencyKey,
+        paymentMethod: data.payment as IPaymentMethod,
         shippingAddress: {
           name: billing.name,
           phone: billing.phoneNumber ?? '',
@@ -118,8 +126,11 @@ export function CheckoutPayment() {
 
   return (
     <Form methods={methods} onSubmit={onSubmit}>
+      {/* The lines take the wide column, which is the one that can grow with them;
+          the decision and the button share the narrow one, so what is confirmed
+          sits next to how it is paid. */}
       <Grid container spacing={3}>
-        <Grid xs={12} md={8}>
+        <Grid xs={12} md={7}>
           <CartChangeNotice items={checkout.items} unverified={unverified} />
 
           {failure && (
@@ -130,7 +141,12 @@ export function CheckoutPayment() {
             />
           )}
 
-          <CheckoutPaymentMethods options={PAYMENT_OPTIONS} sx={{ mb: 3 }} />
+          <CheckoutSummary
+            total={checkout.total}
+            items={checkout.items}
+            subtotal={checkout.subtotal}
+            onEdit={() => checkout.onGotoStep(0)}
+          />
 
           <Button
             size="small"
@@ -142,14 +158,10 @@ export function CheckoutPayment() {
           </Button>
         </Grid>
 
-        <Grid xs={12} md={4}>
+        <Grid xs={12} md={5}>
           <CheckoutBillingInfo billing={checkout.billing} onBackStep={checkout.onBackStep} />
 
-          <CheckoutSummary
-            total={checkout.total}
-            subtotal={checkout.subtotal}
-            onEdit={() => checkout.onGotoStep(0)}
-          />
+          <CheckoutPaymentMethods options={PAYMENT_OPTIONS} sx={{ mb: 3 }} />
 
           <LoadingButton
             fullWidth

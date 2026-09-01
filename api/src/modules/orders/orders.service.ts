@@ -77,6 +77,7 @@ export class OrdersService {
 
         const order = manager.create(Order, {
           status: OrderStatus.PENDING,
+          paymentMethod: dto.paymentMethod,
           totalAmount: fromCents(totalInCents),
           idempotencyKey: dto.idempotencyKey,
           ...toShippingColumns(dto.shippingAddress),

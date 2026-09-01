@@ -10,10 +10,16 @@ import { EmptyContent } from 'src/components/empty-content';
 
 import { useCheckoutContext } from './context';
 import { CheckoutSummary } from './checkout-summary';
+import { CartChangeNotice } from './cart-change-notice';
 import { AddressItem, AddressNewForm } from '../address';
+import { useCartRevalidation } from './hooks/use-cart-revalidation';
 
 export function CheckoutBillingAddress() {
   const checkout = useCheckoutContext();
+
+  // Every screen that shows a total shows a reconciled one: this step displays
+  // the summary too, so it cannot be the one that skips the check.
+  const { unverified } = useCartRevalidation();
 
   const addressForm = useBoolean();
 
@@ -21,29 +27,64 @@ export function CheckoutBillingAddress() {
 
   return (
     <>
+      {/* Same shape as the payment step: what is being bought on the left, what
+          this step asks for on the right. */}
       <Grid container spacing={3}>
-        <Grid xs={12} md={8}>
+        <Grid xs={12} md={7}>
+          <CartChangeNotice items={checkout.items} unverified={unverified} />
+
+          <CheckoutSummary
+            total={checkout.total}
+            items={checkout.items}
+            subtotal={checkout.subtotal}
+            onEdit={() => checkout.onGotoStep(0)}
+          />
+
+          <Button
+            size="small"
+            color="inherit"
+            onClick={checkout.onBackStep}
+            startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
+          >
+            Back
+          </Button>
+        </Grid>
+
+        <Grid xs={12} md={5}>
           {billing ? (
-            <AddressItem
-              address={billing}
-              action={
+            <>
+              <AddressItem
+                address={billing}
+                sx={{
+                  p: 3,
+                  mb: 3,
+                  borderRadius: 2,
+                  boxShadow: (theme) => theme.customShadows.card,
+                }}
+              />
+
+              <Stack spacing={1.5}>
                 <Button
-                  variant="outlined"
-                  size="small"
+                  fullWidth
+                  size="large"
+                  variant="contained"
                   onClick={() => checkout.onCreateBilling(billing)}
                 >
                   Deliver to this address
                 </Button>
-              }
-              sx={{
-                p: 3,
-                mb: 3,
-                borderRadius: 2,
-                boxShadow: (theme) => theme.customShadows.card,
-              }}
-            />
+
+                <Button
+                  size="small"
+                  color="inherit"
+                  onClick={addressForm.onTrue}
+                  startIcon={<Iconify icon="solar:pen-bold" />}
+                >
+                  Change address
+                </Button>
+              </Stack>
+            </>
           ) : (
-            <Card sx={{ mb: 3 }}>
+            <Card>
               <EmptyContent
                 title="No delivery address yet"
                 description="Add where this order should be delivered to continue."
@@ -61,32 +102,6 @@ export function CheckoutBillingAddress() {
               />
             </Card>
           )}
-
-          <Stack direction="row" justifyContent="space-between">
-            <Button
-              size="small"
-              color="inherit"
-              onClick={checkout.onBackStep}
-              startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
-            >
-              Back
-            </Button>
-
-            {billing && (
-              <Button
-                size="small"
-                color="primary"
-                onClick={addressForm.onTrue}
-                startIcon={<Iconify icon="solar:pen-bold" />}
-              >
-                Change address
-              </Button>
-            )}
-          </Stack>
-        </Grid>
-
-        <Grid xs={12} md={4}>
-          <CheckoutSummary total={checkout.total} subtotal={checkout.subtotal} />
         </Grid>
       </Grid>
 

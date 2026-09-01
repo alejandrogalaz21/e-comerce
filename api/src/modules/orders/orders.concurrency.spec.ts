@@ -7,6 +7,7 @@ import { ChargeResult } from '@/modules/payment/payment.interface'
 
 import { Order } from './entities/order.entity'
 import { OrderItem } from './entities/order-item.entity'
+import { PaymentMethod } from './payment-method.enum'
 import { OrdersService } from './orders.service'
 
 const SHIPPING = {
@@ -146,12 +147,14 @@ describe('OrdersService against a real database', () => {
         service.create({
           items: [{ productId, quantity: 1 }],
           idempotencyKey: `${SKU_PREFIX}buyer-a`,
-          shippingAddress: SHIPPING
+          shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
         }),
         service.create({
           items: [{ productId, quantity: 1 }],
           idempotencyKey: `${SKU_PREFIX}buyer-b`,
-          shippingAddress: SHIPPING
+          shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
         })
       ])
 
@@ -179,7 +182,8 @@ describe('OrdersService against a real database', () => {
           service.create({
             items: [{ productId, quantity: 1 }],
             idempotencyKey: `${SKU_PREFIX}rush-${index}`,
-          shippingAddress: SHIPPING
+          shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
           })
         )
       )
@@ -208,7 +212,8 @@ describe('OrdersService against a real database', () => {
             { productId: second, quantity: 1 }
           ],
           idempotencyKey: `${SKU_PREFIX}forward`,
-          shippingAddress: SHIPPING
+          shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
         }),
         service.create({
           items: [
@@ -216,7 +221,8 @@ describe('OrdersService against a real database', () => {
             { productId: first, quantity: 1 }
           ],
           idempotencyKey: `${SKU_PREFIX}reverse`,
-          shippingAddress: SHIPPING
+          shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
         })
       ])
 
@@ -233,7 +239,8 @@ describe('OrdersService against a real database', () => {
     const order = {
       items: [{ productId, quantity: 2 }],
       idempotencyKey: `${SKU_PREFIX}same-key`,
-          shippingAddress: SHIPPING
+          shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     }
 
     const first = await service.create(order)
@@ -258,7 +265,8 @@ describe('OrdersService against a real database', () => {
       service.create({
         items: [{ productId, quantity: 3 }],
         idempotencyKey: `${SKU_PREFIX}declined`,
-          shippingAddress: SHIPPING
+          shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
       })
     ).rejects.toMatchObject({ status: 402 })
 
@@ -279,7 +287,8 @@ describe('OrdersService against a real database', () => {
     await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${SKU_PREFIX}sold-one`,
-          shippingAddress: SHIPPING
+          shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
     })
 
     const products = new ProductsService(
@@ -307,7 +316,8 @@ describe('OrdersService against a real database', () => {
       const { order } = await service.create({
         items: [{ productId, quantity: 1 }],
         idempotencyKey: `${SKU_PREFIX}snapshot`,
-          shippingAddress: SHIPPING
+          shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
       })
 
       await source.query(
