@@ -40,22 +40,22 @@ graph TD
         R3 -- found --> OK1[200 - product]
     end
 
-    subgraph Retire["Discontinue / Restore - JWT required"]
-        T1[PATCH :id/discontinue] --> T2[find ignoring status]
+    subgraph Retire["Discontinue and restore, JWT required"]
+        T1["PATCH /products/:id/discontinue"] --> T2["find ignoring status"]
         T2 -- none --> E404
-        T2 -- already retired --> OK4[200 - date unchanged]
-        T2 -- on sale --> T3[(SET discontinued_at = now)]
+        T2 -- "already retired" --> OK4["200, date unchanged"]
+        T2 -- "on sale" --> T3[("SET discontinued_at = now")]
         T3 --> OK4
-        T4[PATCH :id/restore] --> T5[(SET discontinued_at = NULL)]
-        T5 --> OK5[200 - back on sale]
+        T4["PATCH /products/:id/restore"] --> T5[("SET discontinued_at = NULL")]
+        T5 --> OK5["200, back on sale"]
     end
 
-    subgraph Delete["Delete - JWT required"]
-        D1[DELETE /products/:id] --> D2[find ignoring status]
+    subgraph Delete["Delete, JWT required"]
+        D1["DELETE /products/:id"] --> D2["find ignoring status"]
         D2 -- none --> E404
-        D2 -- found --> D3[(DELETE)]
-        D3 -- referenced by an order line --> E409r[409 RESOURCE_IN_USE]
-        D3 -- ok --> OK3[204]
+        D2 -- found --> D3[("DELETE")]
+        D3 -- "referenced by an order line" --> E409r["409 RESOURCE_IN_USE"]
+        D3 -- ok --> OK3["204"]
     end
 ```
 

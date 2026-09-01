@@ -21,27 +21,27 @@ the history records how it got there, including the times it went back on sale.
 ```mermaid
 graph TD
     subgraph Write["Any write to products"]
-        W1[PATCH /products/:id] --> DB[(products)]
-        W2[POST /products] --> DB
-        W3[DELETE /products/:id] --> DB
-        W4[CSV import upsert] --> DB
-        W5[psql by hand / a future service] --> DB
-        DB --> TR{{trigger trg_product_history}}
-        TR -- INSERT --> H1[operation INSERT, new_data]
-        TR -- DELETE --> H2[operation DELETE, old_data]
-        TR -- UPDATE --> C{any column differs,<br/>ignoring updatedAt?}
-        C -- no --> STOP[nothing written]
-        C -- yes --> H3[operation UPDATE, old_data,<br/>new_data, changed_fields]
-        H1 --> HT[(product_history)]
+        W1["PATCH /products/:id"] --> DB[("products")]
+        W2["POST /products"] --> DB
+        W3["DELETE /products/:id"] --> DB
+        W4["CSV import upsert"] --> DB
+        W5["psql by hand, or a future service"] --> DB
+        DB --> TR["trigger trg_product_history"]
+        TR -- INSERT --> H1["operation INSERT, new_data"]
+        TR -- DELETE --> H2["operation DELETE, old_data"]
+        TR -- UPDATE --> C{"any column differs, ignoring updatedAt?"}
+        C -- no --> STOP["nothing written"]
+        C -- yes --> H3["operation UPDATE, old_data, new_data, changed_fields"]
+        H1 --> HT[("product_history")]
         H2 --> HT
         H3 --> HT
     end
 
-    subgraph Read["Read - JWT required"]
-        R1[GET /products/:id/history] --> R2[ParseUUIDPipe]
-        R2 -- not a UUID --> E400[400]
-        R2 -- ok --> R3[SELECT by product_id,<br/>newest first, paginated]
-        R3 --> OK[200 - entries]
+    subgraph Read["Read, JWT required"]
+        R1["GET /products/:id/history"] --> R2["ParseUUIDPipe"]
+        R2 -- "not a UUID" --> E400["400"]
+        R2 -- ok --> R3["SELECT by product_id, newest first, paginated"]
+        R3 --> OK["200, entries"]
     end
 ```
 
