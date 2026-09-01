@@ -38,8 +38,7 @@ graph LR
         B3[GET /products/import/batches]
         B4[GET /orders and /orders/:id]
         B5[GET /status/db and /status/redis]
-        B6["/users/*"]
-        B7[GET /auth/me]
+        B6[GET /auth/me]
     end
 ```
 
@@ -87,7 +86,7 @@ sequenceDiagram
 | Controller | [auth.controller.ts](../../api/src/modules/auth/auth.controller.ts) | `sign-in`, `sign-up`, `me` |
 | Service | [auth.service.ts](../../api/src/modules/auth/auth.service.ts) | `bcrypt.compare`, token signing, strips the password from the result |
 | Module | [auth.module.ts](../../api/src/modules/auth/auth.module.ts) | JWT configuration |
-| Users | [users.service.ts](../../api/src/modules/users/users.service.ts) | Lookup and password hashing |
+| Users | [users.service.ts](../../api/src/modules/users/users.service.ts) | Lookup and password hashing. No controller: the account CRUD it used to serve was removed, the challenge does not ask for it, and it had no authorization of its own |
 | Composition | [app.module.ts](../../api/src/app.module.ts) | `{ provide: APP_GUARD, useClass: JwtAuthGuard }` |
 | Seed | [1787788800000-demo-user.ts](../../api/src/database/migrations/1787788800000-demo-user.ts) | `demo@demo.com` / `demo`, idempotent |
 

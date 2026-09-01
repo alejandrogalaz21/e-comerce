@@ -15,7 +15,7 @@
 
 ## 2. Stack real confirmado
 
-- **BE**: NestJS 10, TypeORM 0.3 + `pg` (PostgreSQL 13), `class-validator`/`class-transformer`, `@nestjs/config`, Swagger en `/api/v1/docs`, JWT+Passport funcional, paginación propia (`PaginationHelper` + `PaginationResponseBuilder`, documentada en `api/PAGINATION_GUIDE.md`).
+- **BE**: NestJS 10, TypeORM 0.3 + `pg` (PostgreSQL 13), `class-validator`/`class-transformer`, `@nestjs/config`, Swagger en `/api/v1/docs`, JWT+Passport funcional, paginación propia (`PaginationHelper` + `PaginationResponseBuilder`).
 - **FE**: React 18, Vite 5, TypeScript strict, MUI v5 + `@mui/x-data-grid`, **SWR + axios** (no TanStack Query), react-hook-form + zod, sonner (toasts), react-router-dom v6.
 
 ### Decisión: TanStack Query (React Query) como capa de server state — actualizada 2026-08-26

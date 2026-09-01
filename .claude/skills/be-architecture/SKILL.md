@@ -94,4 +94,4 @@ LoggerMiddleware → (Guard) → ValidationPipe (DTO: transform + whitelist + fo
 3. DTOs in `dto/` with validation + Swagger examples (reuse `common/transformers`).
 4. Service with business logic; list endpoints use `PaginationHelper` + `PaginationResponseBuilder`.
 5. Controller: routes + pipes (`ParseUUIDPipe` on ids) + `@ApiTags`/`@ApiResponse`.
-6. Register in `app.module.ts`. Specs for service + DTO. Update `api/API_ENDPOINTS.md`.
+6. Register in `app.module.ts`. Specs for service + DTO. Document the endpoints with Swagger decorators — the generated `/api/v1/docs` is the API reference.

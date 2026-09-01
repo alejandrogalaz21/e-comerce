@@ -5,7 +5,7 @@ flow with a faked payment.
 
 - **Sample CSV download date: 2026-08-26**
 - Stack: NestJS 10 + TypeORM + PostgreSQL 16 + Redis · React 18 + Vite + MUI · Docker Compose
-- **521 automated tests** across four levels, plus five manual cases with their evidence
+- **596 automated tests** across four levels, plus eight manual cases with their evidence
 
 **Start here:** `docker compose up --build`, then http://localhost:3000. The shop is the front
 door and needs no account; sign in with `demo@demo.com` / `demo` to manage the catalog.
@@ -29,6 +29,19 @@ change never rewrites history. The order detail also shows the **idempotency key
 returns the same order instead of charging twice) and the **payment reference** returned by the
 simulated provider, prefixed `fake_ch_` so it is obvious no real charge happened. A declined order
 shows its decline reason instead.
+
+### Where the work went beyond the checklist
+
+The brief says the point is not completing the requirements but showing judgement. These are the
+five places that judgement is visible, each with something you can run:
+
+| | What | Evidence |
+|---|---|---|
+| **Concurrency** | Two buyers, one unit left. Rows are locked `FOR UPDATE` **ordered by `id`**, which is what stops two multi-line orders from deadlocking. Stock lands on zero, never `-1` | [`orders.concurrency.spec.ts`](api/src/modules/orders/orders.concurrency.spec.ts) — 8 cases against a real Postgres, not mocks |
+| **Idempotency** | The key is minted when the cart fills, not when the button is pressed. Replays are decided by `UNIQUE(idempotency_key)` and a caught unique violation, never by a read-then-write | [P-04](docs/processes/P-04-order-placement.md) · [`create-order.dto.spec.ts`](api/src/modules/orders/dto/create-order.dto.spec.ts) |
+| **Money** | `numeric` in the column, string on the wire, **integer cents** in the sum. Each line freezes `unit_price_snapshot`, so a price change never rewrites a past order | [`orders.service.spec.ts`](api/src/modules/orders/orders.service.spec.ts), with prices that break in binary floating point |
+| **A hostile CSV** | The provided file contains `<script>` payloads, an injection SKU, a duplicate SKU, `"free"` as a price and negative stock. Every row lands in a named bucket and the import never returns a 500 | [`import.integration.spec.ts`](api/src/modules/import/import.service.spec.ts) · [`product-csv-cases.spec.ts`](web/e2e/product-csv-cases.spec.ts) |
+| **Saying no** | [What is not built, and why](#what-is-not-built-and-why) and [Alternatives considered](#alternatives-considered) — including the one real limit of this design: the charge runs inside the database transaction, which is right for a local provider and wrong for a remote one |
 
 ## How to run
 
@@ -115,16 +128,16 @@ first launch.
 
 ## How to run the tests
 
-**521 automated tests.** Every level runs green; the browser suite needs the stack up.
+**596 automated tests.** Every level runs green; the browser suite needs the stack up.
 
 | Suite | What it covers | Count | Command |
 |---|---|---|---|
-| API unit + fixture + real database | Domain logic, the real 97-row CSV, and locking and filtering against Postgres | 299 | `cd api && npm test` |
+| API unit + fixture + real database | Domain logic, the real 97-row CSV, and locking and filtering against Postgres | 323 | `cd api && npm test` |
 | API end to end | The real HTTP stack: global pipe and exception filter on a live request | 5 | `cd api && npm run test:e2e` |
-| Web unit | URL state, mappers, schemas, token handling | 152 | `cd web && npm test` |
-| Browser end to end | The whole app driven by Playwright | 65 | `cd web && npm run test:e2e` |
+| Web unit | URL state, mappers, schemas, token handling | 192 | `cd web && npm test` |
+| Browser end to end | The whole app driven by Playwright | 76 | `cd web && npm run test:e2e` |
 
-Playwright reports 66: the extra one is the sign-in fixture that runs as its own project, not a test.
+Playwright reports 77: the extra one is the sign-in fixture that runs as its own project, not a test.
 
 ```bash
 docker compose up -d --build     # the browser suite needs the stack
@@ -256,9 +269,17 @@ part built most defensively.
 
 **Nothing half-happens.** Order, stock and charge share one transaction. The charge runs *inside*
 it rather than after: if it ran after, a decline would leave stock discounted against an order
-that was never paid. With a real gateway this stops being enough — a `ROLLBACK` cannot undo a
-remote charge — and the answer becomes compensation or a saga. That is a known limit, not an
-oversight.
+that was never paid.
+
+**With a real gateway this stops being enough**, and the limit is worth stating plainly. Two
+things break. A `ROLLBACK` cannot undo a remote charge, so a commit that fails after an approved
+charge leaves money taken against no order. And the transaction holds `FOR UPDATE` locks on the
+catalog rows for as long as the provider takes to answer, so a slow gateway serialises every
+purchase of the same product and drains the connection pool. The production shape is to take the
+external call out of the transaction — `authorize` → commit the order and the stock → `capture`,
+with a reconciliation pass for authorisations that never got captured — or an outbox with
+compensation. A synchronous in-process provider has neither failure mode, which is why the
+simpler version is the right one to ship here and the wrong one to ship with Stripe behind it.
 
 **No overselling.** Rows are locked with `SELECT ... FOR UPDATE` (pessimistic; the alternative and
 its trade-off are in [docs/initial.md](docs/initial.md) §5). They are locked **ordered by `id`**,
@@ -342,6 +363,36 @@ key, so the checkout mints a fresh one.
 Reading orders (`GET /orders`) requires a session; placing one does not. The buyer's confirmation
 travels in the `POST` response.
 
+## How this was built
+
+The brief says the interesting part is not completing the requirements but asking the right
+questions. So the process is in the repository, not just its output.
+
+Every feature went through the same loop, and each step left a file behind:
+
+```
+docs/backlog.md            a ticket (TK-###) with the problem, not the solution
+        ↓
+openspec/changes/<name>/   proposal.md  — what changes and why
+                           design.md    — the decision, and what was rejected
+                           specs/       — the behaviour, written before the code
+                           tasks.md     — the work, checked off as it lands
+        ↓
+feature/TK-###             one branch, one pull request
+        ↓
+openspec/specs/            the spec is merged into the living specification
+openspec/changes/archive/  the proposal is archived with its date
+```
+
+`openspec/changes/archive/` holds 23 of these. They are the record of what was decided and what
+was turned down — [orders-and-fake-payment](openspec/changes/archive/2026-08-29-orders-and-fake-payment/)
+is the one to open if you open one: it is where locking, idempotency and the declined-charge path
+were argued out before any of it was written.
+
+Three of the decisions in this readme's [alternatives](#alternatives-considered) table began as a
+rejected option in one of those design documents. The concurrency test, the integer-cents total
+and the shipping-address columns exist because the proposal asked what would break first.
+
 ## Decision documentation
 
 | Document | Content |
@@ -402,12 +453,30 @@ Stating this is more useful than letting a reviewer wonder whether it was forgot
 | Reusable address book | Buying is anonymous, so there is no account to attach saved addresses to. Each order carries the address it was given |
 | Product images | No image data in the source CSV |
 | Content Security Policy | Traded for a working Swagger page; see [P-08](docs/processes/P-08-security-hardening.md) |
-| Rate limiting on sign-in | Would matter in production; the project has one seeded user |
+| User administration | Product CRUD, import, search and purchase are what the challenge asks for. A `/users` CRUD existed and was removed: it sat behind the JWT guard with no ownership or role check, so any signed-in account could change or delete any other. Sign-up stays, closed behind a session |
 
-## A note on comments
+## How AI was used, and where the reasoning lives
 
-The challenge asks for AI-generated comments to be removed. The comments that remain were written
-deliberately and state **why**, not what: why the row lock is ordered by `id`, why idempotency
-inserts and catches instead of checking first, why a declined charge is a return value rather than
-an exception. Deleting them would satisfy the letter of the request and throw away the context that
-makes the code reviewable. They are few, and every one of them earns its place.
+AI was used throughout, as a spec-guided tool rather than a code generator: every feature went
+through a written proposal before any code existed, and the proposals are in the repository.
+
+The challenge asks for two things that fit together. Comments come out of the code; decisions,
+approach and alternatives go in the readme. So the source carries no comments — the only
+survivors are lint and compiler directives — and the reasoning lives where a reader is told to
+look for it:
+
+| Question | Where it is answered |
+|---|---|
+| Why is the row lock ordered by `id`? | [P-04](docs/processes/P-04-order-placement.md), with the deadlock drawn out |
+| Why does idempotency insert and catch instead of checking first? | [P-04](docs/processes/P-04-order-placement.md) · [Alternatives considered](#alternatives-considered) |
+| Why is a declined charge a return value and not an exception? | [P-05](docs/processes/P-05-payment-processing.md) |
+| Why is a duplicate SKU rejected on every row? | [P-01](docs/processes/P-01-csv-import.md) |
+| Why does the whole cache prefix get invalidated? | [Alternatives considered](#alternatives-considered) |
+
+Two constraints were too important to leave at arm's length, so they moved into code that runs
+rather than code that is read: `resolveJwtSecret` throws with the reason a placeholder secret
+stops the boot, and the tests are named for the property they defend rather than the method they
+call.
+
+`openspec/` is the trail. Each folder is one feature: what was proposed, what was decided, what
+was built, and what was archived once it shipped.
