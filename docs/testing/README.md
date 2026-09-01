@@ -36,7 +36,6 @@ because of that edit and nothing else.
 |---|---|---|
 | `LoanPro Code Challenge E-Commerce.csv` | `Budget running shoes...`, `49.99`, `200` | TC-01 |
 | `...-T1.csv` | `UPDATED DESCRIPTION`, `59.99`, `150` | TC-02, and TC-03 step 1 |
-| `...-T2.csv` | identical to T1 | interchangeable with T1 |
 | `...-T3.csv` | same as T1 but `64.99` | TC-03 step 2 |
 
 ## Cases
