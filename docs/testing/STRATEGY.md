@@ -1,187 +1,205 @@
-# Estrategia de pruebas
+# Testing strategy
 
-Qué se prueba, a qué nivel, y — más útil aún — **qué no se prueba a propósito**.
+What is tested, at which level, and — more usefully — **what is deliberately not tested**.
 
-El ticket del backlog que originó esto (TK-016) se escribió cuando la cobertura era 0%. Hoy son
-**222 tests unitarios de API, 108 unitarios de web, 48 tests de navegador con Playwright y 5 e2e de
-API**, más ocho casos manuales. Este documento explica la forma que tomaron.
+The backlog ticket that started this (TK-016) was written when coverage was 0%. Today it is
+**323 API tests, 192 web unit tests, 76 Playwright browser tests and 5 API end-to-end tests**,
+plus eight manual cases. This document explains the shape they took.
 
-Cada caso está enumerado en [MATRIX.md](MATRIX.md): propósito, pasos y resultado esperado, una fila
-por caso de uso.
+Every case is enumerated in [MATRIX.md](MATRIX.md): purpose, steps and expected result, one row
+per use case.
 
-## El principio
+## The principle
 
-**Un test se gana su sitio si puede fallar por un motivo real.** Un test que afirma que se llamó a
-un mock demuestra que el código llama a un mock. Donde la garantía vive en Postgres — bloqueo de
-filas, restricciones únicas, claves foráneas — el test corre contra una base de datos real, porque
-un repositorio mockeado solo puede afirmar que el código *dice* `FOR UPDATE`, nunca que funciona.
+**A test earns its place if it can fail for a real reason.** A test asserting that a mock was
+called proves that the code calls a mock. Where the guarantee lives in Postgres — row locking,
+unique constraints, foreign keys — the test runs against a real database, because a mocked
+repository can only assert that the code *says* `FOR UPDATE`, never that it works.
 
-Esa única decisión explica casi toda la estructura de abajo.
+That single decision explains almost all of the structure below.
 
-## Los niveles
+## The levels
 
-| Nivel | Corre contra | Comando | Cantidad |
+| Level | Runs against | Command | Count |
 |---|---|---|---|
-| **Unitario** | Mocks | `npm test` en `api/` | ~208 |
-| **Integración (fixture real)** | El CSV del challenge de 97 filas, con repositorios mockeados | `npm test` | 7 |
-| **Integración (base de datos real)** | Postgres en `:5432`, se omite si no está | `npm test` | 7 |
-| **e2e de API** | El stack HTTP real vía supertest, se omite sin base de datos | `npm run test:e2e` en `api/` | 5 |
-| **Unitario de frontend** | Funciones puras, sin jsdom | `npm test` en `web/` | 108 |
-| **e2e de navegador** | El stack Docker completo, conducido por Playwright | `npm run test:e2e` en `web/` | 48 |
-| **Manual** | El stack Docker completo | [docs/testing/](.) | 8 casos |
+| **Unit** | Mocks | `npm test` in `api/` | ~308 |
+| **Integration (real fixture)** | The 97-row challenge CSV, with mocked repositories | `npm test` | 7 |
+| **Integration (real database)** | Postgres on `:5432`, skipped when absent | `npm test` | 8 |
+| **API end to end** | The real HTTP stack via supertest, skipped without a database | `npm run test:e2e` in `api/` | 5 |
+| **Frontend unit** | Pure functions, no jsdom | `npm test` in `web/` | 192 |
+| **Browser end to end** | The full Docker stack, driven by Playwright | `npm run test:e2e` in `web/` | 76 |
+| **Manual** | The full Docker stack | [docs/testing/](.) | 8 cases |
 
-`npm test` pasa con o sin Docker levantado. Los specs que dependen de la base detectan su ausencia y
-se omiten con un mensaje en lugar de fallar, de modo que quien revise ejecutando solo la suite
-unitaria igual obtiene una ejecución verde.
+`npm test` passes with or without Docker running. The database-backed specs detect its absence and
+skip with a message rather than failing, so a reviewer running only the unit suite still gets a
+green run.
 
-## Qué cubre cada suite
+## What each suite covers
 
-### Unitarios de API — 222 tests
+### API tests — 323
 
-| Suite | Tests | Qué protege |
+| Suite | Tests | What it protects |
 |---|---|---|
-| `products.service.spec.ts` | 35 | Construcción de consultas, filtros, orden, manejo de decimales |
-| `import.service.spec.ts` | 25 | Validación fila a fila con los casos reales del archivo de muestra |
-| `create-product.dto.spec.ts` | 19 | Cada regla de campo, incluido el rechazo de HTML |
-| `product-filters.dto.spec.ts` | 18 | Transformación de parámetros, límites, validación cruzada de precios |
-| `orders.service.spec.ts` | 15 | Lógica de compra: totales, snapshots, idempotencia, manejo de rechazos |
-| `http-exception.filter.spec.ts` | 13 | El sobre de error, resolución de códigos, sin fugas |
-| `import.hardening.spec.ts` | 13 | Archivos malformados, vacíos, sobredimensionados y de tipo incorrecto |
-| `import.attribution.spec.ts` | 11 | Quién ejecutó una importación |
-| `database-error.translator.spec.ts` | 8 | Códigos de Postgres → HTTP, una sola traducción para todos los módulos |
-| `import.integration.spec.ts` | 7 | El CSV real de 97 filas de punta a punta |
-| `orders.concurrency.spec.ts` | 7 | **Postgres real**: bloqueo, orden anti-deadlock, rollback, negativa de la FK |
-| `jwt-auth.guard.spec.ts` | 6 | Comportamiento fail-closed y la salida `@Public()` |
-| `security.spec.ts` | 6 | CORS nunca resuelve a `*`; la importación lleva un límite de tasa estricto |
-| `fake-payment.provider.spec.ts` | 4 | Aprobar, rechazar, determinismo con fuente fija, la tasa de ~10% |
-| `products.controller.spec.ts` | 4 | Cableado y códigos de estado |
-| `route-protection.spec.ts` | 3 | Qué endpoints son públicos y cuáles no |
+| `products.service.spec.ts` | 35 | Query building, filters, ordering, decimal handling |
+| `import.service.spec.ts` | 25 | Row-by-row validation with the real cases from the sample file |
+| `create-order.dto.spec.ts` | 25 | The order contract: UUID key, shipping address, payment method, and every field name a client might use to send a price |
+| `route-protection.spec.ts` | 23 | Which endpoints are public and which are not, with no handler left unclassified |
+| `product-filters.dto.spec.ts` | 23 | Parameter transformation, bounds, cross-validation of prices |
+| `orders.service.spec.ts` | 23 | Purchase logic: totals, snapshots, idempotency, decline handling |
+| `create-product.dto.spec.ts` | 19 | Every field rule, including HTML rejection |
+| `http-exception.filter.spec.ts` | 17 | The error envelope, code resolution, no leaks |
+| `cache.service.spec.ts` | 14 | Key building, prefix invalidation, behaviour without Redis |
+| `import.hardening.spec.ts` | 13 | Malformed, empty, oversized and wrong-type files |
+| `products.cache.spec.ts` | 11 | The catalog cache and what invalidates it |
+| `orders.filters.spec.ts` | 11 | Order search by id, delivery details and sold lines |
+| `import.attribution.spec.ts` | 11 | Who ran an import |
+| `security.spec.ts` | 9 | CORS never resolves to `*`; the import carries a strict rate limit |
+| `app.configuration.spec.ts` | 9 | Weak and absent JWT secrets, proxy hops, CORS parsing |
+| `orders.concurrency.spec.ts` | 8 | **Real Postgres**: locking, deadlock-safe ordering, rollback, the FK refusal |
+| `database-error.translator.spec.ts` | 8 | Postgres codes → HTTP, one translation for every module |
+| `pagination.dto.spec.ts` | 7 | Page ceiling, integer validation, negative offsets |
+| `import.integration.spec.ts` | 7 | The real 97-row CSV end to end |
+| `jwt-auth.guard.spec.ts` | 6 | Fail-closed behaviour and the `@Public()` opt-out |
+| `users.service.spec.ts` | 4 | The password hash never leaves, on read or on write |
+| `products.controller.spec.ts` | 4 | Wiring and status codes |
+| `fake-payment.provider.spec.ts` | 4 | Approve, decline, determinism with a fixed source, the ~10% rate |
+| `auth.service.spec.ts` | 4 | Credential validation, token payload, no password in the response |
+| `rate-limit.spec.ts` | 3 | That a route ceiling actually reaches a request |
 
-### Unitarios de web — 108 tests
+### Web unit tests — 192
 
-Solo funciones puras: ida y vuelta del estado en la URL, mappers, esquemas, manejo del token, la
-regla de la clave de idempotencia. No hay React Testing Library ni jsdom en el proyecto, así que los
-componentes no se renderizan en tests — ver **Huecos** abajo.
+Pure functions only: URL state round-trips, mappers, schemas, token handling, the idempotency key
+rule. There is no React Testing Library and no jsdom in the project, so components are not rendered
+in tests — see **Gaps** below.
 
-| Suite | Tests | Qué protege |
+| Suite | Tests | What it protects |
 |---|---|---|
-| `product-list-params.test.ts` | 28 | Todo el estado de la vista sobreviviendo en la URL |
-| `product-schema.test.ts` | 18 | Reglas de cliente que reflejan el DTO del servidor |
-| `import-utils.test.ts` | 13 | Vocabulario de estados, forma del reporte |
-| `auth-token.test.ts` | 13 | Almacenamiento del token, expiración |
-| `purchase.mapper.test.ts` | 8 | El contrato de compra y la clasificación de errores |
-| `product.mapper.test.ts` | 7 | Cadenas decimales → números en el borde de render |
-| `error.test.ts` | 7 | Manejo de errores de autenticación |
-| `server-errors.test.ts` | 5 | Validación de servidor mapeada sobre los campos del formulario |
-| `idempotency-key.test.ts` | 4 | Acuñar al entrar, conservar después |
+| `product-list-params.test.ts` | 28 | The whole view state surviving in the URL |
+| `product-schema.test.ts` | 18 | Client rules mirroring the server DTO |
+| `purchase-params.test.ts` | 17 | Order filters in the address bar |
+| `searchbar/utils.test.ts` | 17 | Page search over the live navigation tree |
+| `import-utils.test.ts` | 13 | Status vocabulary, report shape |
+| `cart-reconcile.test.ts` | 13 | Contrasting the cart against the catalog before charging |
+| `auth-token.test.ts` | 13 | Token storage, expiry |
+| `purchase.mapper.test.ts` | 13 | The purchase contract and error classification |
+| `shop-params.test.ts` | 10 | Storefront search and filters in the URL |
+| `purchase-utils.test.ts` | 8 | Order presentation helpers |
+| `idempotency-key.test.ts` | 8 | Mint on entry, keep thereafter |
+| `error.test.ts` | 7 | Authentication error handling |
+| `product.mapper.test.ts` | 7 | Decimal strings → numbers at the render edge |
+| `category-icon.test.ts` | 6 | Category → icon, with a mandatory fallback |
+| `normalize-phone.test.ts` | 5 | Phone input normalisation |
+| `server-errors.test.ts` | 5 | Server validation mapped onto form fields |
+| `uuidv4.test.ts` | 4 | The local UUID generator |
 
-### End to end de navegador — 48 tests de Playwright
+### Browser end to end — 76 Playwright tests
 
-Conducidos contra el stack en marcha, con un solo worker (los specs comparten base de datos y el
-spec de importación reinicia la tabla de productos).
+Driven against the running stack with a single worker (the specs share a database and the import
+spec resets the products table).
 
-| Suite | Tests | Qué protege |
+| Suite | Tests | What it protects |
 |---|---|---|
-| `product-filters.spec.ts` | 8 | Orden a través del catálogo, chips, recarga y atrás, anchos recordados |
-| `auth-session.spec.ts` | 7 | Redirecciones, volver a la ruta pedida, recarga, logout, la tienda pública |
-| `products-crud.spec.ts` | 5 | Crear, editar, borrar por el diálogo de confirmación, la grilla de tienda |
-| `product-csv-cases.spec.ts` | 6 | Las filas problemáticas del CSV de muestra, ejercitadas por el formulario real |
-| `import-batch-search.spec.ts` | 4 | Encontrar un lote por nombre de archivo, sin distinguir mayúsculas |
-| `product-import.spec.ts` | 4 | Subir el CSV real del challenge y ver el reporte |
-| `product-import-batches.spec.ts` | 3 | Listado de historial y detalle del lote |
-| `product-search.spec.ts` | 2 | Búsqueda en servidor y su estado vacío |
-| `purchase.spec.ts` | 8 | El checkout completo: compra, rechazo forzado, conflicto de stock, doble clic en vuelo, comprador anónimo |
+| `storefront.spec.ts` | 14 | The public shop: search, category chips, pagination, the mini cart, the routes a guest meets |
+| `purchase.spec.ts` | 12 | The full checkout: purchase, forced decline, a line that sold out, in-flight double click, anonymous buyer, the order read back by an administrator |
+| `dashboard-page-search.spec.ts` | 11 | The dashboard page search: shortcut, highlighting, empty state |
+| `product-filters.spec.ts` | 8 | Sorting across the catalog, chips, reload and back, remembered widths |
+| `auth-session.spec.ts` | 7 | Redirects, returning to the requested route, reload, logout, the public shop |
+| `product-csv-cases.spec.ts` | 6 | The hostile rows of the sample CSV, exercised through the real form |
+| `products-crud.spec.ts` | 5 | Create, edit, delete through the confirm dialog, the shop grid |
+| `product-import.spec.ts` | 4 | Uploading the real challenge CSV and reading the report |
+| `import-batch-search.spec.ts` | 4 | Finding a batch by filename, case-insensitively |
+| `product-import-batches.spec.ts` | 3 | History listing and batch detail |
+| `product-search.spec.ts` | 2 | Server-side search and its empty state |
 
-`product-csv-cases.spec.ts` es el interesante: toma las filas genuinamente hostiles del archivo del
-challenge — la carga `<script>`, el sku con inyección SQL, el nombre de solo espacios — y las
-conduce por el formulario real, demostrando que la defensa aguanta donde un usuario la encontraría.
+`product-csv-cases.spec.ts` is the interesting one: it takes the genuinely hostile rows from the
+challenge file — the `<script>` payload, the SQL-injection sku, the whitespace-only name — and
+drives them through the real form, proving the defence holds where a user would meet it.
 
-### End to end de API — 5 tests
+### API end to end — 5 tests
 
-`test/app.e2e-spec.ts`, vía supertest. Lo que aporta sobre las suites unitarias es el **stack HTTP
-real**: el pipe global y el filtro de excepciones corriendo de verdad sobre una petición, cosa que
-ningún mock puede mostrar.
+`test/app.e2e-spec.ts`, via supertest. What it adds over the unit suites is the **real HTTP
+stack**: the global pipe and the exception filter actually running over a request, which no mock
+can show.
 
-## Los tests que más importan
+## The tests that matter most
 
-Si vas a leer cuatro, lee estos — cubren comportamiento que sale caro equivocar.
+If you are going to read four, read these — they cover behaviour that is expensive to get wrong.
 
-**`orders.concurrency.spec.ts` — dos compradores, una unidad.** Base de datos real. Dispara dos
-compras simultáneas del último ítem y afirma que exactamente una tiene éxito y que el stock aterriza
-en cero, jamás en `-1`. Cubre además el caso de interbloqueo que `initial.md` §5 no contempla: dos
-pedidos que listan los mismos productos en secuencia opuesta.
+**`orders.concurrency.spec.ts` — two buyers, one unit.** Real database. Fires two simultaneous
+purchases of the last item and asserts that exactly one succeeds and that stock lands on zero,
+never `-1`. It also covers the deadlock case `initial.md` §5 does not consider: two orders listing
+the same products in opposite sequence.
 
-**`orders.service.spec.ts` — el total se suma en céntimos enteros.** Usa precios que se rompen en
-coma flotante binaria y afirma que el total es exacto al céntimo.
+**`orders.service.spec.ts` — the total summed in integer cents.** Uses prices that break in binary
+floating point and asserts the total is exact to the cent.
 
-**`import.integration.spec.ts` — el archivo real de 97 filas.** Afirma la cubeta exacta en la que
-cae cada fila. Es el test que atrapó el bug TK-047: había *codificado* el defecto, esperando que las
-filas rechazadas llegaran sin nombre.
+**`import.integration.spec.ts` — the real 97-row file.** Asserts the exact bucket every row lands
+in. It is the test that caught bug TK-047: it had *encoded* the defect, expecting rejected rows to
+arrive without a name.
 
-**`fake-payment.provider.spec.ts` — determinismo con fuente fija.** El proveedor rechaza ~10% de los
-cobros a propósito, y esto demuestra que la aleatoriedad es inyectable para que ningún otro test
-dependa de la suerte.
+**`fake-payment.provider.spec.ts` — determinism with a fixed source.** The provider declines ~10%
+of charges on purpose, and this proves the randomness is injectable so no other test depends on
+luck.
 
-## Qué no se prueba, deliberadamente
+## What is deliberately not tested
 
-Declarar esto es el sentido de un documento de estrategia; una lista de lo que existe es solo un
-informe.
+Stating this is the point of a strategy document; a list of what exists is just a report.
 
-| No se prueba | Por qué |
+| Not tested | Why |
 |---|---|
-| **Componentes React aislados** | No hay jsdom ni Testing Library en el proyecto. El comportamiento de componentes se cubre donde realmente importa — en un navegador real, con los specs de Playwright — en vez de en un DOM simulado. |
-| **La tasa real de ~10% de rechazo en un navegador** | `purchase.spec.ts` fuerza un rechazo interceptando la respuesta, lo que lo mantiene determinista. La tasa se afirma sobre un barrido uniforme en `fake-payment.provider.spec.ts`, y observarla en la app en marcha queda manual ([TC-05](TC-05-purchase-flow.md), [TC-06](TC-06-concurrency-and-races.md)). |
-| **El límite de tasa bajo carga real** | La configuración se afirma; disparar 300 peticiones en un test sería lento y demostraría poco. |
-| **Las cabeceras individuales de Helmet** | Afirmar que una librería pone sus propias cabeceras es testear la librería. |
-| **La caída de una dependencia a mitad de operación** | Parar un contenedor durante una transacción no se automatiza barato. Es el eje de [TC-06 · R9](TC-06-concurrency-and-races.md) y [TC-08](TC-08-status-and-degradation.md). |
-| **El rollback de migraciones** | Verificado a mano al escribirlas; automatizarlo requiere una base desechable por ejecución. |
+| **React components in isolation** | There is no jsdom and no Testing Library in the project. Component behaviour is covered where it actually matters — in a real browser, with the Playwright specs — rather than in a simulated DOM. |
+| **The real ~10% decline rate in a browser** | `purchase.spec.ts` forces a decline by intercepting the response, which keeps it deterministic. The rate is asserted over a uniform sweep in `fake-payment.provider.spec.ts`, and observing it in the running app is left manual ([TC-05](TC-05-purchase-flow.md), [TC-06](TC-06-concurrency-and-races.md)). |
+| **Rate limiting under real load** | The configuration is asserted; firing 300 requests in a test would be slow and prove little. |
+| **Helmet's individual headers** | Asserting that a library sets its own headers is testing the library. |
+| **A dependency failing mid-operation** | Stopping a container during a transaction does not automate cheaply. It is the axis of [TC-06 · R9](TC-06-concurrency-and-races.md) and [TC-08](TC-08-status-and-degradation.md). |
+| **Migration rollback** | Verified by hand when writing them; automating it needs a throwaway database per run. |
 
-## Debilidades conocidas
+## Known weaknesses
 
-- **Una suite unitaria de mocks puede alejarse de la realidad.** Se mitiga con las suites contra base
-  real y contra fixture real, que es donde vive toda garantía que dependa de Postgres.
-- **Los specs contra base de datos comparten la base de desarrollo.** Siembran filas con un prefijo
-  `CONCURRENCY-TEST-` y las borran después. Una base de test dedicada sería más limpia; el prefijo
-  es la versión pragmática.
-- **No hay umbral de cobertura forzado en CI.** La cobertura está disponible con `npm run test:cov`,
-  pero una puerta porcentual tiende a premiar tests escritos para subir un número.
-- **Los casos manuales no tienen guarda de obsolescencia.** [TC-05](TC-05-purchase-flow.md) llegó a
-  documentar un payload de `POST /orders` que la API ya rechazaba, porque el DTO endureció la clave
-  de idempotencia y añadió la dirección de envío sin que nadie volviera al documento. Cuando cambie
-  un contrato, `MATRIX.md` y los TC se revisan con él.
+- **A mock-based unit suite can drift from reality.** Mitigated by the real-database and
+  real-fixture suites, which is where every guarantee that depends on Postgres lives.
+- **The database-backed specs share the development database.** They seed rows with a
+  `CONCURRENCY-TEST-` prefix and delete them afterwards. A dedicated test database would be
+  cleaner; the prefix is the pragmatic version.
+- **There is no enforced coverage threshold in CI.** Coverage is available with
+  `npm run test:cov`, but a percentage gate tends to reward tests written to raise a number.
+- **The manual cases have no staleness guard.** [TC-05](TC-05-purchase-flow.md) once documented a
+  `POST /orders` payload the API already rejected, because the DTO hardened the idempotency key and
+  added the shipping address without anyone returning to the document. When a contract changes,
+  `MATRIX.md` and the TCs are reviewed with it.
 
-## Ejecutarlos
+## Running them
 
 ```bash
-# API: unitarios + fixture + contra base de datos (los ultimos se omiten sin Postgres)
+# API: unit + fixture + against a real database (the last are skipped without Postgres)
 cd api && npm test
 
-# API de punta a punta por el stack HTTP real (se omite sin base de datos)
+# API end to end through the real HTTP stack (skipped without a database)
 cd api && npm run test:e2e
 
-# Unitarios de web
+# Web unit
 cd web && npm test
 
-# Navegador de punta a punta — necesita todo el stack levantado
+# Browser end to end — needs the whole stack up
 docker compose up -d --build
 cd web && npm run test:e2e
 
-# Cobertura
+# Coverage
 cd api && npm run test:cov
 ```
 
-Última ejecución completa, 2026-08-29: **222 + 5 + 108 + 48 = 383 tests automáticos, todos pasando.**
+Last full run, 2026-09-01: **323 + 5 + 192 + 76 = 596 automated tests, all passing.**
 
-## Casos manuales
+## Manual cases
 
-Los tests automáticos no pueden comprobar que una pantalla se lea bien, ni que un contenedor caído
-degrade con elegancia. Los ocho casos de [docs/testing/](.) cubren lo que las suites no alcanzan:
+Automated tests cannot check that a screen reads well, nor that a downed container degrades
+gracefully. The eight cases in [docs/testing/](.) cover what the suites cannot reach:
 
-| Caso | Qué cubre que lo automático no |
+| Case | What it covers that automation does not |
 |---|---|
-| [TC-01](TC-01-initial-import.md) – [TC-03](TC-03-unchanged-does-not-write.md) | El pipeline de importación contra el archivo real, con el reporte a la vista |
-| [TC-04](TC-04-report-consistency-and-layout.md) | Legibilidad del reporte: iconos, orden de columnas, layout |
-| [TC-05](TC-05-purchase-flow.md) | El flujo de compra completo, incluido el rechazo del pago tal como lo ve un cliente |
-| [TC-06](TC-06-concurrency-and-races.md) | **Concurrencia observable**: la carrera, los interbloqueos y el rollback contra el stack real, no contra un spec |
-| [TC-07](TC-07-login-and-permissions.md) | La matriz público/protegido comprobada endpoint por endpoint, y la manipulación de tokens |
-| [TC-08](TC-08-status-and-degradation.md) | Parar Postgres o Redis y ver que la API responde `ok:false` en vez de `500` |
+| [TC-01](TC-01-initial-import.md) – [TC-03](TC-03-unchanged-does-not-write.md) | The import pipeline against the real file, with the report in view |
+| [TC-04](TC-04-report-consistency-and-layout.md) | Report readability: icons, column order, layout |
+| [TC-05](TC-05-purchase-flow.md) | The full purchase flow, including the declined payment as a customer meets it |
+| [TC-06](TC-06-concurrency-and-races.md) | **Observable concurrency**: the race, the deadlocks and the rollback against the real stack, not against a spec |
+| [TC-07](TC-07-login-and-permissions.md) | The public/protected matrix checked endpoint by endpoint, and token tampering |
+| [TC-08](TC-08-status-and-degradation.md) | Stopping Postgres or Redis and seeing the API answer `ok:false` instead of `500` |

@@ -1,103 +1,103 @@
-# Registro de pruebas manuales
+# Manual test log
 
-Evidencia del sistema ejercitado de punta a punta contra el stack de Docker. Cada caso registra qué
-se esperaba **antes** de ejecutarlo, qué ocurrió en realidad, y — cuando aplica — una captura del
-resultado.
+Evidence of the system exercised end to end against the Docker stack. Each case records what was
+expected **before** running it, what actually happened, and — where it applies — a screenshot of
+the result.
 
-## Entorno
+## Environment
 
 | | |
 |---|---|
 | App | `http://localhost:3000` |
 | API | `http://localhost:4000/api/v1` |
 | Swagger | `http://localhost:4000/api/v1/docs` |
-| Stack | `docker compose up -d --build` desde la raíz del repositorio |
-| Cuenta | `demo@demo.com` / `demo` |
-| Archivos de muestra | [`docs/csv/`](../csv/) — el CSV del challenge y dos variantes |
+| Stack | `docker compose up -d --build` from the repository root |
+| Account | `demo@demo.com` / `demo` |
+| Sample files | [`docs/csv/`](../csv/) — the challenge CSV and two variants |
 
-Reinicia el catálogo entre casos con:
+Reset the catalog between cases with:
 
 ```bash
 docker exec ecommerce-db psql -U postgres -d ecommerce -c "TRUNCATE TABLE order_items, orders, products, import_batches RESTART IDENTITY CASCADE;"
 ```
 
-> `order_items` y `orders` van primero a propósito: una línea de pedido referencia al producto con
-> `RESTRICT`, así que truncar `products` a solas es rechazado. Esa negativa es en sí misma el
-> comportamiento correcto.
+> `order_items` and `orders` come first on purpose: an order line references its product with
+> `RESTRICT`, so truncating `products` on its own is refused. That refusal is itself the correct
+> behaviour.
 >
-> `user` y `migrations` no se truncan nunca: la primera guarda la cuenta demo, la segunda es el
-> historial de esquema de TypeORM.
+> `user` and `migrations` are never truncated: the first holds the demo account, the second is
+> TypeORM's schema history.
 
-## Los archivos de muestra
+## The sample files
 
-Todas las variantes difieren del original **solo en la línea 55**, la fila `RS-050`. Mantener el
-cambio en una sola línea es lo que hace legibles los contadores: cualquier fila que cambie de cubeta
-lo hizo por esa edición y por nada más.
+Every variant differs from the original **only on line 55**, the `RS-050` row. Keeping the change
+to a single line is what makes the counters readable: any row that moves bucket did so because of
+that edit and nothing else.
 
-| Archivo | Línea 55 | Lo usa |
+| File | Line 55 | Used by |
 |---|---|---|
 | `LoanPro Code Challenge E-Commerce.csv` | `Budget running shoes...`, `49.99`, `200` | TC-01 |
-| `...-T1.csv` | `UPDATED DESCRIPTION`, `59.99`, `150` | TC-02, y paso 1 de TC-03 |
-| `...-T3.csv` | igual que T1 pero `64.99` | paso 2 de TC-03 |
+| `...-T1.csv` | `UPDATED DESCRIPTION`, `59.99`, `150` | TC-02, and step 1 of TC-03 |
+| `...-T3.csv` | same as T1 but `64.99` | step 2 of TC-03 |
 
-## Casos
+## The cases
 
-Ver [STRATEGY.md](STRATEGY.md) para qué está cubierto automáticamente, a qué nivel, y qué se deja
-deliberadamente a estos casos manuales. Ver [MATRIX.md](MATRIX.md) para la lista completa de casos
-de uso por proceso.
+See [STRATEGY.md](STRATEGY.md) for what is covered automatically, at which level, and what is
+deliberately left to these manual cases. See [MATRIX.md](MATRIX.md) for the full list of use cases
+by process.
 
-| # | Caso | Cubre | Estado |
+| # | Case | Covers | Status |
 |---|---|---|---|
-| [TC-01](TC-01-initial-import.md) | Importación inicial sobre un catálogo vacío | crear · rechazar · omitir · regla de SKU duplicado | ✅ Aprobado |
-| [TC-02](TC-02-upsert-existing-product.md) | Reimportación con un producto modificado | actualizar · sin cambios · orden por `updatedAt` | ✅ Aprobado |
-| [TC-03](TC-03-unchanged-does-not-write.md) | `Unchanged` no escribe, `Updated` sí | ausencia de escrituras · integridad de marcas de tiempo | ✅ Aprobado |
-| [TC-04](TC-04-report-consistency-and-layout.md) | Consistencia del reporte, columnas, filtros y layout | iconos de estado · SKU antes que Name · filtros · contrato de `name` | ⬜ Por ejecutar |
-| [TC-05](TC-05-purchase-flow.md) | Flujo de compra: stock, idempotencia y pago falso | pedido atómico · precio congelado · idempotencia · pago rechazado | ⬜ Por ejecutar |
-| [TC-06](TC-06-concurrency-and-races.md) | **Concurrencia, bloqueos y condiciones de carrera** | `FOR UPDATE` · interbloqueos · claves en paralelo · rollback · Redis caído | ⬜ Por ejecutar |
-| [TC-07](TC-07-login-and-permissions.md) | Login, sesión y matriz de permisos | público vs protegido · token alterado · límite de tasa · atribución | ⬜ Por ejecutar |
-| [TC-08](TC-08-status-and-degradation.md) | Status, salud y degradación de dependencias | escritura real en Redis · `ok:false` en vez de `500` · refresco automático | ⬜ Por ejecutar |
+| [TC-01](TC-01-initial-import.md) | Initial import into an empty catalog | create · reject · skip · duplicate SKU rule | ✅ Passed |
+| [TC-02](TC-02-upsert-existing-product.md) | Re-import with one product modified | update · unchanged · ordering by `updatedAt` | ✅ Passed |
+| [TC-03](TC-03-unchanged-does-not-write.md) | `Unchanged` writes nothing, `Updated` does | absence of writes · timestamp integrity | ✅ Passed |
+| [TC-04](TC-04-report-consistency-and-layout.md) | Report consistency, columns, filters and layout | status icons · SKU before Name · filters · the `name` contract | ⬜ To run |
+| [TC-05](TC-05-purchase-flow.md) | Purchase flow: stock, idempotency and the fake payment | atomic order · frozen price · idempotency · declined charge | ⬜ To run |
+| [TC-06](TC-06-concurrency-and-races.md) | **Concurrency, locking and race conditions** | `FOR UPDATE` · deadlocks · parallel keys · rollback · Redis down | ⬜ To run |
+| [TC-07](TC-07-login-and-permissions.md) | Login, session and the permission matrix | public vs protected · tampered token · rate limit · attribution | ⬜ To run |
+| [TC-08](TC-08-status-and-degradation.md) | Status, health and dependency degradation | real Redis write · `ok:false` instead of `500` · auto refresh | ⬜ To run |
 
-## Por dónde empezar según lo que quieras ver
+## Where to start, by what you want to see
 
-| Si quieres ver... | Empieza por |
+| If you want to see... | Start with |
 |---|---|
-| Que el CSV del challenge se importa entero y bien | [TC-01](TC-01-initial-import.md) |
-| Que reimportar no reescribe lo que no cambió | [TC-03](TC-03-unchanged-does-not-write.md) |
-| Que una compra mueve stock real y congela el precio | [TC-05](TC-05-purchase-flow.md) |
-| **Que dos compradores no se llevan la misma última unidad** | [TC-06 · R1](TC-06-concurrency-and-races.md) |
-| Que un pago rechazado no deja nada a medias | [TC-05](TC-05-purchase-flow.md) check 6 · [TC-06 · R7](TC-06-concurrency-and-races.md) |
-| Qué puede hacer alguien sin cuenta | [TC-07](TC-07-login-and-permissions.md) |
-| Qué pasa si se cae Postgres o Redis | [TC-08](TC-08-status-and-degradation.md) |
+| That the challenge CSV imports whole and correctly | [TC-01](TC-01-initial-import.md) |
+| That re-importing does not rewrite what did not change | [TC-03](TC-03-unchanged-does-not-write.md) |
+| That a purchase moves real stock and freezes the price | [TC-05](TC-05-purchase-flow.md) |
+| **That two buyers cannot both take the last unit** | [TC-06 · R1](TC-06-concurrency-and-races.md) |
+| That a declined charge leaves nothing half-done | [TC-05](TC-05-purchase-flow.md) check 6 · [TC-06 · R7](TC-06-concurrency-and-races.md) |
+| What someone without an account can do | [TC-07](TC-07-login-and-permissions.md) |
+| What happens when Postgres or Redis goes down | [TC-08](TC-08-status-and-degradation.md) |
 
-## Los cinco desenlaces de la importación
+## The five import outcomes
 
-Cada fila de datos cae en exactamente una cubeta, y las cubetas siempre suman:
+Every data row lands in exactly one bucket, and the buckets always add up:
 
 ```
-  Filas totales = Creadas + Actualizadas + Sin cambios + Rechazadas + Vacías omitidas
+  Total rows = Created + Updated + Unchanged + Rejected + Skipped empty
 ```
 
-| Desenlace | Significado |
+| Outcome | Meaning |
 |---|---|
-| **Created** | El SKU no existía. Insertada. |
-| **Updated** | El SKU existía y al menos uno de los seis campos comparables difería. Sobrescrita. |
-| **Unchanged** | El SKU existía y `name`, `description`, `category`, `price`, `stock` y `weight_kg` eran todos idénticos. La base de datos no se tocó. |
-| **Rejected** | La fila falló la validación de formato, una regla de negocio, o su SKU aparecía más de una vez en el archivo. No se guardó nada. |
-| **Skipped empty** | Todas las celdas estaban en blanco. Ignorada como ruido de exportación, no contada como error. |
+| **Created** | The SKU did not exist. Inserted. |
+| **Updated** | The SKU existed and at least one of the six comparable fields differed. Overwritten. |
+| **Unchanged** | The SKU existed and `name`, `description`, `category`, `price`, `stock` and `weight_kg` were all identical. The database was not touched. |
+| **Rejected** | The row failed format validation, a business rule, or its SKU appeared more than once in the file. Nothing was saved. |
+| **Skipped empty** | Every cell was blank. Ignored as export noise, not counted as an error. |
 
-## Los desenlaces de un pedido
+## The order outcomes
 
 ```
-  POST /orders  -->  201  pedido nuevo, cobrado, stock descontado
-                     200  clave de idempotencia repetida: el mismo pedido, sin cobrar otra vez
-                     400  contrato invalido (clave no-UUID, direccion incompleta, campo desconocido)
-                     402  PAYMENT_DECLINED  — nada guardado, stock intacto, queda orden FAILED
-                     404  un producto referenciado no existe
-                     409  INSUFFICIENT_STOCK — con sku, requested y available
+  POST /orders  -->  201  new order, charged, stock discounted
+                     200  idempotency key replayed: the same order, not charged again
+                     400  invalid contract (non-UUID key, incomplete address, unknown field)
+                     402  PAYMENT_DECLINED  — nothing saved, stock intact, a FAILED order remains
+                     404  a referenced product does not exist
+                     409  INSUFFICIENT_STOCK — with sku, requested and available
 ```
 
-| Estado en `orders` | Significa |
+| `orders` status | Means |
 |---|---|
-| `PAID` | El cobro fue aprobado y el stock se descontó, todo en la misma transacción. |
-| `FAILED` | El cobro fue rechazado. Se guarda con su motivo, **sin** movimiento de stock. |
-| `PENDING` | Solo existe *dentro* de la transacción. Una fila `PENDING` persistida es un defecto. |
+| `PAID` | The charge was approved and stock was discounted, all in the same transaction. |
+| `FAILED` | The charge was declined. Stored with its reason, and **no** stock movement. |
+| `PENDING` | Exists only *inside* the transaction. A persisted `PENDING` row is a defect. |
