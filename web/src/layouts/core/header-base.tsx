@@ -1,3 +1,5 @@
+import type { NavSectionProps } from 'src/components/nav-section';
+
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import { styled, useTheme } from '@mui/material/styles';
@@ -8,6 +10,7 @@ import { RouterLink } from 'src/routes/components';
 import { Logo } from 'src/components/logo';
 
 import { HeaderSection } from './header-section';
+import { Searchbar } from '../components/searchbar';
 import { MenuButton } from '../components/menu-button';
 import { SettingsButton } from '../components/settings-button';
 
@@ -44,9 +47,11 @@ const StyledDivider = styled('span')(({ theme }) => ({
 
 export type HeaderBaseProps = HeaderSectionProps & {
   onOpenNav: () => void;
+  searchbarData?: NavSectionProps['data'];
   slotsDisplay?: {
     helpLink?: boolean;
     settings?: boolean;
+    searchbar?: boolean;
     menuButton?: boolean;
   };
 };
@@ -57,7 +62,13 @@ export function HeaderBase({
   slotProps,
   onOpenNav,
   layoutQuery,
-  slotsDisplay: { helpLink = true, settings = true, menuButton = true } = {},
+  searchbarData,
+  slotsDisplay: {
+    helpLink = true,
+    settings = true,
+    searchbar = false,
+    menuButton = true,
+  } = {},
   ...other
 }: HeaderBaseProps) {
   const theme = useTheme();
@@ -115,6 +126,9 @@ export function HeaderBase({
                   Need help?
                 </Link>
               )}
+
+              {/* -- Page search -- */}
+              {searchbar && <Searchbar data-slot="searchbar" data={searchbarData} />}
 
               {/* -- Settings button -- */}
               {settings && <SettingsButton data-slot="settings" />}
