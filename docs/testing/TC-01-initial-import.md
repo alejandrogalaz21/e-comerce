@@ -1,95 +1,95 @@
-# TC-01 · Initial import into an empty catalog
+# TC-01 · Importación inicial sobre un catálogo vacío
 
 | | |
 |---|---|
-| **Status** | ✅ **Passed** |
-| **Date** | 2026-08-28 |
+| **Estado** | ✅ **Aprobado** |
+| **Fecha** | 2026-08-28 |
 | **Tickets** | TK-009, TK-023, TK-026, TK-033, TK-040, TK-042 |
-| **File** | `LoanPro Code Challenge E-Commerce.csv` (unmodified, 97 data rows) |
+| **Archivo** | `LoanPro Code Challenge E-Commerce.csv` (sin modificar, 97 filas de datos) |
 
-## Objective
+## Objetivo
 
-Verify that a single import of the challenge CSV into an empty catalog classifies every row
-correctly, saves only the valid ones, and reports precisely what happened with each of the
-rest — including the rows it deliberately refused.
+Verificar que una única importación del CSV del challenge sobre un catálogo vacío clasifica cada
+fila correctamente, guarda solo las válidas, y reporta con precisión qué pasó con el resto —
+incluidas las filas que rechazó deliberadamente.
 
-This is the case that exercises the whole pipeline at once: file validation, parsing,
-per-row normalization, DTO rules, the duplicate-SKU rule and persistence.
+Es el caso que ejercita todo el pipeline de una vez: validación de archivo, parseo, normalización
+por fila, reglas del DTO, la regla de SKU duplicado y la persistencia.
 
-## Preconditions
+## Precondiciones
 
 ```
   products         0
   import_batches   0
-  user             1     (demo account, untouched)
+  user             1     (cuenta demo, intacta)
 ```
 
-## Steps
+## Pasos
 
-1. Sign in at `http://localhost:3000` as `demo@demo.com`.
-2. Go to **Product → Import CSV**.
-3. Upload the unmodified challenge CSV.
+1. Inicia sesión en `http://localhost:3000` como `demo@demo.com`.
+2. Ve a **Product → Import CSV**.
+3. Sube el CSV del challenge sin modificar.
 
-## Expected results
+## Resultado esperado
 
-### Summary
+### Resumen
 
-| Metric | Expected |
+| Métrica | Esperado |
 |---|---|
-| Total rows | 97 |
-| Created | 85 |
-| Updated | 0 |
-| Unchanged | 0 |
-| Rejected | 10 |
-| Skipped empty | 2 |
+| Filas totales | 97 |
+| Creadas | 85 |
+| Actualizadas | 0 |
+| Sin cambios | 0 |
+| Rechazadas | 10 |
+| Vacías omitidas | 2 |
 
-### The ten rejected rows
+### Las diez filas rechazadas
 
-Five fail validation, five are the occurrences of two SKUs repeated inside the file.
+Cinco fallan validación; cinco son las apariciones de dos SKU repetidos dentro del archivo.
 
-| Line | SKU | Reason | Group |
+| Línea | SKU | Motivo | Grupo |
 |---|---|---|---|
-| 2 | RS-001 | duplicate sku (lines 2, 36) | duplicate |
-| 7 | YM-015 | `price` is not a valid number: `free` | validation |
-| 11 | BS-021 | duplicate sku (lines 11, 56, 89) | duplicate |
-| 16 | DL-007 | `stock` must not be less than 0 | validation |
-| 20 | XS-001 | `name` contains HTML markup | validation |
-| 25 | HD-099 | `name` should not be empty | validation |
-| 36 | RS-001 | duplicate sku (lines 2, 36) | duplicate |
-| 41 | WS-001 | `name` should not be empty (whitespace only) | validation |
-| 56 | BS-021 | duplicate sku (lines 11, 56, 89) | duplicate |
-| 89 | BS-021 | duplicate sku (lines 11, 56, 89) | duplicate |
+| 2 | RS-001 | sku duplicado (líneas 2, 36) | duplicado |
+| 7 | YM-015 | `price` no es un número válido: `free` | validación |
+| 11 | BS-021 | sku duplicado (líneas 11, 56, 89) | duplicado |
+| 16 | DL-007 | `stock` no puede ser menor que 0 | validación |
+| 20 | XS-001 | `name` contiene marcado HTML | validación |
+| 25 | HD-099 | `name` no debe estar vacío | validación |
+| 36 | RS-001 | sku duplicado (líneas 2, 36) | duplicado |
+| 41 | WS-001 | `name` no debe estar vacío (solo espacios) | validación |
+| 56 | BS-021 | sku duplicado (líneas 11, 56, 89) | duplicado |
+| 89 | BS-021 | sku duplicado (líneas 11, 56, 89) | duplicado |
 
-Lines 62 and 63 are blank and must appear as **skipped**, not as errors.
+Las líneas 62 y 63 están en blanco y deben aparecer como **omitidas**, no como errores.
 
-### Rows that look like problems but must be accepted
+### Filas que parecen problemas pero deben aceptarse
 
-| Line | Content | Expected |
+| Línea | Contenido | Esperado |
 |---|---|---|
-| 4 | `price` = `$29.99` | created, symbol stripped → `29.99` |
-| 29 | `Robert'); DROP TABLE products;--` | created; the query is parameterized |
-| 47 | `price` = `0.00` | created; zero is a valid price |
-| 50 | empty `weight_kg` | created with `null`, never `0` |
-| 51 | `stock` = 0 | created; the only sold-out product |
-| 52 | empty `category` | created as `Uncategorized` |
-| 53 | comma inside a quoted name | created |
-| 59 | escaped quotes `""Inside""` | created |
-| 31 | `—` and `™` | created |
+| 4 | `price` = `$29.99` | creada, símbolo retirado → `29.99` |
+| 29 | `Robert'); DROP TABLE products;--` | creada; la consulta va parametrizada |
+| 47 | `price` = `0.00` | creada; cero es un precio válido |
+| 50 | `weight_kg` vacío | creada con `null`, nunca `0` |
+| 51 | `stock` = 0 | creada; el único producto agotado |
+| 52 | `category` vacía | creada como `Uncategorized` |
+| 53 | coma dentro de un nombre entrecomillado | creada |
+| 59 | comillas escapadas `""Inside""` | creada |
+| 31 | `—` y `™` | creada |
 
-## Acceptance criteria
+## Criterios de aceptación
 
-- [x] `Total = Created + Updated + Unchanged + Rejected + Skipped`
-- [x] Exactly 85 products in the catalog, across 18 categories
-- [x] `RS-001` and `BS-021` are **absent**: a repeated SKU is rejected, not upserted
-- [x] The report lists **which** lines were skipped, not just how many
-- [x] Line 20 shows the offending markup as plain text in `Name`, never rendered
-- [x] Lines 25 and 41 show `—` in `Name`, which is itself the reason they failed
-- [x] The `Created rows` table starts at line 3, not line 2
-- [x] The status filter narrows the table and the counter reports `Showing N of M`
+- [x] `Totales = Creadas + Actualizadas + Sin cambios + Rechazadas + Omitidas`
+- [x] Exactamente 85 productos en el catálogo, repartidos en 18 categorías
+- [x] `RS-001` y `BS-021` están **ausentes**: un SKU repetido se rechaza, no se hace upsert
+- [x] El reporte lista **qué** líneas se omitieron, no solo cuántas
+- [x] La línea 20 muestra el marcado ofensivo como texto plano en `Name`, nunca renderizado
+- [x] Las líneas 25 y 41 muestran `—` en `Name`, que es en sí mismo el motivo del fallo
+- [x] La tabla `Created rows` empieza en la línea 3, no en la 2
+- [x] El filtro de estado acota la tabla y el contador reporta `Showing N of M`
 
-## Actual results
+## Resultado real
 
-Matched the expectation exactly.
+Coincidió exactamente con lo esperado.
 
 ```
   Total rows   97
@@ -103,21 +103,21 @@ Matched the expectation exactly.
   10 rejected and not saved · 0 overwrote an existing SKU · 2 blank and skipped
 ```
 
-Verified in the database:
+Verificado en la base de datos:
 
-| Check | Result |
+| Comprobación | Resultado |
 |---|---|
 | `select count(*) from products` | 85 |
 | `select count(distinct category)` | 18 |
-| `where sku in ('RS-001','BS-021')` | 0 rows |
-| `GC-025` category | `Uncategorized` |
-| `GK-088` weight | `null` |
-| `VC-001` stock | `0` |
-| `MB-001` price | `0.00` |
+| `where sku in ('RS-001','BS-021')` | 0 filas |
+| categoría de `GC-025` | `Uncategorized` |
+| peso de `GK-088` | `null` |
+| stock de `VC-001` | `0` |
+| precio de `MB-001` | `0.00` |
 
-Category breakdown of the 85 created products:
+Reparto por categoría de los 85 productos creados:
 
-| Category | # | | Category | # |
+| Categoría | # | | Categoría | # |
 |---|---|---|---|---|
 | Electronics | 14 | | Stationery | 4 |
 | Home & Office | 13 | | Books | 2 |
@@ -129,17 +129,17 @@ Category breakdown of the 85 created products:
 | Food & Beverage | 4 | | Tools | 1 |
 | Games | 4 | | Uncategorized | 1 |
 
-`Footwear` holds 2 rather than 3 because `RS-001` was rejected, and `Misc` never appears at
-all: its only row was line 41.
+`Footwear` tiene 2 en lugar de 3 porque `RS-001` fue rechazado, y `Misc` no aparece en absoluto:
+su única fila era la 41.
 
-## Evidence
+## Evidencia
 
-![Import summary and rows to review](assets/tc-01-import-report.png)
+![Resumen de la importación y filas a revisar](assets/tc-01-import-report.png)
 
-![Created rows and the product list](assets/tc-01-created-rows.png)
+![Filas creadas y el listado de productos](assets/tc-01-created-rows.png)
 
-## Defects found
+## Defectos encontrados
 
-| Ticket | Summary |
+| Ticket | Resumen |
 |---|---|
-| TK-047 | Rows rejected by the duplicate-SKU rule show `—` in `Name` although the file carries one. `rejectDuplicateSkus` does not propagate the name, unlike the other two rejection paths. |
+| TK-047 | Las filas rechazadas por la regla de SKU duplicado muestran `—` en `Name` aunque el archivo sí trae uno. `rejectDuplicateSkus` no propagaba el nombre, a diferencia de los otros dos caminos de rechazo. |
