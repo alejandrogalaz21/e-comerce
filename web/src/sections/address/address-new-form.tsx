@@ -32,8 +32,6 @@ export const NewAddressSchema = zod.object({
   country: schemaHelper.objectOrNull<string | null>({
     message: { required_error: 'Country is required!' },
   }),
-  // Not required
-  addressType: zod.string(),
 });
 
 type Props = {
@@ -52,7 +50,6 @@ export function AddressNewForm({ open, onClose, onCreate }: Props) {
     country: '',
     email: '',
     phoneNumber: '',
-    addressType: 'Home',
   };
 
   const methods = useForm<NewAddressSchemaType>({
@@ -73,7 +70,6 @@ export function AddressNewForm({ open, onClose, onCreate }: Props) {
         phoneNumber: data.phoneNumber,
         email: data.email,
         fullAddress: `${data.address}, ${data.city}, ${data.state}, ${data.country}, ${data.zipCode}`,
-        addressType: data.addressType,
         // The one-line form is for display; the order is stored in parts.
         street: data.address,
         city: data.city,
@@ -94,15 +90,6 @@ export function AddressNewForm({ open, onClose, onCreate }: Props) {
 
         <DialogContent dividers>
           <Stack spacing={3}>
-            <Field.RadioGroup
-              row
-              name="addressType"
-              options={[
-                { label: 'Home', value: 'Home' },
-                { label: 'Office', value: 'Office' },
-              ]}
-            />
-
             <Box
               rowGap={3}
               columnGap={2}

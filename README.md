@@ -100,8 +100,12 @@ docker compose --profile devtools up -d
 
 | Console | URL | Connects to | Credentials |
 | --- | --- | --- | --- |
-| Adminer | http://localhost:8081 | server `db`, PostgreSQL | `DB_USER` / `DB_PASSWORD` / `DB_NAME` from `.env` |
+| Adminer | http://localhost:8081/?pgsql=db&username=postgres&db=ecommerce | server `db`, PostgreSQL | password from `DB_PASSWORD` in `.env` (`changeme` by default) |
 | RedisInsight | http://localhost:5540 | `redis:6379` (pre-registered) | none |
+
+The Adminer link carries the driver, server, user and database in the query string: the plain
+`http://localhost:8081` opens on MySQL, because the image's default-server variable does not set the
+driver. Only the password is left to type.
 
 These are development tools with full read/write access to real data and no authentication of
 their own — never expose them outside your machine. The RedisInsight service sets

@@ -1,7 +1,6 @@
 import type { IAddressItem } from 'src/types/common';
 import type { PaperProps } from '@mui/material/Paper';
 
-import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
@@ -27,12 +26,7 @@ export function AddressItem({ address, action, sx, ...other }: Props) {
     >
       <Stack flexGrow={1} spacing={1}>
         <Stack direction="row" alignItems="center">
-          <Typography variant="subtitle2">
-            {address.name}
-            <Box component="span" sx={{ ml: 0.5, typography: 'body2', color: 'text.secondary' }}>
-              ({address.addressType})
-            </Box>
-          </Typography>
+          <Typography variant="subtitle2">{address.name}</Typography>
         </Stack>
 
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>

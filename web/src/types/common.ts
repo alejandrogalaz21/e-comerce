@@ -16,7 +16,6 @@ export type IAddressItem = {
   fullAddress: string;
   phoneNumber?: string;
   email?: string;
-  addressType?: string;
   street?: string;
   city?: string;
   state?: string;

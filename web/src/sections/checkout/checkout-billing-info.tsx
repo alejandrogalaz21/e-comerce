@@ -25,12 +25,7 @@ export function CheckoutBillingInfo({ billing, onBackStep }: Props) {
         }
       />
       <Stack spacing={1} sx={{ p: 3 }}>
-        <Box sx={{ typography: 'subtitle2' }}>
-          {`${billing?.name} `}
-          <Box component="span" sx={{ color: 'text.secondary', typography: 'body2' }}>
-            ({billing?.addressType})
-          </Box>
-        </Box>
+        <Box sx={{ typography: 'subtitle2' }}>{billing?.name}</Box>
 
         <Box sx={{ color: 'text.secondary', typography: 'body2' }}>{billing?.fullAddress}</Box>
 
