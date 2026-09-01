@@ -71,8 +71,10 @@ export function DashboardLayout({ sx, children, data }: DashboardLayoutProps) {
             layoutQuery={layoutQuery}
             disableElevation={isNavVertical}
             onOpenNav={mobileNavOpen.onTrue}
+            searchbarData={navData}
             slotsDisplay={{
               helpLink: false,
+              searchbar: true,
             }}
             slots={{
               rightAreaEnd: <SessionMenu />,
