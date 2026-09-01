@@ -101,6 +101,31 @@ test.describe('product lifecycle', () => {
     await api.patch(`/api/v1/products/${id}/restore`);
   });
 
+  test('the mini cart warns without a reload', async ({
+    page,
+  }) => {
+    const id = await createProduct('CACHED');
+
+    await page.goto(`/product/${id}`);
+    await page.evaluate(() => window.localStorage.removeItem('app-checkout'));
+    await page.reload();
+    await page.getByRole('button', { name: 'Add to cart' }).click();
+
+    const discontinued = await api.patch(`/api/v1/products/${id}/discontinue`);
+    expect(discontinued.ok()).toBe(true);
+
+
+    await page.getByRole('button', { name: 'Open cart' }).click();
+
+    await expect(page.getByText('No longer available — remove it to continue')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Check out' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    );
+
+    await api.patch(`/api/v1/products/${id}/restore`);
+  });
+
   test('the detail shows the history after the price changes', async ({ page }) => {
     const id = await createProduct('HISTORY', 20);
 

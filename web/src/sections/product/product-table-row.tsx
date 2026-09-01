@@ -90,9 +90,25 @@ export function RenderCellProduct({
 }: ParamsProps & {
   onViewRow: () => void;
 }) {
+  const discontinued = !!params.row.discontinuedAt;
+
   return (
-    <Link noWrap color="inherit" variant="subtitle2" onClick={onViewRow} sx={{ cursor: 'pointer' }}>
-      {params.row.name}
-    </Link>
+    <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
+      <Link
+        noWrap
+        color={discontinued ? 'text.disabled' : 'inherit'}
+        variant="subtitle2"
+        onClick={onViewRow}
+        sx={{ cursor: 'pointer' }}
+      >
+        {params.row.name}
+      </Link>
+
+      {discontinued && (
+        <Label variant="soft" color="default" sx={{ flexShrink: 0 }}>
+          Discontinued
+        </Label>
+      )}
+    </Stack>
   );
 }

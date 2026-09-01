@@ -58,10 +58,16 @@ export function useCartRevalidation(enabled: boolean = true) {
   };
 }
 
-function toLookup(query: { data?: unknown; error: unknown; isError: boolean }): CartLookup {
-  if (query.data) return { status: 'found', product: query.data as never };
+export function toLookup(query: {
+  data?: unknown;
+  error: unknown;
+  isError: boolean;
+}): CartLookup {
+  if (query.isError) {
+    return statusOf(query.error) === 404 ? { status: 'gone' } : { status: 'unverified' };
+  }
 
-  if (query.isError && statusOf(query.error) === 404) return { status: 'gone' };
+  if (query.data) return { status: 'found', product: query.data as never };
 
   return { status: 'unverified' };
 }
