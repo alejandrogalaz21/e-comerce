@@ -1,8 +1,14 @@
 {
-  "name": "@minimal-kit/vite-ts",
-  "author": "Minimals",
-  "version": "6.0.1",
-  "description": "Vite & TypeScript",
+  "name": "loanpro-ecommerce-web",
+  "version": "1.0.0",
+  "description": "Storefront and admin dashboard for the LoanPro e-commerce challenge: product CRUD, CSV import, search and checkout.",
+  "author": "Alex Galaz <alejandrogalaz21@gmail.com>",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alejandrogalaz21/e-commerce.git",
+    "directory": "web"
+  },
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,10 +19,6 @@
     "lint:fix": "eslint --fix \"src/**/*.{js,jsx,ts,tsx}\"",
     "fm:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx}\"",
     "fm:fix": "prettier --write \"src/**/*.{js,jsx,ts,tsx}\"",
-    "rm:all": "rm -rf node_modules .next out dist build",
-    "re:start": "yarn rm:all && yarn install && yarn dev",
-    "re:build": "yarn rm:all && yarn install && yarn build",
-    "re:build-npm": "npm run rm:all && npm install && npm run build",
     "dev:host": "vite --host",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",

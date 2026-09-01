@@ -1,10 +1,15 @@
 {
-  "name": "nest-pg",
-  "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "name": "loanpro-ecommerce-api",
+  "version": "1.0.0",
+  "description": "REST API for the LoanPro e-commerce challenge: product CRUD, CSV import, search, and order placement with a simulated payment provider.",
+  "author": "Alex Galaz <alejandrogalaz21@gmail.com>",
   "private": true,
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alejandrogalaz21/e-commerce.git",
+    "directory": "api"
+  },
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
