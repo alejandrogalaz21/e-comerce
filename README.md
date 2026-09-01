@@ -3,12 +3,44 @@
 Enterprise-grade e-commerce: a public storefront, product CRUD, CSV import, search, and a purchase
 flow with a faked payment.
 
-- **Sample CSV download date: 2026-08-26**
+By **Alex Galaz** — [github.com/alejandrogalaz21](https://github.com/alejandrogalaz21) ·
+[alejandrogalaz21@gmail.com](mailto:alejandrogalaz21@gmail.com) ·
+repository at [alejandrogalaz21/e-commerce](https://github.com/alejandrogalaz21/e-commerce)
+
+- **Sample CSV download date: 2026-08-26** — the provided file is committed at
+  [`docs/csv/`](docs/csv/) so the import can be reproduced exactly
 - Stack: NestJS 10 + TypeORM + PostgreSQL 16 + Redis · React 18 + Vite + MUI · Docker Compose
 - **596 automated tests** across four levels, plus eight manual cases with their evidence
 
 **Start here:** `docker compose up --build`, then http://localhost:3000. The shop is the front
 door and needs no account; sign in with `demo@demo.com` / `demo` to manage the catalog.
+
+### What was asked, and where it is
+
+The challenge in one table, each requirement pointing at the code that satisfies it and the
+document that explains how.
+
+| # | Requirement | Where it lives | How it works |
+|---|---|---|---|
+| 1 | Local database (SQL/NoSQL) | PostgreSQL 16 in [`docker-compose.yml`](docker-compose.yml), schema in [`api/src/database/migrations/`](api/src/database/migrations/) | Versioned migrations run at boot; `synchronize` is off |
+| 2 | CRUD for products | [`products.controller.ts`](api/src/modules/products/products.controller.ts) · UI at *Dashboard → Product* | [P-02](docs/processes/P-02-product-crud.md) |
+| 3 | Import products from a CSV | [`import.service.ts`](api/src/modules/import/import.service.ts) · UI at *Dashboard → Product → Import CSV* | [P-01](docs/processes/P-01-csv-import.md) |
+| 4 | CSV columns: name, sku, description, category, price, stock, weight_kg | [`import.service.ts`](api/src/modules/import/import.service.ts) `EXPECTED_HEADERS` | Missing **and** unexpected columns are both rejected — [P-01](docs/processes/P-01-csv-import.md) |
+| 5 | Search for products | [`products.service.ts`](api/src/modules/products/products.service.ts) `findAll` | Multi-term search, category, price range, availability, sorting — [P-03](docs/processes/P-03-product-search.md) |
+| 6 | Purchase products | [`orders.service.ts`](api/src/modules/orders/orders.service.ts) `create` | Locking, stock, total, idempotency — [P-04](docs/processes/P-04-order-placement.md) |
+| 7 | Fake the payment | [`fake-payment.provider.ts`](api/src/modules/payment/fake-payment.provider.ts) | Behind an interface, declines ~10%, randomness injected — [P-05](docs/processes/P-05-payment-processing.md) |
+| 8 | UI for CRUD, search and purchase | [`web/src/sections/product/`](web/src/sections/product/) · [`web/src/sections/checkout/`](web/src/sections/checkout/) · [`web/src/sections/purchase/`](web/src/sections/purchase/) | [Frontend architecture](#frontend-architecture-web) |
+| 9 | Runnable as a Docker container | [`docker-compose.yml`](docker-compose.yml) · [`api/Dockerfile`](api/Dockerfile) · [`web/Dockerfile`](web/Dockerfile) | One command, no `.env` needed — [How to run](#how-to-run) |
+| 10 | README: decisions, approach, alternatives | this file | [Key decisions](#key-decisions-summary) · [Alternatives considered](#alternatives-considered) · [What is not built](#what-is-not-built-and-why) |
+| 11 | Date the sample CSV was downloaded | top of this file: **2026-08-26** | — |
+| 12 | Instructions to run it locally | [How to run](#how-to-run) | Docker and manual paths, both verified |
+| 13 | AI allowed, comments removed from the code | the source carries no comments; only lint and compiler directives remain | [How AI was used](#how-ai-was-used-and-where-the-reasoning-lives) |
+| 14 | Public GitHub repository | [alejandrogalaz21/e-commerce](https://github.com/alejandrogalaz21/e-commerce) | — |
+
+> The brief closes by saying the challenge is not about completing the requirements — AI can do
+> that — but about asking the right questions and applying judgement. [How this was
+> built](#how-this-was-built) is the answer to that: every feature was proposed and argued in
+> writing before it was code, and those documents are in the repository.
 
 ### Verifying it in five minutes
 
@@ -396,28 +428,63 @@ and the shipping-address columns exist because the proposal asked what would bre
 
 ## Decision documentation
 
+### The eight processes
+
+One document per flow the challenge asks for. Each traces it end to end: a diagram, every file
+involved, every validation and where it lives, the failure modes, and shell commands to verify
+each claim against the running stack.
+
+| | Process | What it answers | Endpoint |
+|---|---|---|---|
+| [P-01](docs/processes/P-01-csv-import.md) | **CSV import** | Header check, per-row validation, upsert by SKU, the duplicate rule, the per-row report | `POST /products/import` |
+| [P-02](docs/processes/P-02-product-crud.md) | **Product CRUD** | Create, read, update, delete; SKU uniqueness; XSS rejection; decimal handling | `/products` |
+| [P-03](docs/processes/P-03-product-search.md) | **Search and filters** | Multi-term OR search, category, price range, availability, sorting, pagination | `GET /products` |
+| [P-04](docs/processes/P-04-order-placement.md) | **Order placement** | Row locking, stock check, server-side total, price snapshot, idempotency | `POST /orders` |
+| [P-05](docs/processes/P-05-payment-processing.md) | **Payment processing** | The provider contract, the fake implementation, decline handling, rollback | inside P-04 |
+| [P-06](docs/processes/P-06-authentication.md) | **Authentication** | Login, JWT, the public/protected boundary, the fail-closed guard | `/auth` |
+| [P-07](docs/processes/P-07-error-contract.md) | **Error contract** | The shape every failure shares, the code catalogue, database error translation | every endpoint |
+| [P-08](docs/processes/P-08-security-hardening.md) | **Security hardening** | Headers, explicit CORS, rate limiting, input rejection — and the known gaps | every request |
+
+**If you read one**, read [P-04](docs/processes/P-04-order-placement.md): it is where the
+concurrency, the money and the idempotency all meet, and it draws the deadlock that ordering the
+lock by `id` prevents.
+
+### Everything else
+
 | Document | Content |
 |---|---|
-| [docs/processes/](docs/processes/) | One document per system process — flow diagram, every file involved, every validation and where it lives, failure modes, and commands to verify each claim |
-| [docs/testing/MATRIX.md](docs/testing/MATRIX.md) | Every use case with purpose, steps and expected result |
-| [docs/testing/](docs/testing/) | Eight manual test cases run against the stack, with their evidence — import, purchase, concurrency, auth and dependency degradation |
-| [docs/initial.md](docs/initial.md) | Full design spec: row-by-row CSV analysis, architecture, data model, import flow, stock concurrency, security, scope |
-| [docs/02-analisis-base.md](docs/02-analisis-base.md) | Analysis of the base templates (api/web): what was reused, adapted and removed |
-| `openspec/` | Spec-driven workflow ([OpenSpec](https://openspec.dev/)): every feature is proposed, specified and archived as a decision record |
+| [docs/testing/MATRIX.md](docs/testing/MATRIX.md) | 115 use cases with purpose, steps, expected result, and the test that guards each |
+| [docs/testing/STRATEGY.md](docs/testing/STRATEGY.md) | What is tested at which level, and — more usefully — what is deliberately **not**, with the reasoning |
+| [docs/testing/](docs/testing/) | Eight manual test cases run against the stack, with screenshots — import, purchase, concurrency, auth and dependency degradation |
+| [docs/initial.md](docs/initial.md) | The original design spec: row-by-row analysis of the provided CSV, architecture, data model, import flow, stock concurrency, security, scope |
+| [docs/02-analisis-base.md](docs/02-analisis-base.md) | Analysis of the two base templates: what was reused, adapted and removed |
+| [docs/backlog.md](docs/backlog.md) | Every ticket (TK-###), its reasoning and its outcome |
+| [openspec/](openspec/) | The spec-driven workflow ([OpenSpec](https://openspec.dev/)): 23 archived changes, each proposed, designed and specified before it was built |
+
+The documents under `docs/` and `openspec/` are written in Spanish; the code, its strings and this
+readme are in English.
 
 ## Key decisions (summary)
 
-- **PostgreSQL** for referential integrity and ACID transactions (stock + order must be atomic).
-- **Price as `DECIMAL`**, never float, and totals summed as **integer cents** — `numeric` crosses
-  the wire as a string, and converting it to a number to add it up is where money breaks.
-- **Partial CSV import** (not all-or-nothing) with a per-row report; **upsert by SKU**.
-- **Pessimistic locking** (`SELECT ... FOR UPDATE`, ordered by `id`) for stock, plus an
-  `idempotency_key` resolved by catching the unique violation rather than checking first.
-- **Auth scoped to what justifies it**: catalog, search and **checkout are public** (you buy without
-  an account); product management, CSV import and diagnostics require a JWT.
-- **One error contract** for every response, with a machine-readable code the client branches on.
-- **AI**: used as a spec-guided tool (OpenSpec) — decisions and their rationale are documented in
-  `docs/` and `openspec/`.
+Each row links to the process document that traces it end to end — the flow, every file involved,
+every validation and where it lives, the failure modes, and commands to verify the claim yourself.
+
+| Decision | Why | Traced in |
+|---|---|---|
+| **PostgreSQL**, not a document store | Stock and order must move together or not at all. That is a transaction, and transactions are what a relational engine is for. Foreign keys also make "you cannot delete a product that was sold" a database rule rather than a hopeful one | [P-04](docs/processes/P-04-order-placement.md) |
+| **Price as `DECIMAL`**, totals in **integer cents** | `numeric` crosses the wire as a string precisely because it does not fit a float. Converting it to a number to add it up is where money breaks | [P-04](docs/processes/P-04-order-placement.md) |
+| **Partial CSV import**, never all-or-nothing | One bad row out of 97 should not cost the other 96. Every row lands in a named bucket — created, updated, unchanged, rejected, skipped — and the batch keeps the report | [P-01](docs/processes/P-01-csv-import.md) |
+| **Upsert by SKU**, and a duplicate SKU in one file rejects **every** occurrence | The SKU is the business key. Picking a winner by row position makes the result depend on the ordering rather than on the data | [P-01](docs/processes/P-01-csv-import.md) |
+| **Pessimistic locking** — `SELECT ... FOR UPDATE`, **ordered by `id`** | The lock is what stops overselling; the ordering is what stops two multi-line orders from deadlocking on each other | [P-04](docs/processes/P-04-order-placement.md) |
+| **Idempotency by insert-and-catch**, not check-then-insert | Check-then-insert is a race condition with a longer name: two concurrent replays both read "absent" and both insert. The `UNIQUE` constraint is what decides | [P-04](docs/processes/P-04-order-placement.md) |
+| **The price is frozen on the line** (`unit_price_snapshot`) | An order is a historical record. Editing a product must never rewrite what somebody already paid | [P-04](docs/processes/P-04-order-placement.md) |
+| **The payment provider sits behind an interface**, and its randomness is injected | Connecting a real gateway means implementing one interface. Injecting the randomness is what lets the decline path be tested deterministically instead of hoping for it | [P-05](docs/processes/P-05-payment-processing.md) |
+| **A declined charge is a return value, not an exception** | A decline is a legitimate business outcome. Exceptions stay reserved for infrastructure faults, so the two never get handled by the same code | [P-05](docs/processes/P-05-payment-processing.md) |
+| **Auth scoped to what justifies it** — buying is public | Catalog, search and checkout need no account. Product management, CSV import and diagnostics need a JWT. The guard is global and fails closed: a new endpoint is protected unless someone opens it deliberately | [P-06](docs/processes/P-06-authentication.md) |
+| **One error contract** for every response | `{ statusCode, error, message, path, timestamp }` with a machine-readable code, so the client branches on `INSUFFICIENT_STOCK` rather than parsing prose | [P-07](docs/processes/P-07-error-contract.md) |
+| **Reject HTML in product text** rather than stripping it | Stripping guesses at intent and leaves the caller believing their input was accepted. The sample file's `<script>` payload is reported back verbatim as the reason for rejection | [P-08](docs/processes/P-08-security-hardening.md) |
+| **`JWT_SECRET` ships empty** | A placeholder committed to a compose file is a published signing key. Unset generates one per boot — sessions die on restart, which is loud and harmless. A weak value stops the boot on purpose | [P-08](docs/processes/P-08-security-hardening.md) |
+| **AI as a spec-guided tool** | Every feature was proposed, argued and specified in writing before it was code. The proposals are in `openspec/` | [How this was built](#how-this-was-built) |
 
 ## Alternatives considered
 

@@ -1,5 +1,5 @@
 {
-  "name": "loanpro-ecommerce-web",
+  "name": "ecommerce-web",
   "version": "1.0.0",
   "description": "Storefront and admin dashboard for the LoanPro e-commerce challenge: product CRUD, CSV import, search and checkout.",
   "author": "Alex Galaz <alejandrogalaz21@gmail.com>",

@@ -1,5 +1,5 @@
 {
-  "name": "loanpro-ecommerce-api",
+  "name": "ecommerce-api",
   "version": "1.0.0",
   "description": "REST API for the LoanPro e-commerce challenge: product CRUD, CSV import, search, and order placement with a simulated payment provider.",
   "author": "Alex Galaz <alejandrogalaz21@gmail.com>",
