@@ -16,8 +16,6 @@ import { SplashScreen } from 'src/components/loading-screen';
 import { CHECKOUT_STEPS } from '../checkout-steps';
 import { keepOrMintKey, shouldMintKey } from '../idempotency-key';
 
-// ----------------------------------------------------------------------
-
 export const CheckoutContext = createContext<CheckoutContextValue | undefined>(undefined);
 
 export const CheckoutConsumer = CheckoutContext.Consumer;
@@ -34,8 +32,6 @@ const initialState: ICheckoutState = {
   purchase: null,
 };
 
-// ----------------------------------------------------------------------
-
 type Props = {
   children: React.ReactNode;
 };
@@ -47,8 +43,6 @@ export function CheckoutProvider({ children }: Props) {
     </Suspense>
   );
 }
-
-// ----------------------------------------------------------------------
 
 function Container({ children }: Props) {
   const router = useRouter();
@@ -260,8 +254,6 @@ function Container({ children }: Props) {
 
   return <CheckoutContext.Provider value={memoizedValue}>{children}</CheckoutContext.Provider>;
 }
-
-// ----------------------------------------------------------------------
 
 function createUrl(type: 'back' | 'next' | 'go', activeStep: number) {
   const step = { back: activeStep - 1, next: activeStep + 1, go: activeStep }[type];

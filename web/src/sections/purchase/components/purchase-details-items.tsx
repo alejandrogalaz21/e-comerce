@@ -25,8 +25,6 @@ import { useGetProduct } from 'src/sections/product/hooks/use-product';
 
 import { priceComparison } from '../purchase-utils';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   items: IPurchaseItem[];
 };
@@ -34,10 +32,7 @@ type Props = {
 export function PurchaseDetailsItems({ items }: Props) {
   return (
     <Card>
-      <CardHeader
-        title="Items"
-        subheader="Prices are the ones frozen when the order was placed"
-      />
+      <CardHeader title="Items" subheader="Prices are the ones frozen when the order was placed" />
 
       <TableContainer sx={{ px: 3, pb: 3 }}>
         <Table size="small">
@@ -61,8 +56,6 @@ export function PurchaseDetailsItems({ items }: Props) {
     </Card>
   );
 }
-
-// ----------------------------------------------------------------------
 
 /**
  * The frozen price is the order's own data and always renders. The current

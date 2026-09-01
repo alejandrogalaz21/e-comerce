@@ -1,8 +1,6 @@
 import type { StackProps } from '@mui/material/Stack';
 import type { Theme, SxProps } from '@mui/material/styles';
 
-// ----------------------------------------------------------------------
-
 export interface ExtendFile extends File {
   path?: string;
   preview?: string;

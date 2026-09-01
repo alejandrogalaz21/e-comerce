@@ -10,11 +10,7 @@ import MuiStepConnector, { stepConnectorClasses } from '@mui/material/StepConnec
 
 import { Iconify } from 'src/components/iconify';
 
-// ----------------------------------------------------------------------
-
 export const CHECKOUT_STEPS = ['Cart', 'Billing & address', 'Payment'];
-
-// ----------------------------------------------------------------------
 
 const StepConnector = styled(MuiStepConnector)(({ theme }) => ({
   top: 10,
@@ -28,8 +24,6 @@ const StepConnector = styled(MuiStepConnector)(({ theme }) => ({
     [`& .${stepConnectorClasses.line}`]: { borderColor: theme.vars.palette.primary.main },
   },
 }));
-
-// ----------------------------------------------------------------------
 
 type Props = StepperProps & {
   steps: string[];
@@ -58,8 +52,6 @@ export function CheckoutSteps({ steps, activeStep, sx, ...other }: Props) {
     </Stepper>
   );
 }
-
-// ----------------------------------------------------------------------
 
 type StepIconProps = {
   active?: boolean;

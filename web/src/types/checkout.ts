@@ -1,8 +1,6 @@
 import type { IPurchase } from './purchase';
 import type { IAddressItem } from './common';
 
-// ----------------------------------------------------------------------
-
 export type ICheckoutItem = {
   id: string;
   name: string;

@@ -12,8 +12,6 @@ import { navSectionClasses } from './classes';
 import { svgColorClasses } from '../svg-color';
 import { Iconify, iconifyClasses } from '../iconify';
 
-// ----------------------------------------------------------------------
-
 export function stateClasses({
   open,
   active,
@@ -35,8 +33,6 @@ export function stateClasses({
 
   return classes;
 }
-
-// ----------------------------------------------------------------------
 
 export const sharedStyles = {
   icon: {
@@ -72,8 +68,6 @@ export const sharedStyles = {
   },
   disabled: { opacity: 0.48, pointerEvents: 'none' },
 } as const;
-
-// ----------------------------------------------------------------------
 
 export function Subheader({
   sx,
@@ -131,8 +125,6 @@ export function Subheader({
   );
 }
 
-// ----------------------------------------------------------------------
-
 export function NavCollapse({
   sx,
   depth,
@@ -172,8 +164,6 @@ export function NavCollapse({
   );
 }
 
-// ----------------------------------------------------------------------
-
 export function NavLi({
   sx,
   children,
@@ -198,8 +188,6 @@ export function NavLi({
     </Box>
   );
 }
-
-// ----------------------------------------------------------------------
 
 export function NavUl({ children, sx, ...other }: BoxProps) {
   return (

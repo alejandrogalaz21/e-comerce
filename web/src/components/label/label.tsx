@@ -8,8 +8,6 @@ import { labelClasses } from './classes';
 
 import type { LabelProps } from './types';
 
-// ----------------------------------------------------------------------
-
 export const Label = forwardRef<HTMLSpanElement, LabelProps>(
   ({ children, color = 'default', variant = 'soft', startIcon, endIcon, sx, ...other }, ref) => {
     const theme = useTheme();
@@ -51,8 +49,6 @@ export const Label = forwardRef<HTMLSpanElement, LabelProps>(
     );
   }
 );
-
-// ----------------------------------------------------------------------
 
 function sentenceCase(string: string): string {
   return string.charAt(0).toUpperCase() + string.slice(1);

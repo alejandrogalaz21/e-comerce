@@ -24,8 +24,6 @@ import { FullScreenButton } from './fullscreen-button';
 
 import type { SettingsDrawerProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export function SettingsDrawer({
   sx,
   hideFont,

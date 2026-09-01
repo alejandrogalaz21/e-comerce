@@ -3,8 +3,6 @@ import { describe, it, expect } from 'vitest';
 import { toPurchase, toPurchaseItem } from './purchase.mapper';
 import { toPlacePurchaseError } from './purchase';
 
-// ----------------------------------------------------------------------
-
 const apiItem = {
   id: 'item-1',
   productId: 'product-1',

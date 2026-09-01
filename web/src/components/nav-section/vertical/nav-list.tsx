@@ -10,8 +10,6 @@ import { NavUl, NavLi, NavCollapse } from '../styles';
 
 import type { NavListProps, NavSubListProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export function NavList({ data, render, depth, slotProps, enabledRootRedirect }: NavListProps) {
   const pathname = usePathname();
 
@@ -96,8 +94,6 @@ export function NavList({ data, render, depth, slotProps, enabledRootRedirect }:
   // Default
   return <NavLi disabled={data.disabled}>{renderNavItem}</NavLi>;
 }
-
-// ----------------------------------------------------------------------
 
 function NavSubList({ data, render, depth, slotProps, enabledRootRedirect }: NavSubListProps) {
   return (

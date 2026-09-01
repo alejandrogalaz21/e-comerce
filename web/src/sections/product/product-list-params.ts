@@ -6,8 +6,6 @@ import type {
 
 import { PRODUCT_SORT_FIELDS } from 'src/types/product';
 
-// ----------------------------------------------------------------------
-
 export type IProductListState = {
   q: string[];
   category: string[];
@@ -33,8 +31,6 @@ export const defaultProductListState: IProductListState = {
   page: DEFAULT_PAGE,
   limit: DEFAULT_LIMIT,
 };
-
-// ----------------------------------------------------------------------
 
 function parsePositiveInt(raw: string | null, fallback: number): number {
   const value = Number(raw);

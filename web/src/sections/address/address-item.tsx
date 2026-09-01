@@ -8,8 +8,6 @@ import Typography from '@mui/material/Typography';
 
 import { Label } from 'src/components/label';
 
-// ----------------------------------------------------------------------
-
 type Props = PaperProps & {
   action?: React.ReactNode;
   address: IAddressItem;

@@ -12,8 +12,6 @@ import { CheckoutSteps, CHECKOUT_STEPS } from '../checkout-steps';
 import { CheckoutOrderComplete } from '../checkout-order-complete';
 import { CheckoutBillingAddress } from '../checkout-billing-address';
 
-// ----------------------------------------------------------------------
-
 export function CheckoutView() {
   const checkout = useCheckoutContext();
 

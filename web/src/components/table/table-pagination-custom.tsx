@@ -6,8 +6,6 @@ import Switch from '@mui/material/Switch';
 import TablePagination from '@mui/material/TablePagination';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
-// ----------------------------------------------------------------------
-
 export type TablePaginationCustomProps = TablePaginationProps & {
   dense?: boolean;
   sx?: SxProps<Theme>;

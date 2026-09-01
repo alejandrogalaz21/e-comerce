@@ -8,8 +8,6 @@ import IconButton from '@mui/material/IconButton';
 
 import { useSettingsContext } from 'src/components/settings/context';
 
-// ----------------------------------------------------------------------
-
 export type SettingsButtonProps = IconButtonProps;
 
 export function SettingsButton({ sx, ...other }: SettingsButtonProps) {

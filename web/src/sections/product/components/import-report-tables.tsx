@@ -6,8 +6,6 @@ import { toImportIssueRows } from '../import-utils';
 import { ImportIssuesTable } from './import-issues-table';
 import { ImportCreatedTable } from './import-created-table';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   report: IImportReport;
 };

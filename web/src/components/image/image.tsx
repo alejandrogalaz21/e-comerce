@@ -10,8 +10,6 @@ import { imageClasses } from './classes';
 
 import type { ImageProps } from './types';
 
-// ----------------------------------------------------------------------
-
 const ImageWrapper = styled(Box)({
   overflow: 'hidden',
   position: 'relative',
@@ -33,8 +31,6 @@ const Overlay = styled('span')({
   height: '100%',
   position: 'absolute',
 });
-
-// ----------------------------------------------------------------------
 
 export const Image = forwardRef<HTMLSpanElement, ImageProps>(
   (

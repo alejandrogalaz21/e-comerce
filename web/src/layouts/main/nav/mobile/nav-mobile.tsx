@@ -13,8 +13,6 @@ import { NavList } from './nav-mobile-list';
 
 import type { NavMainProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export type NavMobileProps = NavMainProps & {
   open: boolean;
   onClose: () => void;

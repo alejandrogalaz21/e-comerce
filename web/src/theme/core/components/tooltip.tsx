@@ -4,8 +4,6 @@ import { tooltipClasses } from '@mui/material/Tooltip';
 
 import { stylesMode } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 const MuiTooltip: Components<Theme>['MuiTooltip'] = {
   /** **************************************
    * STYLE
@@ -39,7 +37,5 @@ const MuiTooltip: Components<Theme>['MuiTooltip'] = {
     },
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const tooltip = { MuiTooltip };

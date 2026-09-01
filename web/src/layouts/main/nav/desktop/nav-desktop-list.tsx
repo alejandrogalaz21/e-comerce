@@ -19,8 +19,6 @@ import { NavItem, NavItemDashboard } from './nav-desktop-item';
 
 import type { NavListProps, NavSubListProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export function NavList({ data }: NavListProps) {
   const theme = useTheme();
 
@@ -137,8 +135,6 @@ export function NavList({ data }: NavListProps) {
 
   return <NavLi sx={{ height: 1 }}>{renderNavItem}</NavLi>;
 }
-
-// ----------------------------------------------------------------------
 
 function NavSubList({ data, subheader, sx, ...other }: NavSubListProps) {
   const pathname = usePathname();

@@ -4,8 +4,6 @@ import Box from '@mui/material/Box';
 
 import { layoutClasses } from '../classes';
 
-// ----------------------------------------------------------------------
-
 export function Main({ children, sx, ...other }: BoxProps) {
   return (
     <Box

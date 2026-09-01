@@ -27,8 +27,6 @@ import { Scrollbar } from 'src/components/scrollbar';
 import { TableFilterBar } from './table-filter-bar';
 import { IMPORT_STATUS_META, IMPORT_ISSUE_STATUSES } from '../import-utils';
 
-// ----------------------------------------------------------------------
-
 const EMPTY = '—';
 
 type StatusFilter = IImportIssueSeverity | 'all';

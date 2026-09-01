@@ -1,7 +1,5 @@
 /* eslint-disable no-bitwise */
 
-// ----------------------------------------------------------------------
-
 /**
  * The checkout's idempotency key is one of these, and replaying a key returns
  * that order with its shipping address. So the value has to be unguessable, and

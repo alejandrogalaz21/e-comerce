@@ -1,8 +1,6 @@
 import type { PopoverProps } from '@mui/material/Popover';
 import type { Theme, SxProps } from '@mui/material/styles';
 
-// ----------------------------------------------------------------------
-
 export type PopoverArrow = {
   hide?: boolean;
   size?: number;

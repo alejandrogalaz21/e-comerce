@@ -7,8 +7,6 @@ import {
   serializePurchaseFilters,
 } from './purchase-params';
 
-// ----------------------------------------------------------------------
-
 const parse = (search: string) => parsePurchaseFilters(new URLSearchParams(search));
 
 describe('parsePurchaseFilters', () => {
@@ -24,15 +22,16 @@ describe('parsePurchaseFilters', () => {
   });
 
   it('reads every criterion from the address', () => {
-    expect(parse('page=3&limit=50&q=PRJ-001&status=FAILED&dateFrom=2026-08-01&dateTo=2026-08-31'))
-      .toEqual({
-        page: 3,
-        limit: 50,
-        q: 'PRJ-001',
-        status: 'FAILED',
-        dateFrom: '2026-08-01',
-        dateTo: '2026-08-31',
-      });
+    expect(
+      parse('page=3&limit=50&q=PRJ-001&status=FAILED&dateFrom=2026-08-01&dateTo=2026-08-31')
+    ).toEqual({
+      page: 3,
+      limit: 50,
+      q: 'PRJ-001',
+      status: 'FAILED',
+      dateFrom: '2026-08-01',
+      dateTo: '2026-08-31',
+    });
   });
 
   /**

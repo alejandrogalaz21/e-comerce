@@ -1,7 +1,5 @@
 import type { Theme, Components } from '@mui/material/styles';
 
-// ----------------------------------------------------------------------
-
 const MuiListItemIcon: Components<Theme>['MuiListItemIcon'] = {
   /** **************************************
    * STYLE
@@ -11,16 +9,12 @@ const MuiListItemIcon: Components<Theme>['MuiListItemIcon'] = {
   },
 };
 
-// ----------------------------------------------------------------------
-
 const MuiListItemAvatar: Components<Theme>['MuiListItemAvatar'] = {
   /** **************************************
    * STYLE
    *************************************** */
   styleOverrides: { root: ({ theme }) => ({ minWidth: 'auto', marginRight: theme.spacing(2) }) },
 };
-
-// ----------------------------------------------------------------------
 
 const MuiListItemText: Components<Theme>['MuiListItemText'] = {
   /** **************************************
@@ -33,8 +27,6 @@ const MuiListItemText: Components<Theme>['MuiListItemText'] = {
    *************************************** */
   styleOverrides: { root: { margin: 0 }, multiline: { margin: 0 } },
 };
-
-// ----------------------------------------------------------------------
 
 export const list = {
   MuiListItemIcon,

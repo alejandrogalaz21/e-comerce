@@ -10,8 +10,6 @@ import { createShadowColor, customShadows as coreCustomShadows } from '../core/c
 
 import type { ThemeComponents, ThemeUpdateOptions } from '../types';
 
-// ----------------------------------------------------------------------
-
 /**
  * [1] settings @primaryColor
  * [2] settings @contrast
@@ -59,8 +57,6 @@ export function updateCoreWithSettings(
   };
 }
 
-// ----------------------------------------------------------------------
-
 export function updateComponentsWithSettings(settings: SettingsState) {
   const components: ThemeComponents = {};
 
@@ -87,8 +83,6 @@ export function updateComponentsWithSettings(settings: SettingsState) {
 
   return { components };
 }
-
-// ----------------------------------------------------------------------
 
 const PRIMARY_COLORS = {
   default: COLORS.primary,

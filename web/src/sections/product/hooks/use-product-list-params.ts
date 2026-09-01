@@ -11,8 +11,6 @@ import {
 
 import type { IProductListState } from '../product-list-params';
 
-// ----------------------------------------------------------------------
-
 type ApplyOptions = {
   replace?: boolean;
 };

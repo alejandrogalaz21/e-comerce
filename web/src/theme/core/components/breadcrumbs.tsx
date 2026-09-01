@@ -1,7 +1,5 @@
 import type { Theme, Components } from '@mui/material/styles';
 
-// ----------------------------------------------------------------------
-
 const MuiBreadcrumbs: Components<Theme>['MuiBreadcrumbs'] = {
   /** **************************************
    * STYLE
@@ -13,7 +11,5 @@ const MuiBreadcrumbs: Components<Theme>['MuiBreadcrumbs'] = {
     separator: { margin: 0 },
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const breadcrumbs = { MuiBreadcrumbs };

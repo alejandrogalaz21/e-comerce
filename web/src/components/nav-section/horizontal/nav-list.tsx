@@ -16,8 +16,6 @@ import { navSectionClasses } from '../classes';
 
 import type { NavListProps, NavSubListProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export function NavList({
   data,
   depth,
@@ -144,8 +142,6 @@ export function NavList({
   // Default
   return <NavLi disabled={data.disabled}>{renderNavItem}</NavLi>;
 }
-
-// ----------------------------------------------------------------------
 
 function NavSubList({
   data,

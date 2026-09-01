@@ -14,8 +14,6 @@ import { CONFIG } from 'src/config-global';
 
 import { Logo } from 'src/components/logo';
 
-// ----------------------------------------------------------------------
-
 function FooterBar({ sx }: { sx?: SxProps<Theme> }) {
   return (
     <Box component="footer" sx={{ bgcolor: 'background.default', ...sx }}>
@@ -45,8 +43,6 @@ function FooterBar({ sx }: { sx?: SxProps<Theme> }) {
     </Box>
   );
 }
-
-// ----------------------------------------------------------------------
 
 export type FooterProps = {
   sx?: SxProps<Theme>;

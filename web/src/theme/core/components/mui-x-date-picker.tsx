@@ -7,8 +7,6 @@ import { dialogActionsClasses } from '@mui/material/DialogActions';
 
 import { stylesMode } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 /**
  * Icons
  */
@@ -191,8 +189,6 @@ const MuiPickersPopper: Components<Theme>['MuiPickersPopper'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const datePicker = {
   MuiPickersPopper,

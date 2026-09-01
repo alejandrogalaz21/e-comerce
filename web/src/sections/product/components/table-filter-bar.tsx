@@ -8,8 +8,6 @@ import InputAdornment from '@mui/material/InputAdornment';
 
 import { Iconify } from 'src/components/iconify';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   value: string;
   onChange: (value: string) => void;

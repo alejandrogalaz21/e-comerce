@@ -1,7 +1,5 @@
 import type { Theme, Components } from '@mui/material/styles';
 
-// ----------------------------------------------------------------------
-
 const MuiCard: Components<Theme>['MuiCard'] = {
   /** **************************************
    * STYLE
@@ -15,8 +13,6 @@ const MuiCard: Components<Theme>['MuiCard'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 const MuiCardHeader: Components<Theme>['MuiCardHeader'] = {
   /** **************************************
@@ -37,15 +33,11 @@ const MuiCardHeader: Components<Theme>['MuiCardHeader'] = {
   },
 };
 
-// ----------------------------------------------------------------------
-
 const MuiCardContent: Components<Theme>['MuiCardContent'] = {
   /** **************************************
    * STYLE
    *************************************** */
   styleOverrides: { root: ({ theme }) => ({ padding: theme.spacing(3) }) },
 };
-
-// ----------------------------------------------------------------------
 
 export const card = { MuiCard, MuiCardHeader, MuiCardContent };

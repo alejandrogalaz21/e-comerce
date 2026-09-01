@@ -18,8 +18,6 @@ import { HeaderSessionAction } from '../components/header-session-action';
 
 import type { NavMainProps } from './nav/types';
 
-// ----------------------------------------------------------------------
-
 export type MainLayoutProps = {
   sx?: SxProps<Theme>;
   children: React.ReactNode;

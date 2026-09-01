@@ -1,5 +1,3 @@
-// ----------------------------------------------------------------------
-
 export const fileThumbnailClasses = {
   root: 'mnl__file__thumbnail__root',
   img: 'mnl__file__thumbnail__img',

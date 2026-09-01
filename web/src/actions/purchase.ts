@@ -12,8 +12,6 @@ import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { toPurchase } from './purchase.mapper';
 
-// ----------------------------------------------------------------------
-
 /** The error envelope every API failure carries. See docs/processes/P-07-error-contract.md */
 type ApiError = {
   statusCode: number;
@@ -75,10 +73,7 @@ export function toPlacePurchaseError(error: unknown): PlacePurchaseError {
   const body = error as Partial<ApiError> | string | undefined;
 
   if (!body || typeof body !== 'object' || typeof body.statusCode !== 'number') {
-    return new PlacePurchaseError(
-      'unknown',
-      'The order could not be sent. Check your connection.'
-    );
+    return new PlacePurchaseError('unknown', 'The order could not be sent. Check your connection.');
   }
 
   if (body.statusCode === 409) {

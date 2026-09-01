@@ -4,8 +4,6 @@ import { Iconify } from '../iconify';
 import { StyledToaster } from './styles';
 import { toasterClasses } from './classes';
 
-// ----------------------------------------------------------------------
-
 export function Snackbar() {
   return (
     <Portal>

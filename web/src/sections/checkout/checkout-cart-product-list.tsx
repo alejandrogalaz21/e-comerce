@@ -8,8 +8,6 @@ import { TableHeadCustom } from 'src/components/table';
 
 import { CheckoutCartProduct } from './checkout-cart-product';
 
-// ----------------------------------------------------------------------
-
 const TABLE_HEAD = [
   { id: 'product', label: 'Name' },
   { id: 'price', label: 'Price' },
@@ -17,8 +15,6 @@ const TABLE_HEAD = [
   { id: 'totalAmount', label: 'Total Price', align: 'right' },
   { id: '' },
 ];
-
-// ----------------------------------------------------------------------
 
 type Props = {
   products: ICheckoutItem[];

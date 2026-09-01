@@ -1,5 +1,3 @@
-// ----------------------------------------------------------------------
-
 export type IServiceStatus = {
   source: 'redis' | 'postgres';
   ok: boolean;

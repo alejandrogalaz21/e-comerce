@@ -13,8 +13,6 @@ import FormControl from '@mui/material/FormControl';
 import FormHelperText from '@mui/material/FormHelperText';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
-// ----------------------------------------------------------------------
-
 type Props = RadioGroupProps & {
   name: string;
   label?: string;

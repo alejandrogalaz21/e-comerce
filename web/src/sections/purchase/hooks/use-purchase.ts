@@ -7,16 +7,12 @@ import { getPurchase, getPurchases, placePurchase } from 'src/actions/purchase';
 
 import { productKeys } from 'src/sections/product/hooks/use-product';
 
-// ----------------------------------------------------------------------
-
 export const purchaseKeys = {
   all: ['purchases'] as const,
   lists: () => [...purchaseKeys.all, 'list'] as const,
   list: (params: IPurchaseListParams) => [...purchaseKeys.lists(), params] as const,
   detail: (id: string) => [...purchaseKeys.all, 'detail', id] as const,
 };
-
-// ----------------------------------------------------------------------
 
 export function useGetPurchases(params: IPurchaseListParams) {
   const query = useQuery({
@@ -52,8 +48,6 @@ export function useGetPurchase(purchaseId: string) {
     purchaseError: query.error,
   };
 }
-
-// ----------------------------------------------------------------------
 
 export function usePlacePurchase() {
   const queryClient = useQueryClient();

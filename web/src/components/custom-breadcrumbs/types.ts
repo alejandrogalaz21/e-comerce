@@ -1,8 +1,6 @@
 import type { Theme, SxProps } from '@mui/material/styles';
 import type { BreadcrumbsProps } from '@mui/material/Breadcrumbs';
 
-// ----------------------------------------------------------------------
-
 export type BreadcrumbsLinkProps = {
   name?: string;
   href?: string;

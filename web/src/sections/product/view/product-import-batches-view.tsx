@@ -31,8 +31,6 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { importStatusColor } from '../import-utils';
 import { useGetImportBatches } from '../hooks/use-import-batches';
 
-// ----------------------------------------------------------------------
-
 export function ProductImportBatchesView() {
   const router = useRouter();
 

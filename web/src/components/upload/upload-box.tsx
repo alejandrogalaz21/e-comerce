@@ -8,8 +8,6 @@ import { Iconify } from '../iconify';
 
 import type { UploadProps } from './types';
 
-// ----------------------------------------------------------------------
-
 export function UploadBox({ placeholder, error, disabled, sx, ...other }: UploadProps) {
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     disabled,

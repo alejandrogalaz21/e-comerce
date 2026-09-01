@@ -4,8 +4,6 @@ import Box from '@mui/material/Box';
 import Portal from '@mui/material/Portal';
 import LinearProgress from '@mui/material/LinearProgress';
 
-// ----------------------------------------------------------------------
-
 type Props = BoxProps & {
   portal?: boolean;
 };

@@ -9,8 +9,6 @@ import Typography from '@mui/material/Typography';
 
 import { varFade, varContainer } from './variants';
 
-// ----------------------------------------------------------------------
-
 export const animateTextClasses = {
   root: 'animate-text-root',
   lines: 'animate-text-lines',

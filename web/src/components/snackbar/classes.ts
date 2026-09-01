@@ -1,5 +1,3 @@
-// ----------------------------------------------------------------------
-
 export const toasterClasses = {
   root: 'toaster__root',
   toast: 'toaster__toast',

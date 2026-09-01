@@ -4,8 +4,6 @@ import { CONFIG } from 'src/config-global';
 
 import { PurchaseListView } from 'src/sections/purchase/view';
 
-// ----------------------------------------------------------------------
-
 const metadata = { title: `Orders | Dashboard - ${CONFIG.site.name}` };
 
 export default function Page() {

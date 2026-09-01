@@ -8,8 +8,6 @@ import { varAlpha } from 'src/theme/styles';
 
 import { Logo } from '../logo';
 
-// ----------------------------------------------------------------------
-
 export type AnimateLogoProps = BoxProps & {
   logo?: React.ReactNode;
 };
@@ -78,8 +76,6 @@ export function AnimateLogo1({ logo, sx, ...other }: AnimateLogoProps) {
     </Box>
   );
 }
-
-// ----------------------------------------------------------------------
 
 export function AnimateLogo2({ logo, sx, ...other }: AnimateLogoProps) {
   return (

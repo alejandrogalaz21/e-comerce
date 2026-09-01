@@ -5,8 +5,6 @@ import { useState, useEffect } from 'react';
 
 import { usePathname } from 'src/routes/hooks';
 
-// ----------------------------------------------------------------------
-
 export function ProgressBar() {
   const pathname = usePathname();
 

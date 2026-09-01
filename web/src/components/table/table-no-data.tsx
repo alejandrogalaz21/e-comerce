@@ -5,8 +5,6 @@ import TableCell from '@mui/material/TableCell';
 
 import { EmptyContent } from '../empty-content';
 
-// ----------------------------------------------------------------------
-
 export type TableNoDataProps = {
   notFound: boolean;
   sx?: SxProps<Theme>;

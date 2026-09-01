@@ -1,5 +1,3 @@
-// ----------------------------------------------------------------------
-
 export const SHOP_DEFAULT_PAGE = 1;
 export const SHOP_PAGE_SIZE = 12;
 

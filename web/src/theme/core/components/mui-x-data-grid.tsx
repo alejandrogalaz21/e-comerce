@@ -14,8 +14,6 @@ import { formControlLabelClasses } from '@mui/material/FormControlLabel';
 
 import { paper, varAlpha } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
   /** **************************************
    * DEFAULT PROPS
@@ -208,11 +206,7 @@ const MuiDataGrid: Components<Theme>['MuiDataGrid'] = {
   },
 };
 
-// ----------------------------------------------------------------------
-
 export const dataGrid = { MuiDataGrid };
-
-// ----------------------------------------------------------------------
 
 /**
  * Icons

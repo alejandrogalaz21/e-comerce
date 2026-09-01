@@ -1,7 +1,5 @@
 import { setAccessToken } from 'src/lib/auth-token';
 
-// ----------------------------------------------------------------------
-
 export function jwtDecode(token: string) {
   try {
     if (!token) return null;
@@ -21,8 +19,6 @@ export function jwtDecode(token: string) {
     throw error;
   }
 }
-
-// ----------------------------------------------------------------------
 
 export function isValidToken(accessToken: string) {
   if (!accessToken) {
@@ -44,8 +40,6 @@ export function isValidToken(accessToken: string) {
     return false;
   }
 }
-
-// ----------------------------------------------------------------------
 
 /**
  * The token reaches every request through the axios request interceptor,

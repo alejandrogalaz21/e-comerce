@@ -20,8 +20,6 @@ import { ImportSummary } from '../components/import-summary';
 import { useGetImportBatch } from '../hooks/use-import-batches';
 import { ImportReportTables } from '../components/import-report-tables';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   batchId: string;
 };

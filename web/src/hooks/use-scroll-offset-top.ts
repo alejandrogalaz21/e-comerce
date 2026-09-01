@@ -1,8 +1,6 @@
 import { useScroll, useMotionValueEvent } from 'framer-motion';
 import { useRef, useMemo, useState, useCallback } from 'react';
 
-// ----------------------------------------------------------------------
-
 export type UseScrollOffSetTopReturn = {
   offsetTop: boolean;
   elementRef: React.RefObject<HTMLDivElement>;

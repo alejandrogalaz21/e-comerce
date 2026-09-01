@@ -6,8 +6,6 @@ import { varAlpha } from 'src/theme/styles';
 
 import { toasterClasses } from './classes';
 
-// ----------------------------------------------------------------------
-
 export const StyledToaster = styled(Toaster)(({ theme }) => {
   const baseStyles = {
     toastDefault: {

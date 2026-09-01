@@ -30,8 +30,6 @@ import { usePurchaseParams } from '../hooks/use-purchase-params';
 import { toPurchaseQuery, hasPurchaseFilters } from '../purchase-params';
 import { PurchaseId, PurchaseStatusLabel, PurchaseTableToolbar } from '../components';
 
-// ----------------------------------------------------------------------
-
 export function PurchaseListView() {
   const router = useRouter();
 
@@ -198,9 +196,7 @@ export function PurchaseListView() {
             <DataGrid
               disableRowSelectionOnClick
               disableColumnMenu
-              onRowClick={(params) =>
-                router.push(paths.dashboard.order.details(String(params.id)))
-              }
+              onRowClick={(params) => router.push(paths.dashboard.order.details(String(params.id)))}
               rows={purchases}
               columns={columns}
               loading={purchasesLoading}

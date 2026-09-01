@@ -6,8 +6,6 @@ import { NavList } from './nav-desktop-list';
 
 import type { NavMainProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export function NavDesktop({ data, sx }: NavMainProps) {
   return (
     <Stack component="nav" sx={{ height: 1, ...sx }}>

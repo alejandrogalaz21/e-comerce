@@ -9,8 +9,6 @@ import { SplashScreen } from 'src/components/loading-screen';
 
 import { useAuthContext } from '../hooks';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   children: React.ReactNode;
 };

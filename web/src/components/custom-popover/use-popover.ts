@@ -4,8 +4,6 @@ import { useState, useCallback } from 'react';
 
 import type { UsePopoverReturn } from './types';
 
-// ----------------------------------------------------------------------
-
 export function usePopover(): UsePopoverReturn {
   const [anchorEl, setAnchorEl] = useState<PopoverProps['anchorEl']>(null);
 

@@ -14,8 +14,6 @@ import { NavItem } from './nav-mobile-item';
 
 import type { NavListProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export function NavList({ data }: NavListProps) {
   const active = useActiveLink(data.path, !!data.children);
 

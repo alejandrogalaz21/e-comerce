@@ -20,8 +20,6 @@ import { Iconify } from 'src/components/iconify';
 
 import { IncrementerButton } from './components/incrementer-button';
 
-// ----------------------------------------------------------------------
-
 const PLACEHOLDER_IMAGE = `${CONFIG.site.basePath}/assets/placeholder.svg`;
 
 type Props = {

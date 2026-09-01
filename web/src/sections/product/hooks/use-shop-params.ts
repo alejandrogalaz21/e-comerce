@@ -6,8 +6,6 @@ import { parseShopState, serializeShopState } from '../shop-params';
 
 import type { IShopState } from '../shop-params';
 
-// ----------------------------------------------------------------------
-
 /**
  * The same pattern the dashboard uses: the address is the state, so back works
  * and a filtered link can be shared.

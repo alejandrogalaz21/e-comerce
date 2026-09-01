@@ -13,8 +13,6 @@ import { LocalizationProvider as Provider } from '@mui/x-date-pickers/Localizati
 
 import { useTranslate } from './use-locales';
 
-// ----------------------------------------------------------------------
-
 type Props = {
   children: React.ReactNode;
 };

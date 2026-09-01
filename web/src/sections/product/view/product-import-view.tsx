@@ -20,8 +20,6 @@ import { ImportSummary } from '../components/import-summary';
 import { ImportReportTables } from '../components/import-report-tables';
 import { getErrorMessage, useImportProducts } from '../hooks/use-product';
 
-// ----------------------------------------------------------------------
-
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export function ProductImportView() {

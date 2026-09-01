@@ -2,8 +2,6 @@ import axios, { endpoints } from 'src/lib/axios';
 
 import { setSession } from './utils';
 
-// ----------------------------------------------------------------------
-
 export type SignInParams = {
   email: string;
   password: string;

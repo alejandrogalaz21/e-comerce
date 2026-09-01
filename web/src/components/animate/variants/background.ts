@@ -1,7 +1,5 @@
 import type { BackgroundType } from '../types';
 
-// ----------------------------------------------------------------------
-
 export const varBgColor = (props?: BackgroundType) => {
   const colors = props?.colors || ['#19dcea', '#b22cff'];
   const duration = props?.duration || 5;
@@ -9,8 +7,6 @@ export const varBgColor = (props?: BackgroundType) => {
 
   return { animate: { background: colors, transition: { duration, ease } } };
 };
-
-// ----------------------------------------------------------------------
 
 export const varBgKenburns = (props?: BackgroundType) => {
   const duration = props?.duration || 5;
@@ -53,8 +49,6 @@ export const varBgKenburns = (props?: BackgroundType) => {
     },
   };
 };
-
-// ----------------------------------------------------------------------
 
 export const varBgPan = (props?: BackgroundType) => {
   const colors = props?.colors || ['#ee7752', '#e73c7e', '#23a6d5', '#23d5ab'];

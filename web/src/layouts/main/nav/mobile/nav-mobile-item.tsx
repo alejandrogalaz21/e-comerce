@@ -11,8 +11,6 @@ import { useNavItem } from 'src/components/nav-section/hooks';
 
 import type { NavItemProps, NavItemStateProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export const NavItem = forwardRef<HTMLButtonElement, NavItemProps>(
   ({ title, path, icon, open, active, hasChild, externalLink, ...other }, ref) => {
     const navItem = useNavItem({
@@ -47,8 +45,6 @@ export const NavItem = forwardRef<HTMLButtonElement, NavItemProps>(
     );
   }
 );
-
-// ----------------------------------------------------------------------
 
 const StyledNavItem = styled(ButtonBase, {
   shouldForwardProp: (prop) => prop !== 'active' && prop !== 'open',

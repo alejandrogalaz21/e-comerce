@@ -4,8 +4,6 @@ import { switchClasses } from '@mui/material/Switch';
 
 import { varAlpha, stylesMode } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 const MuiSwitch: Components<Theme>['MuiSwitch'] = {
   /** **************************************
    * STYLE
@@ -49,7 +47,5 @@ const MuiSwitch: Components<Theme>['MuiSwitch'] = {
     },
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const switches = { MuiSwitch };

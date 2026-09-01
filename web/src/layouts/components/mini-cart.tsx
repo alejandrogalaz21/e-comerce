@@ -20,8 +20,6 @@ import { Scrollbar } from 'src/components/scrollbar';
 
 import { useCheckoutContext } from 'src/sections/checkout/context';
 
-// ----------------------------------------------------------------------
-
 /**
  * Lives in the header rather than inside the shop view, so the cart does not
  * disappear the moment a visitor opens a product. Opening it shows what is in

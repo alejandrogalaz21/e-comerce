@@ -6,8 +6,6 @@ import { outlinedInputClasses } from '@mui/material/OutlinedInput';
 
 import { varAlpha } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 const MuiInputBase: Components<Theme>['MuiInputBase'] = {
   /** **************************************
    * STYLE
@@ -32,8 +30,6 @@ const MuiInputBase: Components<Theme>['MuiInputBase'] = {
   },
 };
 
-// ----------------------------------------------------------------------
-
 const MuiInput: Components<Theme>['MuiInput'] = {
   /** **************************************
    * STYLE
@@ -45,8 +41,6 @@ const MuiInput: Components<Theme>['MuiInput'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 const MuiOutlinedInput: Components<Theme>['MuiOutlinedInput'] = {
   /** **************************************
@@ -79,8 +73,6 @@ const MuiOutlinedInput: Components<Theme>['MuiOutlinedInput'] = {
   },
 };
 
-// ----------------------------------------------------------------------
-
 const MuiFilledInput: Components<Theme>['MuiFilledInput'] = {
   /** **************************************
    * DEFAULT PROPS
@@ -110,8 +102,6 @@ const MuiFilledInput: Components<Theme>['MuiFilledInput'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const textfield = {
   MuiInput,

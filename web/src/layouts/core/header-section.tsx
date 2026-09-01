@@ -15,8 +15,6 @@ import { bgBlur, varAlpha } from 'src/theme/styles';
 
 import { layoutClasses } from '../classes';
 
-// ----------------------------------------------------------------------
-
 const StyledElevation = styled('span')(({ theme }) => ({
   left: 0,
   right: 0,
@@ -30,8 +28,6 @@ const StyledElevation = styled('span')(({ theme }) => ({
   width: `calc(100% - 48px)`,
   boxShadow: theme.customShadows.z8,
 }));
-
-// ----------------------------------------------------------------------
 
 export type HeaderSectionProps = AppBarProps & {
   layoutQuery: Breakpoint;

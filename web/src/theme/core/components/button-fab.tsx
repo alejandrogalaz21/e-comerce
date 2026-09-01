@@ -4,8 +4,6 @@ import { fabClasses } from '@mui/material/Fab';
 
 import { varAlpha, stylesMode } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 // NEW VARIANT
 declare module '@mui/material/Fab' {
   interface FabPropsVariantOverrides {
@@ -23,8 +21,6 @@ const EXTENDED_VARIANT = ['extended', 'outlinedExtended', 'softExtended'];
 const FILLED_VARIANT = ['circular', 'extended'];
 const OUTLINED_VARIANT = ['outlined', 'outlinedExtended'];
 const SOFT_VARIANT = ['soft', 'softExtended'];
-
-// ----------------------------------------------------------------------
 
 const filledVariant: Record<string, ComponentsVariants<Theme>['MuiFab']> = {
   colors: COLORS.map((color) => ({
@@ -198,7 +194,5 @@ const MuiFab: Components<Theme>['MuiFab'] = {
    *************************************** */
   styleOverrides: {},
 };
-
-// ----------------------------------------------------------------------
 
 export const fab = { MuiFab };

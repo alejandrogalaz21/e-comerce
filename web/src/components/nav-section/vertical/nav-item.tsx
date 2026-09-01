@@ -14,8 +14,6 @@ import { stateClasses, sharedStyles } from '../styles';
 
 import type { NavItemProps, NavItemStateProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export const NavItem = forwardRef<HTMLButtonElement, NavItemProps>(
   (
     {
@@ -108,8 +106,6 @@ export const NavItem = forwardRef<HTMLButtonElement, NavItemProps>(
     );
   }
 );
-
-// ----------------------------------------------------------------------
 
 const StyledNavItem = styled(ButtonBase, {
   shouldForwardProp: (prop) =>

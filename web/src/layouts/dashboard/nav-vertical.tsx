@@ -12,8 +12,6 @@ import { NavSectionMini, NavSectionVertical } from 'src/components/nav-section';
 
 import { NavToggleButton } from '../components/nav-toggle-button';
 
-// ----------------------------------------------------------------------
-
 export type NavVerticalProps = NavSectionProps & {
   isNavMini: boolean;
   layoutQuery: Breakpoint;

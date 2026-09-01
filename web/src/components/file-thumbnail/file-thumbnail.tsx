@@ -8,8 +8,6 @@ import { RemoveButton, DownloadButton } from './action-buttons';
 
 import type { FileThumbnailProps } from './types';
 
-// ----------------------------------------------------------------------
-
 export function FileThumbnail({
   sx,
   file,

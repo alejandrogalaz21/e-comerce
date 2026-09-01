@@ -2,8 +2,6 @@ import type { Theme, Components } from '@mui/material/styles';
 
 import { badgeClasses } from '@mui/material/Badge';
 
-// ----------------------------------------------------------------------
-
 // NEW VARIANT
 declare module '@mui/material/Badge' {
   interface BadgePropsVariantOverrides {
@@ -14,8 +12,6 @@ declare module '@mui/material/Badge' {
     invisible: true;
   }
 }
-
-// ----------------------------------------------------------------------
 
 const baseStyles = (theme: Theme) => ({
   width: 10,
@@ -102,7 +98,5 @@ const MuiBadge: Components<Theme>['MuiBadge'] = {
    *************************************** */
   styleOverrides: { dot: { borderRadius: '50%' } },
 };
-
-// ----------------------------------------------------------------------
 
 export const badge = { MuiBadge };

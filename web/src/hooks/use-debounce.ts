@@ -1,7 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 
-// ----------------------------------------------------------------------
-
 export type UseDebounceReturn = string;
 
 export function useDebounce(value: string, delay = 500): UseDebounceReturn {

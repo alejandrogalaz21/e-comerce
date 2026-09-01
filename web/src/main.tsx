@@ -6,8 +6,6 @@ import { HelmetProvider } from 'react-helmet-async';
 import App from './app';
 import { CONFIG } from './config-global';
 
-// ----------------------------------------------------------------------
-
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
 root.render(

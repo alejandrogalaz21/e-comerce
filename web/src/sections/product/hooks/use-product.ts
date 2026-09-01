@@ -16,8 +16,6 @@ import { toast } from 'src/components/snackbar';
 
 import { formatImportSummary } from '../import-utils';
 
-// ----------------------------------------------------------------------
-
 export const productKeys = {
   all: ['products'] as const,
   lists: () => [...productKeys.all, 'list'] as const,
@@ -25,8 +23,6 @@ export const productKeys = {
   detail: (id: string) => [...productKeys.all, 'detail', id] as const,
   categories: () => [...productKeys.all, 'categories'] as const,
 };
-
-// ----------------------------------------------------------------------
 
 export function getErrorMessage(error: unknown): string {
   if (typeof error === 'string') return error;
@@ -36,8 +32,6 @@ export function getErrorMessage(error: unknown): string {
   }
   return 'Something went wrong!';
 }
-
-// ----------------------------------------------------------------------
 
 export function useGetProducts(params: IProductListParams) {
   const query = useQuery({
@@ -86,8 +80,6 @@ export function useGetProduct(productId: string) {
     productValidating: query.isFetching,
   };
 }
-
-// ----------------------------------------------------------------------
 
 export function useCreateProduct() {
   const queryClient = useQueryClient();

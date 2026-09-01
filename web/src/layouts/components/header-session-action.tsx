@@ -9,8 +9,6 @@ import { Iconify } from 'src/components/iconify';
 
 import { useAuthContext } from 'src/auth/hooks';
 
-// ----------------------------------------------------------------------
-
 /**
  * The header used to advertise the dashboard to everyone, including visitors
  * with no session, whom the guard then bounced. Offering an action the system is

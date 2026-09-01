@@ -9,8 +9,6 @@ import { Main } from './main';
 import { HeaderBase } from '../core/header-base';
 import { LayoutSection } from '../core/layout-section';
 
-// ----------------------------------------------------------------------
-
 export type AuthCenteredLayoutProps = {
   sx?: SxProps<Theme>;
   children: React.ReactNode;

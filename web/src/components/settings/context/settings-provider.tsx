@@ -6,13 +6,9 @@ import { STORAGE_KEY } from '../config-settings';
 
 import type { SettingsState, SettingsContextValue, SettingsProviderProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export const SettingsContext = createContext<SettingsContextValue | undefined>(undefined);
 
 export const SettingsConsumer = SettingsContext.Consumer;
-
-// ----------------------------------------------------------------------
 
 export function SettingsProvider({ children, settings }: SettingsProviderProps) {
   const values = useLocalStorage<SettingsState>(STORAGE_KEY, settings);

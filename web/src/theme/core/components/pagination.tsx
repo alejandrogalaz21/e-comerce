@@ -4,8 +4,6 @@ import { paginationItemClasses } from '@mui/material/PaginationItem';
 
 import { varAlpha, stylesMode } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 // NEW VARIANT
 declare module '@mui/material/Pagination' {
   interface PaginationPropsVariantOverrides {
@@ -21,8 +19,6 @@ declare module '@mui/material/Pagination' {
 }
 
 const COLORS = ['primary', 'secondary', 'info', 'success', 'warning', 'error'] as const;
-
-// ----------------------------------------------------------------------
 
 const softVariant: Record<string, ComponentsVariants<Theme>['MuiPagination']> = {
   colors: COLORS.map((color) => ({
@@ -55,8 +51,6 @@ const softVariant: Record<string, ComponentsVariants<Theme>['MuiPagination']> = 
     },
   ],
 };
-
-// ----------------------------------------------------------------------
 
 const MuiPagination: Components<Theme>['MuiPagination'] = {
   /** **************************************
@@ -109,7 +103,5 @@ const MuiPagination: Components<Theme>['MuiPagination'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const pagination = { MuiPagination };

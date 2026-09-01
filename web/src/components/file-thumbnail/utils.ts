@@ -2,8 +2,6 @@ import { CONFIG } from 'src/config-global';
 
 import type { ExtendFile } from './types';
 
-// ----------------------------------------------------------------------
-
 // Define more types here
 const FORMAT_PDF = ['pdf'];
 const FORMAT_TEXT = ['txt'];
@@ -18,8 +16,6 @@ const FORMAT_IMG = ['jpg', 'jpeg', 'gif', 'bmp', 'png', 'svg', 'webp'];
 const FORMAT_VIDEO = ['m4v', 'avi', 'mpg', 'mp4', 'webm'];
 
 const iconUrl = (icon: string) => `${CONFIG.site.basePath}/assets/icons/files/${icon}.svg`;
-
-// ----------------------------------------------------------------------
 
 export function fileFormat(fileUrl: string) {
   let format;
@@ -67,8 +63,6 @@ export function fileFormat(fileUrl: string) {
   return format;
 }
 
-// ----------------------------------------------------------------------
-
 export function fileThumb(fileUrl: string) {
   let thumb;
 
@@ -115,19 +109,13 @@ export function fileThumb(fileUrl: string) {
   return thumb;
 }
 
-// ----------------------------------------------------------------------
-
 export function fileTypeByUrl(fileUrl: string) {
   return (fileUrl && fileUrl.split('.').pop()) || '';
 }
 
-// ----------------------------------------------------------------------
-
 export function fileNameByUrl(fileUrl: string) {
   return fileUrl.split('/').pop();
 }
-
-// ----------------------------------------------------------------------
 
 export function fileData(file: File | string) {
   // From url

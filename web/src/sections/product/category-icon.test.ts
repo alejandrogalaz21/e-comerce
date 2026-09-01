@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 
 import { categoryIcon, FALLBACK_CATEGORY_ICON } from './category-icon';
 
-// ----------------------------------------------------------------------
-
 describe('categoryIcon', () => {
   it('maps a known category to its own icon', () => {
     expect(categoryIcon('Electronics')).not.toBe(FALLBACK_CATEGORY_ICON);

@@ -11,8 +11,6 @@ import { fileData, FileThumbnail } from '../../file-thumbnail';
 
 import type { MultiFilePreviewProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export function MultiFilePreview({
   sx,
   onRemove,

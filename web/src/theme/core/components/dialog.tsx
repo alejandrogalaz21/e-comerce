@@ -1,7 +1,5 @@
 import type { Theme, Components } from '@mui/material/styles';
 
-// ----------------------------------------------------------------------
-
 const MuiDialog: Components<Theme>['MuiDialog'] = {
   /** **************************************
    * STYLE
@@ -53,8 +51,6 @@ const MuiDialogActions: Components<Theme>['MuiDialogActions'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const dialog = {
   MuiDialog,

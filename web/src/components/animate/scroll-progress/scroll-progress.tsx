@@ -5,8 +5,6 @@ import { m, useSpring } from 'framer-motion';
 
 import Box from '@mui/material/Box';
 
-// ----------------------------------------------------------------------
-
 export interface ScrollProgressProps extends BoxProps {
   size?: number;
   thickness?: number;

@@ -8,8 +8,6 @@ import { navSectionCssVars } from '../css-vars';
 
 import type { NavGroupProps, NavSectionProps } from '../types';
 
-// ----------------------------------------------------------------------
-
 export function NavSectionMini({
   sx,
   data,
@@ -42,8 +40,6 @@ export function NavSectionMini({
     </Stack>
   );
 }
-
-// ----------------------------------------------------------------------
 
 function Group({ items, render, slotProps, enabledRootRedirect, cssVars }: NavGroupProps) {
   return (

@@ -4,8 +4,6 @@ import type { Theme, Components } from '@mui/material/styles';
 import SvgIcon from '@mui/material/SvgIcon';
 import { radioClasses } from '@mui/material/Radio';
 
-// ----------------------------------------------------------------------
-
 /**
  * Icons
  */
@@ -28,8 +26,6 @@ export const RadioCheckedIcon = (props: SvgIconProps) => (
     />
   </SvgIcon>
 );
-
-// ----------------------------------------------------------------------
 
 const MuiRadio: Components<Theme>['MuiRadio'] = {
   /** **************************************
@@ -54,7 +50,5 @@ const MuiRadio: Components<Theme>['MuiRadio'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const radio = { MuiRadio };

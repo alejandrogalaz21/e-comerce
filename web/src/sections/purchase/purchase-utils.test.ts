@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest';
 
 import { shortId, countItems, sumSubtotals, priceComparison } from './purchase-utils';
 
-// ----------------------------------------------------------------------
-
 const line = (quantity: number, subtotal: number) => ({
   id: 'x',
   productId: 'p',

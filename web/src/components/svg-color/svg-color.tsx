@@ -6,8 +6,6 @@ import { svgColorClasses } from './classes';
 
 import type { SvgColorProps } from './types';
 
-// ----------------------------------------------------------------------
-
 export const SvgColor = forwardRef<HTMLSpanElement, SvgColorProps>(
   ({ src, className, sx, ...other }, ref) => (
     <Box

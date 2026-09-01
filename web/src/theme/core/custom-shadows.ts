@@ -3,8 +3,6 @@ import { grey, info, error, common, primary, success, warning, secondary } from 
 
 import type { ThemeColorScheme } from '../types';
 
-// ----------------------------------------------------------------------
-
 export interface CustomShadows {
   z1?: string;
   z4?: string;
@@ -37,8 +35,6 @@ declare module '@mui/material/styles' {
     customShadows: CustomShadows;
   }
 }
-
-// ----------------------------------------------------------------------
 
 export function createShadowColor(colorChannel: string) {
   return `0 8px 16px 0 ${varAlpha(colorChannel, 0.24)}`;

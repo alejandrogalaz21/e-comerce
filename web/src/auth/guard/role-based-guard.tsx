@@ -9,8 +9,6 @@ import { ForbiddenIllustration } from 'src/assets/illustrations';
 
 import { varBounce, MotionContainer } from 'src/components/animate';
 
-// ----------------------------------------------------------------------
-
 export type RoleBasedGuardProp = {
   sx?: SxProps<Theme>;
   currentRole: string;

@@ -8,8 +8,6 @@ import Typography from '@mui/material/Typography';
 import { CONFIG } from 'src/config-global';
 import { varAlpha } from 'src/theme/styles';
 
-// ----------------------------------------------------------------------
-
 export type EmptyContentProps = StackProps & {
   title?: string;
   imgUrl?: string;

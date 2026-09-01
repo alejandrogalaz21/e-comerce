@@ -4,8 +4,6 @@ import { listClasses } from '@mui/material/List';
 
 import { paper } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 const MuiPopover: Components<Theme>['MuiPopover'] = {
   /** **************************************
    * STYLE
@@ -17,7 +15,5 @@ const MuiPopover: Components<Theme>['MuiPopover'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const popover = { MuiPopover };

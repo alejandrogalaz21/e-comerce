@@ -12,8 +12,6 @@ import { useCheckoutContext } from './context';
 import { CheckoutSummary } from './checkout-summary';
 import { AddressItem, AddressNewForm } from '../address';
 
-// ----------------------------------------------------------------------
-
 export function CheckoutBillingAddress() {
   const checkout = useCheckoutContext();
 
@@ -29,7 +27,11 @@ export function CheckoutBillingAddress() {
             <AddressItem
               address={billing}
               action={
-                <Button variant="outlined" size="small" onClick={() => checkout.onCreateBilling(billing)}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => checkout.onCreateBilling(billing)}
+                >
                   Deliver to this address
                 </Button>
               }

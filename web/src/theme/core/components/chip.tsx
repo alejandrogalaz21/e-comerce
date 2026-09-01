@@ -7,8 +7,6 @@ import { chipClasses } from '@mui/material/Chip';
 
 import { varAlpha, stylesMode } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 /**
  * Icons
  * https://icon-sets.iconify.design/solar/close-circle-bold
@@ -24,8 +22,6 @@ export const ChipDeleteIcon = (props: SvgIconProps) => (
   </SvgIcon>
 );
 
-// ----------------------------------------------------------------------
-
 // NEW VARIANT
 declare module '@mui/material/Chip' {
   interface ChipPropsVariantOverrides {
@@ -36,8 +32,6 @@ declare module '@mui/material/Chip' {
 const COLORS = ['primary', 'secondary', 'info', 'success', 'warning', 'error'] as const;
 
 type ColorType = (typeof COLORS)[number];
-
-// ----------------------------------------------------------------------
 
 function styleColors(ownerState: ChipProps, styles: (val: ColorType) => CSSObject) {
   const outputStyle = COLORS.reduce((acc, color) => {
@@ -71,8 +65,6 @@ const softVariant: Record<string, ComponentsVariants<Theme>['MuiChip']> = {
     },
   ],
 };
-
-// ----------------------------------------------------------------------
 
 const MuiChip: Components<Theme>['MuiChip'] = {
   /** **************************************
@@ -169,7 +161,5 @@ const MuiChip: Components<Theme>['MuiChip'] = {
     },
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const chip = { MuiChip };

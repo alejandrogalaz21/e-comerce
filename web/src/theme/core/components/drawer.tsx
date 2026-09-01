@@ -2,8 +2,6 @@ import type { Theme, Components } from '@mui/material/styles';
 
 import { paper, varAlpha, stylesMode } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 const MuiDrawer: Components<Theme>['MuiDrawer'] = {
   /** **************************************
    * STYLE
@@ -29,7 +27,5 @@ const MuiDrawer: Components<Theme>['MuiDrawer'] = {
     }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const drawer = { MuiDrawer };

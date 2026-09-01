@@ -3,13 +3,9 @@ import type { Theme, CSSObject, Components } from '@mui/material/styles';
 
 import { varAlpha } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 const COLORS = ['primary', 'secondary', 'info', 'success', 'warning', 'error'] as const;
 
 type ColorType = (typeof COLORS)[number];
-
-// ----------------------------------------------------------------------
 
 function styleColors(ownerState: LinearProgressProps, styles: (val: ColorType) => CSSObject) {
   const outputStyle = COLORS.reduce((acc, color) => {
@@ -47,7 +43,5 @@ const MuiLinearProgress: Components<Theme>['MuiLinearProgress'] = {
     bar: { borderRadius: 'inherit' },
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const progress = { MuiLinearProgress };

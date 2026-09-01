@@ -2,8 +2,6 @@ import type { Theme, Components } from '@mui/material/styles';
 
 import { varAlpha } from '../../styles';
 
-// ----------------------------------------------------------------------
-
 const MuiSkeleton: Components<Theme>['MuiSkeleton'] = {
   /** **************************************
    * DEFAULT PROPS
@@ -20,7 +18,5 @@ const MuiSkeleton: Components<Theme>['MuiSkeleton'] = {
     rounded: ({ theme }) => ({ borderRadius: theme.shape.borderRadius * 2 }),
   },
 };
-
-// ----------------------------------------------------------------------
 
 export const skeleton = { MuiSkeleton };

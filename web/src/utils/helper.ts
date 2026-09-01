@@ -3,8 +3,6 @@
  * https://github.com/you-dont-need-x/you-dont-need-lodash
  */
 
-// ----------------------------------------------------------------------
-
 export function flattenArray<T>(list: T[], key = 'children'): T[] {
   let children: T[] = [];
 
@@ -18,8 +16,6 @@ export function flattenArray<T>(list: T[], key = 'children'): T[] {
   return flatten?.concat(children.length ? flattenArray(children, key) : children);
 }
 
-// ----------------------------------------------------------------------
-
 export function flattenDeep(array: any): any[] {
   const isArray = array && Array.isArray(array);
 
@@ -28,8 +24,6 @@ export function flattenDeep(array: any): any[] {
   }
   return [];
 }
-
-// ----------------------------------------------------------------------
 
 export function orderBy<T>(array: T[], properties: (keyof T)[], orders?: ('asc' | 'desc')[]): T[] {
   return array.slice().sort((a, b) => {
@@ -47,8 +41,6 @@ export function orderBy<T>(array: T[], properties: (keyof T)[], orders?: ('asc' 
   });
 }
 
-// ----------------------------------------------------------------------
-
 export function keyBy<T>(
   array: T[],
   key: keyof T
@@ -62,13 +54,9 @@ export function keyBy<T>(
   }, {});
 }
 
-// ----------------------------------------------------------------------
-
 export function sumBy<T>(array: T[], iteratee: (item: T) => number): number {
   return array.reduce((sum, item) => sum + iteratee(item), 0);
 }
-
-// ----------------------------------------------------------------------
 
 export function isEqual(a: any, b: any): boolean {
   if (a === null || a === undefined || b === null || b === undefined) {
@@ -104,8 +92,6 @@ export function isEqual(a: any, b: any): boolean {
 
   return false;
 }
-
-// ----------------------------------------------------------------------
 
 function isObject(item: any) {
   return item && typeof item === 'object' && !Array.isArray(item);

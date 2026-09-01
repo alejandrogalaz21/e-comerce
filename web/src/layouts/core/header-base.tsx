@@ -16,8 +16,6 @@ import { SettingsButton } from '../components/settings-button';
 
 import type { HeaderSectionProps } from './header-section';
 
-// ----------------------------------------------------------------------
-
 const StyledDivider = styled('span')(({ theme }) => ({
   width: 1,
   height: 10,
@@ -43,8 +41,6 @@ const StyledDivider = styled('span')(({ theme }) => ({
   '&::after': { bottom: -5, top: 'auto' },
 }));
 
-// ----------------------------------------------------------------------
-
 export type HeaderBaseProps = HeaderSectionProps & {
   onOpenNav: () => void;
   searchbarData?: NavSectionProps['data'];
@@ -63,12 +59,7 @@ export function HeaderBase({
   onOpenNav,
   layoutQuery,
   searchbarData,
-  slotsDisplay: {
-    helpLink = true,
-    settings = true,
-    searchbar = false,
-    menuButton = true,
-  } = {},
+  slotsDisplay: { helpLink = true, settings = true, searchbar = false, menuButton = true } = {},
   ...other
 }: HeaderBaseProps) {
   const theme = useTheme();

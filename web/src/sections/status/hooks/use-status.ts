@@ -2,8 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 
 import { getDbStatus, getApiHealth, getRedisStatus } from 'src/actions/status';
 
-// ----------------------------------------------------------------------
-
 const REFRESH_INTERVAL_MS = 5000;
 
 export const statusKeys = {
@@ -12,8 +10,6 @@ export const statusKeys = {
   db: () => [...statusKeys.all, 'db'] as const,
   redis: () => [...statusKeys.all, 'redis'] as const,
 };
-
-// ----------------------------------------------------------------------
 
 export function useApiHealth() {
   return useQuery({

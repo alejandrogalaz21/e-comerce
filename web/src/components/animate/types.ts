@@ -1,7 +1,5 @@
 import type { Easing } from 'framer-motion';
 
-// ----------------------------------------------------------------------
-
 export type VariantsType = {
   distance?: number;
   durationIn?: number;

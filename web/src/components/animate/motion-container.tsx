@@ -8,8 +8,6 @@ import Box from '@mui/material/Box';
 
 import { varContainer } from './variants';
 
-// ----------------------------------------------------------------------
-
 export type MotionContainerProps = BoxProps &
   MotionProps & {
     animate?: boolean;

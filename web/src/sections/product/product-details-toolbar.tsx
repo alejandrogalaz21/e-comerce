@@ -10,8 +10,6 @@ import { RouterLink } from 'src/routes/components';
 
 import { Iconify } from 'src/components/iconify';
 
-// ----------------------------------------------------------------------
-
 type Props = StackProps & {
   backLink: string;
   editLink: string;

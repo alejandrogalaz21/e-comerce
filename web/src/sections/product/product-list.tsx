@@ -6,8 +6,6 @@ import Box from '@mui/material/Box';
 import { ProductItem } from './product-item';
 import { ProductItemSkeleton } from './product-skeleton';
 
-// ----------------------------------------------------------------------
-
 type Props = BoxProps & {
   loading?: boolean;
   products: IProductItem[];

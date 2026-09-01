@@ -5,8 +5,6 @@ import IconButton from '@mui/material/IconButton';
 
 import { varAlpha } from 'src/theme/styles';
 
-// ----------------------------------------------------------------------
-
 export type NavToggleButtonProps = IconButtonProps & {
   isNavMini: boolean;
 };

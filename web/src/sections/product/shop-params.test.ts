@@ -9,8 +9,6 @@ import {
   serializeShopState,
 } from './shop-params';
 
-// ----------------------------------------------------------------------
-
 const parse = (search: string) => parseShopState(new URLSearchParams(search));
 
 describe('parseShopState', () => {

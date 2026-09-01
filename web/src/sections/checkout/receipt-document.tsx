@@ -2,8 +2,6 @@ import type { IPurchase } from 'src/types/purchase';
 
 import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 
-// ----------------------------------------------------------------------
-
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 11, color: '#212B36' },
   title: { fontSize: 20, marginBottom: 4 },

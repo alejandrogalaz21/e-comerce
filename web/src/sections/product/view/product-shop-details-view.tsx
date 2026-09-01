@@ -21,8 +21,6 @@ import { useCheckoutContext } from '../../checkout/context';
 import { ProductDetailsSkeleton } from '../product-skeleton';
 import { ProductDetailsSummary } from '../product-details-summary';
 
-// ----------------------------------------------------------------------
-
 const PLACEHOLDER_IMAGE = `${CONFIG.site.basePath}/assets/placeholder.svg`;
 
 type Props = {
@@ -79,12 +77,7 @@ export function ProductShopDetailsView({ product, error, loading }: Props) {
 
       <Grid container spacing={{ xs: 3, md: 5, lg: 8 }}>
         <Grid xs={12} md={6} lg={7}>
-          <Image
-            alt={product?.name}
-            src={PLACEHOLDER_IMAGE}
-            ratio="1/1"
-            sx={{ borderRadius: 2 }}
-          />
+          <Image alt={product?.name} src={PLACEHOLDER_IMAGE} ratio="1/1" sx={{ borderRadius: 2 }} />
         </Grid>
 
         <Grid xs={12} md={6} lg={5}>

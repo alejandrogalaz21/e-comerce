@@ -6,8 +6,6 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { ProductNewEditForm } from '../product-new-edit-form';
 
-// ----------------------------------------------------------------------
-
 export function ProductCreateView() {
   return (
     <DashboardContent>

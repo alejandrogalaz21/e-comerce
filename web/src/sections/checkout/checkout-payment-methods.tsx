@@ -14,8 +14,6 @@ import FormHelperText from '@mui/material/FormHelperText';
 
 import { Iconify } from 'src/components/iconify';
 
-// ----------------------------------------------------------------------
-
 type Props = CardProps & {
   options: ICheckoutPaymentOption[];
 };
@@ -52,8 +50,6 @@ export function CheckoutPaymentMethods({ options, ...other }: Props) {
     </Card>
   );
 }
-
-// ----------------------------------------------------------------------
 
 type OptionItemProps = PaperProps & {
   selected: boolean;

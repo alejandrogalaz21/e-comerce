@@ -4,8 +4,6 @@ import { useMemo, useCallback } from 'react';
 
 import { useLocalStorage } from 'src/hooks/use-local-storage';
 
-// ----------------------------------------------------------------------
-
 const STORAGE_KEY = 'product-list-columns';
 
 type StoredColumnState = {

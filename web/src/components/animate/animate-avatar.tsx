@@ -7,8 +7,6 @@ import { m } from 'framer-motion';
 import Box from '@mui/material/Box';
 import Avatar from '@mui/material/Avatar';
 
-// ----------------------------------------------------------------------
-
 export type AnimateAvatarProps = BoxProps & {
   slotProps?: {
     avatar?: AvatarProps;
