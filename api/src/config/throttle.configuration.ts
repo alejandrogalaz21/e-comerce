@@ -9,7 +9,8 @@ const fromEnv = (name: string, fallback: number): number => {
 export const THROTTLE = {
   default: { ttl: 60_000, limit: fromEnv('THROTTLE_LIMIT', 300) },
   import: { ttl: 60_000, limit: fromEnv('IMPORT_RATE_LIMIT', 20) },
-  placeOrder: { ttl: 60_000, limit: fromEnv('ORDER_RATE_LIMIT', 20) }
+  placeOrder: { ttl: 60_000, limit: fromEnv('ORDER_RATE_LIMIT', 20) },
+  signIn: { ttl: 60_000, limit: fromEnv('AUTH_RATE_LIMIT', 30) }
 } as const
 
 export default registerAs('throttle', () => THROTTLE)

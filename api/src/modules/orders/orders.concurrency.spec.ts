@@ -267,11 +267,48 @@ describe('OrdersService against a real database', () => {
     expect(await stockOf(source, productId)).toBe(7)
 
     const [failed] = await source.query(
-      `SELECT "status" FROM "orders" WHERE "idempotency_key" = $1`,
+      `SELECT "id", "status", "total_amount", "decline_reason"
+         FROM "orders" WHERE "idempotency_key" = $1`,
       [`${SKU_PREFIX}declined`]
     )
     expect(failed.status).toBe('FAILED')
+    expect(failed.decline_reason).toBe('card declined by the issuer')
   })
+
+  maybe(
+    'the declined order keeps the lines it was attempted with',
+    async () => {
+      const source = dataSource!
+      const productId = await seedProduct(source, 'DECLINED-LINES', 7)
+      const service = serviceFor(source, {
+        charge: async (): Promise<ChargeResult> => ({
+          status: 'declined',
+          reason: 'card declined by the issuer'
+        })
+      })
+
+      await expect(
+        service.create({
+          items: [{ productId, quantity: 3 }],
+          idempotencyKey: `${SKU_PREFIX}declined-lines`,
+          shippingAddress: SHIPPING,
+          paymentMethod: PaymentMethod.CARD
+        })
+      ).rejects.toMatchObject({ status: 402 })
+
+      const lines = await source.query(
+        `SELECT i."sku", i."quantity", i."unit_price_snapshot"
+           FROM "order_items" i
+           JOIN "orders" o ON o."id" = i."order_id"
+          WHERE o."idempotency_key" = $1`,
+        [`${SKU_PREFIX}declined-lines`]
+      )
+
+      expect(lines).toHaveLength(1)
+      expect(lines[0].quantity).toBe(3)
+      expect(lines[0].unit_price_snapshot).toBe('10.00')
+    }
+  )
 
   maybe('refuses to delete a product that appears in an order', async () => {
     const source = dataSource!

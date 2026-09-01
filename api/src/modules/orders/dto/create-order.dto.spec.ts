@@ -135,4 +135,27 @@ describe('CreateOrderDto', () => {
       expect(dto.shippingAddress.email).toBe('ada@example.com')
     })
   })
+
+  describe('the amount', () => {
+    it.each(['total', 'price', 'amount', 'totalAmount', 'discount'])(
+      'refuses %s in the body: the catalog decides what an order costs',
+      async field => {
+        expect(await messagesFor({ [field]: 0.01 })).toContain(field)
+      }
+    )
+
+    it('refuses a price smuggled onto a line', async () => {
+      const messages = await messagesFor({
+        items: [
+          {
+            productId: '0d6cd087-3f2e-4f30-b0aa-cf9c93b1c0d5',
+            quantity: 1,
+            unitPriceSnapshot: 0.01
+          }
+        ]
+      })
+
+      expect(messages).toContain('unitPriceSnapshot')
+    })
+  })
 })

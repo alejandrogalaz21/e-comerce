@@ -17,14 +17,11 @@ import { UsersService } from '../users/users.service'
 import { CreateUserDto } from '../users/dto/create-user.dto'
 import { SignInDto } from './dto/sign-in.dto'
 import { Public } from '@/common/decorators/public.decorator'
+import { THROTTLE } from '@/config'
 import {
   AuthenticatedUser,
   CurrentUser
 } from '@/common/decorators/current-user.decorator'
-
-const SIGN_IN_RATE_LIMIT = process.env.AUTH_RATE_LIMIT
-  ? parseInt(process.env.AUTH_RATE_LIMIT, 10)
-  : 30
 
 @ApiTags('auth')
 @Controller('auth')
@@ -44,7 +41,7 @@ export class AuthController {
 
   @Post('sign-in')
   @Public()
-  @Throttle({ default: { ttl: 60_000, limit: SIGN_IN_RATE_LIMIT } })
+  @Throttle({ default: THROTTLE.signIn })
   @ApiResponse({
     status: 200,
     description: 'Access token and public user data'

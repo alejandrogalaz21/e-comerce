@@ -92,7 +92,7 @@ sequenceDiagram
 | `items` | array, non-empty, ≤ 100 entries |
 | `items[].productId` | UUID |
 | `items[].quantity` | integer ≥ 1 |
-| `idempotencyKey` | string, 8–100 chars |
+| `idempotencyKey` | UUID |
 | **any amount** | **rejected** — `price` or `total` in the body produce a `400` |
 
 That last row is enforced by the global pipe's `forbidNonWhitelisted`, not by special-case code.
@@ -199,24 +199,28 @@ records the decline reason and touches no stock.
 ```bash
 ID=$(docker exec ecommerce-db psql -U postgres -d ecommerce -t -A -c "SELECT id FROM products WHERE stock > 5 LIMIT 1;")
 
+# Every order needs somewhere to go and a method to pay with, so the checks below reuse these
+REST='"paymentMethod":"card","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}'
+
 # The client cannot set the amount
 curl -s -o /dev/null -w "with total: %{http_code}\n" -X POST http://localhost:4000/api/v1/orders \
   -H 'Content-Type: application/json' \
-  -d "{\"items\":[{\"productId\":\"$ID\",\"quantity\":1}],\"idempotencyKey\":\"probe-amount\",\"total\":\"0.01\"}"
+  -d "{\"items\":[{\"productId\":\"$ID\",\"quantity\":1}],\"idempotencyKey\":\"11111111-1111-4111-8111-111111111111\",\"total\":\"0.01\",$REST}"
 # expect 400
 
 # Same key twice: one order, one stock movement
 for i in 1 2; do
   curl -s -o /dev/null -w "attempt $i: %{http_code}\n" -X POST http://localhost:4000/api/v1/orders \
     -H 'Content-Type: application/json' \
-    -d "{\"items\":[{\"productId\":\"$ID\",\"quantity\":2}],\"idempotencyKey\":\"probe-idempotent\"}"
+    -d "{\"items\":[{\"productId\":\"$ID\",\"quantity\":2}],\"idempotencyKey\":\"22222222-2222-4222-8222-222222222222\",$REST}"
 done
-# expect 201 then 200
+# expect 201 then 200 (or 402 twice: the provider declines ~10% of charges, and a
+# declined key replays its decline rather than charging again — use a new key to retry)
 
 # Two buyers, one unit: exactly one wins
 docker exec ecommerce-db psql -U postgres -d ecommerce -q -c "UPDATE products SET stock = 1 WHERE id = '$ID';"
-curl -s -o /dev/null -w "A: %{http_code}\n" -X POST http://localhost:4000/api/v1/orders -H 'Content-Type: application/json' -d "{\"items\":[{\"productId\":\"$ID\",\"quantity\":1}],\"idempotencyKey\":\"probe-race-a\"}" &
-curl -s -o /dev/null -w "B: %{http_code}\n" -X POST http://localhost:4000/api/v1/orders -H 'Content-Type: application/json' -d "{\"items\":[{\"productId\":\"$ID\",\"quantity\":1}],\"idempotencyKey\":\"probe-race-b\"}" &
+curl -s -o /dev/null -w "A: %{http_code}\n" -X POST http://localhost:4000/api/v1/orders -H 'Content-Type: application/json' -d "{\"items\":[{\"productId\":\"$ID\",\"quantity\":1}],\"idempotencyKey\":\"33333333-3333-4333-8333-333333333333\",$REST}" &
+curl -s -o /dev/null -w "B: %{http_code}\n" -X POST http://localhost:4000/api/v1/orders -H 'Content-Type: application/json' -d "{\"items\":[{\"productId\":\"$ID\",\"quantity\":1}],\"idempotencyKey\":\"44444444-4444-4444-8444-444444444444\",$REST}" &
 wait
 docker exec ecommerce-db psql -U postgres -d ecommerce -c "SELECT stock FROM products WHERE id = '$ID';"
 # expect 201 + 409, and stock 0 — never -1
