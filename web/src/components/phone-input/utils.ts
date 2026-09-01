@@ -16,9 +16,14 @@ export function normalizePhoneValue(rawValue?: string, country?: Country): strin
   }
 
   const digits = rawValue.replace(/\D/g, '');
-  const international = digits ? parsePhoneNumber(`+${digits}`) : undefined;
+  const candidate = digits ? `+${digits}` : undefined;
 
-  return international ? international.number : rawValue;
+  if (candidate && isValidPhoneNumber(candidate)) {
+    const international = parsePhoneNumber(candidate);
+    if (international) return international.number;
+  }
+
+  return rawValue;
 }
 
 export function getCountryCode(inputValue: string, countryCode?: Country) {
