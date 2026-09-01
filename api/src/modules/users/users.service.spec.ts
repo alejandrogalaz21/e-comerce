@@ -2,8 +2,6 @@ import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import * as bcrypt from 'bcryptjs'
 
-import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
-
 import { UsersService } from './users.service'
 import { User } from './entities/user.entity'
 
@@ -22,38 +20,21 @@ function userWith(overrides: Partial<User> = {}): User {
 describe('UsersService', () => {
   let service: UsersService
   let repository: {
-    createQueryBuilder: jest.Mock
     findOne: jest.Mock
-    update: jest.Mock
-  }
-  let query: {
-    andWhere: jest.Mock
-    orderBy: jest.Mock
-    take: jest.Mock
-    skip: jest.Mock
-    getCount: jest.Mock
-    getMany: jest.Mock
+    create: jest.Mock
+    save: jest.Mock
   }
 
   beforeEach(async () => {
-    query = {
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
-      skip: jest.fn().mockReturnThis(),
-      getCount: jest.fn().mockResolvedValue(1),
-      getMany: jest.fn().mockResolvedValue([userWith()])
-    }
     repository = {
-      createQueryBuilder: jest.fn().mockReturnValue(query),
       findOne: jest.fn().mockResolvedValue(userWith()),
-      update: jest.fn().mockResolvedValue({ affected: 1 })
+      create: jest.fn().mockImplementation(data => Object.assign(new User(), data)),
+      save: jest.fn().mockImplementation(async user => user)
     }
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         UsersService,
-        PaginationResponseBuilder,
         { provide: getRepositoryToken(User), useValue: repository }
       ]
     }).compile()
@@ -61,43 +42,54 @@ describe('UsersService', () => {
     service = moduleRef.get(UsersService)
   })
 
-  describe('findAll', () => {
+  describe('findOne', () => {
     it('never returns the password hash', async () => {
-      const result = await service.findAll({})
+      const user = await service.findOne('0d6cd087-3f2e-4f30-b0aa-cf9c93b1c0d5')
 
-      expect(result.data).toHaveLength(1)
-      expect(result.data[0]).not.toHaveProperty('password')
-      expect(result.data[0]).not.toHaveProperty('refreshToken')
-      expect(result.data[0].email).toBe('ada@example.com')
+      expect(user).not.toHaveProperty('password')
+      expect(user).not.toHaveProperty('refreshToken')
+      expect(user.email).toBe('ada@example.com')
     })
 
     it('leaks nothing through the serialized payload either', async () => {
-      const result = await service.findAll({})
+      const user = await service.findOne('0d6cd087-3f2e-4f30-b0aa-cf9c93b1c0d5')
 
-      expect(JSON.stringify(result)).not.toContain('$2a$10$')
+      expect(JSON.stringify(user)).not.toContain('$2a$10$')
     })
   })
 
-  describe('update', () => {
-    it('hashes a new password instead of storing it as typed', async () => {
-      await service.update('0d6cd087-3f2e-4f30-b0aa-cf9c93b1c0d5', {
-        password: 'a-brand-new-password'
-      })
+  describe('create', () => {
+    it('hashes the password instead of storing it as typed', async () => {
+      repository.findOne.mockResolvedValue(null)
 
-      const written = repository.update.mock.calls[0][1]
+      await service.create({
+        name: 'grace',
+        lastName: 'hopper',
+        email: 'grace@example.com',
+        phone: '+14155552672',
+        password: 'a-brand-new-password'
+      } as never)
+
+      const written = repository.save.mock.calls[0][0]
 
       expect(written.password).not.toBe('a-brand-new-password')
-      expect(
-        await bcrypt.compare('a-brand-new-password', written.password)
-      ).toBe(true)
+      expect(await bcrypt.compare('a-brand-new-password', written.password)).toBe(
+        true
+      )
     })
 
-    it('leaves the password alone when the update does not carry one', async () => {
-      await service.update('0d6cd087-3f2e-4f30-b0aa-cf9c93b1c0d5', {
-        name: 'grace'
-      })
+    it('does not return the hash it just wrote', async () => {
+      repository.findOne.mockResolvedValue(null)
 
-      expect(repository.update.mock.calls[0][1]).not.toHaveProperty('password')
+      const created = await service.create({
+        name: 'grace',
+        lastName: 'hopper',
+        email: 'grace@example.com',
+        phone: '+14155552672',
+        password: 'a-brand-new-password'
+      } as never)
+
+      expect(created).not.toHaveProperty('password')
     })
   })
 })

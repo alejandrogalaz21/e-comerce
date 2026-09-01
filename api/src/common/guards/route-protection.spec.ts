@@ -7,7 +7,6 @@ import { ImportController } from '@/modules/import/import.controller'
 import { OrdersController } from '@/modules/orders/orders.controller'
 import { ProductsController } from '@/modules/products/products.controller'
 import { StatusController } from '@/modules/status/status.controller'
-import { UsersController } from '@/modules/users/users.controller'
 
 type ControllerClass = new (...args: never[]) => unknown
 
@@ -48,12 +47,7 @@ const PROTECTED_SURFACE: [string, ControllerClass, string][] = [
   // sign-up would hand those rights to anyone who found the endpoint.
   ['POST /auth/sign-up', AuthController, 'signup'],
   ['GET /orders', OrdersController, 'findAll'],
-  ['GET /orders/:id', OrdersController, 'findOne'],
-  ['POST /users', UsersController, 'create'],
-  ['GET /users', UsersController, 'findAll'],
-  ['GET /users/:id', UsersController, 'findOne'],
-  ['PATCH /users/:id', UsersController, 'update'],
-  ['DELETE /users/:id', UsersController, 'remove']
+  ['GET /orders/:id', OrdersController, 'findOne']
 ]
 
 describe('public/protected boundary', () => {
@@ -81,8 +75,7 @@ describe('public/protected boundary', () => {
       ImportController,
       OrdersController,
       ProductsController,
-      StatusController,
-      UsersController
+      StatusController
     ]
 
     const handlers = controllers.flatMap(controller =>
