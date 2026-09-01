@@ -252,14 +252,14 @@ Todo automático: el buscador no toca el API ni la base, así que no hay nada qu
 | P-01 Importación CSV | 12 | 11 | 1 |
 | P-02 CRUD de productos | 11 | 11 | 0 |
 | P-03 Búsqueda y filtros | 11 | 11 | 0 |
-| P-04 Creación de pedidos | 21 | 18 | 3 |
+| P-04 Creación de pedidos | 27 | 24 | 3 |
 | P-05 Procesamiento de pagos | 9 | 7 | 2 |
 | P-06 Autenticación | 13 | 11 | 2 |
 | P-07 Contrato de errores | 8 | 8 | 0 |
-| P-08 Endurecimiento de seguridad | 6 | 4 | 2 |
+| P-08 Endurecimiento de seguridad | 6 | 5 | 1 |
 | P-09 Status y observabilidad | 8 | 1 | 7 |
 | P-10 Búsqueda de páginas | 10 | 10 | 0 |
-| **Total** | **109** | **92** | **17** |
+| **Total** | **115** | **99** | **16** |
 
 ## Lo que sigue siendo solo manual
 

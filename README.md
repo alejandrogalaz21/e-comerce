@@ -40,7 +40,7 @@ five places that judgement is visible, each with something you can run:
 | **Concurrency** | Two buyers, one unit left. Rows are locked `FOR UPDATE` **ordered by `id`**, which is what stops two multi-line orders from deadlocking. Stock lands on zero, never `-1` | [`orders.concurrency.spec.ts`](api/src/modules/orders/orders.concurrency.spec.ts) — 8 cases against a real Postgres, not mocks |
 | **Idempotency** | The key is minted when the cart fills, not when the button is pressed. Replays are decided by `UNIQUE(idempotency_key)` and a caught unique violation, never by a read-then-write | [P-04](docs/processes/P-04-order-placement.md) · [`create-order.dto.spec.ts`](api/src/modules/orders/dto/create-order.dto.spec.ts) |
 | **Money** | `numeric` in the column, string on the wire, **integer cents** in the sum. Each line freezes `unit_price_snapshot`, so a price change never rewrites a past order | [`orders.service.spec.ts`](api/src/modules/orders/orders.service.spec.ts), with prices that break in binary floating point |
-| **A hostile CSV** | The provided file contains `<script>` payloads, an injection SKU, a duplicate SKU, `"free"` as a price and negative stock. Every row lands in a named bucket and the import never returns a 500 | [`import.integration.spec.ts`](api/src/modules/import/import.service.spec.ts) · [`product-csv-cases.spec.ts`](web/e2e/product-csv-cases.spec.ts) |
+| **A hostile CSV** | The provided file contains `<script>` payloads, an injection SKU, a duplicate SKU, `"free"` as a price and negative stock. Every row lands in a named bucket and the import never returns a 500 | [`import.integration.spec.ts`](api/src/modules/import/import.integration.spec.ts) · [`product-csv-cases.spec.ts`](web/e2e/product-csv-cases.spec.ts) |
 | **Saying no** | [What is not built, and why](#what-is-not-built-and-why) and [Alternatives considered](#alternatives-considered) — including the one real limit of this design: the charge runs inside the database transaction, which is right for a local provider and wrong for a remote one |
 
 ## How to run
@@ -84,7 +84,7 @@ Shopping is open to everyone; managing the catalog is not.
 | Browsing the catalog, product detail, and completing a purchase | Creating, editing and deleting products |
 | | Creating an account: an account only grants catalog administration |
 | `GET /health` (monitoring) | CSV import and its batch history |
-| | Infrastructure status and user administration |
+| | Infrastructure status and diagnostics |
 
 The API enforces this with a global JWT guard and an explicit `@Public()` opt-out, so it fails
 closed: a new endpoint is protected unless someone deliberately opens it.
@@ -167,7 +167,7 @@ Two documents make this navigable rather than a wall of names:
 
 | Document | What it gives you |
 |---|---|
-| [docs/testing/MATRIX.md](docs/testing/MATRIX.md) | **109 use cases**, each with its purpose, steps, expected result and the test that guards it |
+| [docs/testing/MATRIX.md](docs/testing/MATRIX.md) | **115 use cases**, each with its purpose, steps, expected result and the test that guards it |
 | [docs/testing/STRATEGY.md](docs/testing/STRATEGY.md) | What is tested at which level, and — more usefully — what is deliberately **not**, with the reasoning |
 
 The manual cases are written in Spanish, like the rest of `docs/`. [TC-06](docs/testing/TC-06-concurrency-and-races.md)
