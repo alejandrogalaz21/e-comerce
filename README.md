@@ -10,7 +10,7 @@ repository at [alejandrogalaz21/e-commerce](https://github.com/alejandrogalaz21/
 - **Sample CSV download date: 2026-08-26** — the provided file is committed at
   [`docs/csv/`](docs/csv/) so the import can be reproduced exactly
 - Stack: NestJS 10 + TypeORM + PostgreSQL 16 + Redis · React 18 + Vite + MUI · Docker Compose
-- **596 automated tests** across four levels, plus eight manual cases with their evidence
+- **650 automated tests** across four levels, plus eight manual cases with their evidence
 
 ## Run it
 
@@ -334,16 +334,16 @@ first launch.
 
 ## How to run the tests
 
-**596 automated tests.** Every level runs green; the browser suite needs the stack up.
+**650 automated tests.** Every level runs green; the browser suite needs the stack up.
 
 | Suite | What it covers | Count | Command |
 |---|---|---|---|
-| API unit + fixture + real database | Domain logic, the real 97-row CSV, and locking and filtering against Postgres | 323 | `cd api && npm test` |
+| API unit + fixture + real database | Domain logic, the real 97-row CSV, and locking, filtering and the history trigger against Postgres | 358 | `cd api && npm test` |
 | API end to end | The real HTTP stack: global pipe and exception filter on a live request | 5 | `cd api && npm run test:e2e` |
-| Web unit | URL state, mappers, schemas, token handling | 192 | `cd web && npm test` |
-| Browser end to end | The whole app driven by Playwright | 76 | `cd web && npm run test:e2e` |
+| Web unit | URL state, mappers, schemas, token handling | 204 | `cd web && npm test` |
+| Browser end to end | The whole app driven by Playwright | 83 | `cd web && npm run test:e2e` |
 
-Playwright reports 77: the extra one is the sign-in fixture that runs as its own project, not a test.
+Playwright reports 84: the extra one is the sign-in fixture that runs as its own project, not a test.
 
 ```bash
 docker compose up -d --build     # the browser suite needs the stack
