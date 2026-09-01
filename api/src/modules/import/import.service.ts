@@ -101,7 +101,6 @@ export class ImportService {
       })
       await this.batchRepository.save(batch)
 
-      // Once per batch, not once per row: a 97-row import must not issue 97 invalidations.
       await this.productsService.invalidateCache()
 
       return { batchId: batch.id, ...result }
@@ -269,6 +268,8 @@ export class ImportService {
         } else if (this.isIdentical(existing, dto)) {
           summary.unchanged++
         } else {
+          const reactivated = Boolean(existing.discontinuedAt)
+
           await this.productRepository.save(
             this.applyDtoToEntity(existing, dto)
           )
@@ -277,7 +278,9 @@ export class ImportService {
             line,
             sku: dto.sku,
             name: dto.name,
-            message: 'sku already exists with different data — updated'
+            message: reactivated
+              ? 'sku existed but was discontinued — updated and put back on sale'
+              : 'sku already exists with different data — updated'
           })
         }
       } catch (error) {
@@ -348,9 +351,6 @@ export class ImportService {
     return candidates
   }
 
-  // A sku is the business key: repeating it within one file makes the file
-  // ambiguous, and picking a winner by row position would make the result
-  // depend on the ordering rather than on the data.
   private rejectDuplicateSkus(
     candidates: ImportCandidate[],
     rejected: ImportRejectedRow[]
@@ -413,6 +413,8 @@ export class ImportService {
   }
 
   private isIdentical(existing: Product, dto: CreateProductDto): boolean {
+    if (existing.discontinuedAt) return false
+
     return (
       existing.name === dto.name &&
       (existing.description ?? null) === (dto.description ?? null) &&
@@ -433,6 +435,7 @@ export class ImportService {
   }
 
   private applyDtoToEntity(existing: Product, dto: CreateProductDto): Product {
+    existing.discontinuedAt = null
     existing.name = dto.name
     existing.description = dto.description ?? null
     existing.category = dto.category

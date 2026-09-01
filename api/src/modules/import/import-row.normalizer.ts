@@ -4,9 +4,7 @@ export interface NormalizedRow {
   values: Record<string, unknown>
   errors: string[]
   isEmpty: boolean
-  /** Raw sku, empty string when the cell was blank. */
   sku: string
-  /** Raw name, kept so a rejected row can show what was wrong with it. */
   name: string
 }
 

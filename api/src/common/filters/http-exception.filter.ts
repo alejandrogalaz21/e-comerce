@@ -10,7 +10,6 @@ import { Request, Response } from 'express'
 
 import { codeForStatus, ERROR_CODES } from './error-codes'
 
-/** The envelope every error response carries. Extra keys are error-specific detail. */
 export interface ErrorResponseBody {
   statusCode: number
   error: string
@@ -36,8 +35,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR
 
-    // Anything that is not an HttpException was never meant to reach the client:
-    // log it whole before replying with something deliberately uninformative.
     if (!(exception instanceof HttpException)) {
       this.logger.error(exception)
     }
@@ -66,12 +63,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       : (response as Record<string, unknown>)
   }
 
-  /**
-   * A domain error already knows what it is — INSUFFICIENT_STOCK, PAYMENT_DECLINED —
-   * so its own code wins. Nest's default fills `error` with the HTTP status in
-   * prose, which is redundant with statusCode and useless to branch on, so that
-   * form is replaced by a code derived from the status.
-   */
   private resolveCode(
     payload: Record<string, unknown> | string,
     status: number
@@ -100,11 +91,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       : 'Request failed'
   }
 
-  /**
-   * Detail such as sku / requested / available stays at the top level: the
-   * checkout already reads it there, and nesting it would break that for the
-   * sake of tidiness.
-   */
   private extractDetail(
     payload: Record<string, unknown> | string
   ): Record<string, unknown> {

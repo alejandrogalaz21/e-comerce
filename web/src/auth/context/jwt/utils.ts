@@ -41,10 +41,6 @@ export function isValidToken(accessToken: string) {
   }
 }
 
-/**
- * The token reaches every request through the axios request interceptor,
- * so persisting it is all a session needs.
- */
 export function setSession(accessToken: string | null) {
   setAccessToken(accessToken);
 }

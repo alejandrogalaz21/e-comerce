@@ -36,7 +36,6 @@ type Props = {
 export function ProductShopView({ products, categories, total, loading }: Props) {
   const { state, apply } = useShopParams();
 
-  // Kept local while typing, so every keystroke does not become a history entry.
   const [term, setTerm] = useState(state.q);
 
   useEffect(() => setTerm(state.q), [state.q]);
@@ -48,8 +47,6 @@ export function ProductShopView({ products, categories, total, loading }: Props)
     [categories]
   );
 
-  // An empty catalog and a query that matched nothing need opposite actions:
-  // one has nothing to search, the other has a criterion to drop.
   const nothingFound = !loading && !products.length;
   const filtered = Boolean(state.q || state.category);
   const catalogEmpty = nothingFound && !filtered;

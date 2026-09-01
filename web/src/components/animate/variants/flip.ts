@@ -9,7 +9,6 @@ export const varFlip = (props?: VariantsType) => {
   const easeOut = props?.easeOut;
 
   return {
-    // IN
     inX: {
       initial: { rotateX: -180, opacity: 0 },
       animate: { rotateX: 0, opacity: 1, transition: varTranEnter({ durationIn, easeIn }) },
@@ -21,7 +20,6 @@ export const varFlip = (props?: VariantsType) => {
       exit: { rotateY: -180, opacity: 0, transition: varTranExit({ durationOut, easeOut }) },
     },
 
-    // OUT
     outX: {
       initial: { rotateX: 0, opacity: 1 },
       animate: { rotateX: 70, opacity: 0, transition: varTranExit({ durationOut, easeOut }) },

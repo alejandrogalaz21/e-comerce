@@ -5,9 +5,6 @@ import { typographyClasses } from '@mui/material/Typography';
 import { accordionSummaryClasses } from '@mui/material/AccordionSummary';
 
 const MuiAccordion: Components<Theme>['MuiAccordion'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       backgroundColor: 'transparent',
@@ -22,9 +19,6 @@ const MuiAccordion: Components<Theme>['MuiAccordion'] = {
 };
 
 const MuiAccordionSummary: Components<Theme>['MuiAccordionSummary'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       paddingLeft: theme.spacing(2),

@@ -7,10 +7,6 @@ import { chipClasses } from '@mui/material/Chip';
 
 import { varAlpha, stylesMode } from '../../styles';
 
-/**
- * Icons
- * https://icon-sets.iconify.design/solar/close-circle-bold
- */
 export const ChipDeleteIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
     <path
@@ -22,7 +18,6 @@ export const ChipDeleteIcon = (props: SvgIconProps) => (
   </SvgIcon>
 );
 
-// NEW VARIANT
 declare module '@mui/material/Chip' {
   interface ChipPropsVariantOverrides {
     soft: true;
@@ -67,24 +62,10 @@ const softVariant: Record<string, ComponentsVariants<Theme>['MuiChip']> = {
 };
 
 const MuiChip: Components<Theme>['MuiChip'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: { deleteIcon: <ChipDeleteIcon /> },
 
-  /** **************************************
-   * VARIANTS
-   *************************************** */
-  variants: [
-    /**
-     * @variant soft
-     */
-    ...[...softVariant.inheritColor!, ...softVariant.colors!],
-  ],
+  variants: [...[...softVariant.inheritColor!, ...softVariant.colors!]],
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ ownerState, theme }) => {
       const styled = {
@@ -124,9 +105,6 @@ const MuiChip: Components<Theme>['MuiChip'] = {
     },
     sizeMedium: ({ theme }) => ({ borderRadius: theme.shape.borderRadius * 1.25 }),
     sizeSmall: ({ theme }) => ({ borderRadius: theme.shape.borderRadius }),
-    /**
-     * @variant filled
-     */
     filled: ({ ownerState, theme }) => {
       const styled = {
         defaultColor: {
@@ -145,9 +123,6 @@ const MuiChip: Components<Theme>['MuiChip'] = {
       };
       return { ...styled.defaultColor };
     },
-    /**
-     * @variant outlined
-     */
     outlined: ({ ownerState, theme }) => {
       const styled = {
         defaultColor: {

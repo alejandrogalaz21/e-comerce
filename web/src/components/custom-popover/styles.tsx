@@ -43,9 +43,6 @@ export const StyledArrow = styled('span', {
     [stylesMode.dark]: {
       border: `solid 1px ${varAlpha(theme.vars.palette.common.blackChannel, 0.12)}`,
     },
-    /**
-     * Top
-     */
     ...(placement === 'top-left' && {
       ...alignmentStyles.top,
       left: offset,
@@ -59,9 +56,6 @@ export const StyledArrow = styled('span', {
       ...alignmentStyles.top,
       right: offset,
     }),
-    /**
-     * Bottom
-     */
     ...(placement === 'bottom-left' && {
       ...backgroundStyles('red'),
       ...alignmentStyles.bottom,
@@ -75,9 +69,6 @@ export const StyledArrow = styled('span', {
       ...alignmentStyles.bottom,
       right: offset,
     }),
-    /**
-     * Left
-     */
     ...(placement === 'left-top' && {
       ...alignmentStyles.left,
       top: offset,
@@ -92,9 +83,6 @@ export const StyledArrow = styled('span', {
       ...alignmentStyles.left,
       bottom: offset,
     }),
-    /**
-     * Right
-     */
     ...(placement === 'right-top' && {
       ...backgroundStyles('cyan'),
       ...alignmentStyles.right,

@@ -12,21 +12,11 @@ const FOREIGN_KEY_VIOLATION = '23503'
 const logger = new Logger('DatabaseError')
 
 export interface DatabaseErrorContext {
-  /** What the caller was acting on, used to phrase the message. */
   resource: string
-  /** The unique field that collided, when naming it helps the caller. */
   field?: string
-  /** The value that collided, when it is safe and useful to name it. */
   identifier?: string
 }
 
-/**
- * One translation for the whole system. It used to live as a private
- * handleDBExceptions in each service, which is how the same unique violation
- * ended up as a 409 in products and a 400 in users.
- *
- * Postgres detail never reaches the client: it names columns and values.
- */
 export function translateDatabaseError(
   error: unknown,
   context: DatabaseErrorContext

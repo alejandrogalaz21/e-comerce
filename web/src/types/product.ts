@@ -7,6 +7,7 @@ export type ApiProduct = {
   price: string;
   stock: number;
   weightKg: string | null;
+  discontinuedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -20,8 +21,35 @@ export type IProductItem = {
   price: number;
   stock: number;
   weightKg: number | null;
+  discontinuedAt: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ProductStatusFilter = 'active' | 'discontinued' | 'all';
+
+export type ApiProductHistoryEntry = {
+  id: string;
+  productId: string;
+  sku: string;
+  operation: 'INSERT' | 'UPDATE' | 'DELETE';
+  changedAt: string;
+  oldData: Record<string, unknown> | null;
+  newData: Record<string, unknown> | null;
+  changedFields: string[];
+};
+
+export type IProductHistoryChange = {
+  field: string;
+  from: string | null;
+  to: string | null;
+};
+
+export type IProductHistoryEntry = {
+  id: string;
+  operation: 'INSERT' | 'UPDATE' | 'DELETE';
+  changedAt: string;
+  changes: IProductHistoryChange[];
 };
 
 export type IProductPayload = {
@@ -61,6 +89,7 @@ export type IProductFilters = {
 export type IProductListParams = IProductFilters & {
   page: number;
   limit: number;
+  status?: ProductStatusFilter;
   sortBy?: IProductSortField;
   sortDir?: IProductSortDirection;
 };
@@ -79,11 +108,6 @@ export type IImportSummary = {
   skippedEmpty: number;
 };
 
-/**
- * The API always sends sku and name, using an empty string for a blank cell.
- * They stay optional here on purpose: batches stored before that contract
- * existed omit them, and their detail must keep opening.
- */
 export type IImportRejectedRow = {
   line: number;
   sku?: string;
@@ -98,12 +122,10 @@ export type IImportWarning = {
   message: string;
 };
 
-/** A fully blank row: there is nothing to report about it beyond where it was. */
 export type IImportSkippedRow = {
   line: number;
 };
 
-/** Fields beyond line/sku/name are optional: batches stored before they existed lack them. */
 export type IImportCreatedRow = {
   line: number;
   sku: string;
@@ -119,7 +141,6 @@ export type IImportReport = {
   rejected: IImportRejectedRow[];
   warnings: IImportWarning[];
   created: IImportCreatedRow[];
-  /** Absent on batches stored before skipped lines were recorded. */
   skipped?: IImportSkippedRow[];
 };
 

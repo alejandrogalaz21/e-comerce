@@ -2,6 +2,7 @@ import type { IProductItem } from 'src/types/product';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Unstable_Grid2';
 import Typography from '@mui/material/Typography';
@@ -9,15 +10,18 @@ import Typography from '@mui/material/Typography';
 import { paths } from 'src/routes/paths';
 import { RouterLink } from 'src/routes/components';
 
+import { fDateTime } from 'src/utils/format-time';
+
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
-import { CategoryIcon } from 'src/components/logo/CategoryIcons';
+import { CategoryIcon } from 'src/components/category-icon';
 
 import { ProductDetailsSkeleton } from '../product-skeleton';
 import { ProductDetailsSummary } from '../product-details-summary';
 import { ProductDetailsToolbar } from '../product-details-toolbar';
+import { ProductHistoryTimeline } from '../components/product-history-timeline';
 
 type Props = {
   product?: IProductItem;
@@ -64,6 +68,14 @@ export function ProductDetailsView({ product, error, loading }: Props) {
         liveLink={paths.product.details(`${product?.id}`)}
       />
 
+      {!!product?.discontinuedAt && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Taken off the catalog on {fDateTime(product.discontinuedAt)}. It is not for sale and the
+          shop answers as if it did not exist. Orders that contain it keep it, and putting it back on
+          sale from the product list undoes this.
+        </Alert>
+      )}
+
       <Grid container spacing={{ xs: 3, md: 5, lg: 8 }}>
         <Grid xs={12} md={6} lg={7}>
           {/* The catalog carries no photos: the category icon is the product's
@@ -98,6 +110,8 @@ export function ProductDetailsView({ product, error, loading }: Props) {
           </Typography>
         </Card>
       )}
+
+      {product && <ProductHistoryTimeline productId={product.id} />}
     </DashboardContent>
   );
 }

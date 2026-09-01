@@ -1,8 +1,3 @@
-/**
- * https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore?tab=readme-ov-file#_flatten
- * https://github.com/you-dont-need-x/you-dont-need-lodash
- */
-
 export function flattenArray<T>(list: T[], key = 'children'): T[] {
   let children: T[] = [];
 

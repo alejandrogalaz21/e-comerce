@@ -1,15 +1,5 @@
 import type { IPurchase } from 'src/types/purchase';
 
-/**
- * Downloads a receipt for an order.
- *
- * It takes the order the API actually confirmed, not the checkout context, so a
- * receipt cannot disagree with what was charged.
- *
- * `@react-pdf/renderer` is loaded with a dynamic import: it is a large dependency
- * used on one screen most visitors never open, and it has no business in the
- * main bundle.
- */
 export async function downloadReceipt(purchase: IPurchase): Promise<void> {
   const [{ pdf }, { buildReceiptDocument }] = await Promise.all([
     import('@react-pdf/renderer'),

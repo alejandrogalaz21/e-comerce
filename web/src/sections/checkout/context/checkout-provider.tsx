@@ -60,8 +60,6 @@ function Container({ children }: Props) {
   const completed = activeStep === CHECKOUT_STEPS.length;
 
   const updateTotalField = useCallback(() => {
-    // A line the catalog no longer has cannot be bought, so counting it would
-    // promise a total the order could never register.
     const buyable = state.items.filter(isPurchasable);
 
     const totalItems: number = buyable.reduce(
@@ -76,8 +74,6 @@ function Container({ children }: Props) {
 
     setField('subtotal', subtotal);
     setField('totalItems', totalItems);
-    // The API derives the total from the lines it receives, so anything the
-    // checkout adds on top would be a number the order never records.
     setField('total', subtotal);
   }, [setField, state.items]);
 
@@ -95,12 +91,6 @@ function Container({ children }: Props) {
     }
   }, [activeStep, router]);
 
-  /**
-   * The key is minted once the cart has contents, not on mount. Writing on mount
-   * raced the hydration above: this provider's children run their effects first,
-   * so the write landed on the empty initial state and wiped the stored cart.
-   * Gating on items means the write only happens after hydration produced them.
-   */
   useEffect(() => {
     if (shouldMintKey(state.items.length, state.idempotencyKey)) {
       setField('idempotencyKey', keepOrMintKey(state.idempotencyKey));
@@ -191,16 +181,10 @@ function Container({ children }: Props) {
     [setField, state.items]
   );
 
-  /**
-   * Emptying the cart ends that checkout attempt, so the idempotency key goes
-   * with it: a key kept across an emptied cart would tie a brand new purchase to
-   * the attempt the visitor just abandoned.
-   */
   const onEmptyCart = useCallback(() => {
     setState({ items: [], idempotencyKey: '' });
   }, [setState]);
 
-  /** Once the visitor has seen what changed and continues, the marks are done. */
   const onClearCartChanges = useCallback(() => {
     if (!state.items.some(hasCartDifference)) return;
 
@@ -216,7 +200,6 @@ function Container({ children }: Props) {
     [onNextStep, setField]
   );
 
-  // Reset
   const onReset = useCallback(() => {
     if (completed) {
       resetState();
@@ -231,22 +214,16 @@ function Container({ children }: Props) {
       onReset,
       onUpdate: setState,
       onUpdateField: setField,
-      //
       completed,
-      //
       onAddToCart,
       onDeleteCart,
-      //
       onIncreaseQuantity,
       onDecreaseQuantity,
-      //
       onEmptyCart,
       onClearCartChanges,
       onCreateBilling,
-      //
       onPurchasePlaced,
       onRenewIdempotencyKey,
-      //
       activeStep,
       initialStep,
       onBackStep,

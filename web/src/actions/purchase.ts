@@ -12,7 +12,6 @@ import axiosInstance, { endpoints } from 'src/lib/axios';
 
 import { toPurchase } from './purchase.mapper';
 
-/** The error envelope every API failure carries. See docs/processes/P-07-error-contract.md */
 type ApiError = {
   statusCode: number;
   error: string;
@@ -22,7 +21,6 @@ type ApiError = {
   available?: number;
 };
 
-/** A real Error so it survives rejection handling and shows a useful stack. */
 export class PlacePurchaseError extends Error {
   readonly kind: IPurchaseErrorKind;
 
@@ -70,16 +68,7 @@ export async function getPurchase(id: string): Promise<IPurchase> {
   return toPurchase(res.data);
 }
 
-/**
- * Insufficient stock and a declined card are different outcomes: retrying the
- * same request fixes the second and never the first, so the UI must tell them
- * apart without parsing prose.
- */
 export function toPlacePurchaseError(error: unknown): PlacePurchaseError {
-  // The axios response interceptor rejects with `error.response.data`, not with
-  // the AxiosError, so the error body arrives here already unwrapped. Testing
-  // for an AxiosError would never match and would flatten every failure into the
-  // generic one, which is exactly what the two distinct messages exist to avoid.
   const body = error as Partial<ApiError> | string | undefined;
 
   if (!body || typeof body !== 'object' || typeof body.statusCode !== 'number') {
@@ -99,9 +88,6 @@ export function toPlacePurchaseError(error: unknown): PlacePurchaseError {
     );
   }
 
-  // A product that vanished between the cart being checked and the order being
-  // sent. The API names it by id; the caller knows that id as a line of the cart,
-  // which is what lets the failure point at a product instead of at the order.
   if (body.statusCode === 404) {
     const id = MISSING_PRODUCT.exec(body.message ?? '')?.[1];
 

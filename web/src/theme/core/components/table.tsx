@@ -6,9 +6,6 @@ import { tableCellClasses } from '@mui/material/TableCell';
 import { varAlpha } from '../../styles';
 
 const MuiTableContainer: Components<Theme>['MuiTableContainer'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       position: 'relative',
@@ -19,18 +16,12 @@ const MuiTableContainer: Components<Theme>['MuiTableContainer'] = {
 };
 
 const MuiTable: Components<Theme>['MuiTable'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({ '--palette-TableCell-border': theme.vars.palette.divider }),
   },
 };
 
 const MuiTableRow: Components<Theme>['MuiTableRow'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       [`&.${tableRowClasses.selected}`]: {
@@ -43,9 +34,6 @@ const MuiTableRow: Components<Theme>['MuiTableRow'] = {
 };
 
 const MuiTableCell: Components<Theme>['MuiTableCell'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: { borderBottomStyle: 'dashed' },
     head: ({ theme }) => ({
@@ -63,18 +51,12 @@ const MuiTableCell: Components<Theme>['MuiTableCell'] = {
 };
 
 const MuiTablePagination: Components<Theme>['MuiTablePagination'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: {
     backIconButtonProps: { size: 'small' },
     nextIconButtonProps: { size: 'small' },
     slotProps: { select: { name: 'table-pagination-select' } },
   },
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: { width: '100%' },
     toolbar: { height: 64 },

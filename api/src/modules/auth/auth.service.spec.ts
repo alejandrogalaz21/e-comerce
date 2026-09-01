@@ -50,10 +50,6 @@ describe('AuthService', () => {
   })
 
   describe('login', () => {
-    /**
-     * The refresh token issued here used to be signed with the same secret and
-     * payload as the access token, so the JWT strategy accepted it as one.
-     */
     it('issues one access token and no refresh token', async () => {
       const user = await service.validateUser('demo@demo.com', PASSWORD)
 

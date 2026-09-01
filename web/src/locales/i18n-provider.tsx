@@ -7,11 +7,6 @@ import { localStorageGetItem } from 'src/utils/storage-available';
 
 import { i18nOptions, fallbackLng } from './config-locales';
 
-/**
- * [1] localStorage
- * Auto detection:
- * const lng = localStorageGetItem('i18nextLng')
- */
 const lng = localStorageGetItem('i18nextLng', fallbackLng);
 
 i18next

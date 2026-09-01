@@ -1,155 +1,158 @@
 # LoanPro — Code Challenge E-Commerce | Open Spec
 
-> Documento de diseño técnico previo a la implementación. Se documenta ANTES de escribir código
-> porque el challenge lo pide explícitamente: *"queremos ver que hagas las preguntas correctas y
-> guíes a la IA con tu experiencia y capacidad de anticipación"*.
+> A technical design document written before implementation. It is documented BEFORE writing code
+> because the challenge asks for it explicitly: *"we want you to ask the right questions and guide
+> AI with your experience and foreseeing skills"*.
 >
-> **Contexto clave**: LoanPro es una empresa de préstamos (fintech). Aunque el challenge es un
-> e-commerce de juguete, lo trato con la mentalidad de un sistema financiero: transacciones
-> atómicas, prevención de condiciones de carrera en dinero/inventario, trazabilidad (auditoría),
-> y desconfianza por defecto de cualquier dato de entrada (el CSV incluye intentos de XSS y SQL
-> injection — no es casualidad, es parte del test).
+> **Key context**: LoanPro is a lending company (fintech). Although the challenge is a toy
+> e-commerce, it is treated with the mindset of a financial system: atomic transactions, race
+> conditions on money and inventory prevented, traceability (auditing), and distrust by default of
+> any input datum (the CSV includes XSS and SQL injection attempts — that is not a coincidence, it
+> is part of the test).
 
-**CSV de ejemplo descargado**: `2026-08-26` (fecha de este análisis).
-
----
-
-## Contexto para quien retome este proyecto (incluido Claude Code)
-
-Este documento es el resultado de un proceso de diseño conversacional previo a escribir código,
-hecho para un take-home challenge técnico de LoanPro (empresa de préstamos). El objetivo no es
-solo pasar el checklist del challenge — es demostrar criterio de arquitectura senior aplicando
-una mentalidad fintech a un dominio de e-commerce.
-
-**Ya se hizo:**
-- Análisis fila por fila del CSV de ejemplo real (`LoanPro_Code_Challenge_E-Commerce...csv`) —
-  ver sección 1. Se encontraron errores de formato, filas vacías, payloads de XSS/SQLi
-  intencionales, SKUs duplicados con datos conflictivos, y casos límite válidos que no deben
-  rechazarse.
-- Diseño de arquitectura (NestJS + React + PostgreSQL), modelo de datos, flujo de import CSV con
-  validación por capas (sección 4.5), estrategia de concurrencia para stock (sección 5), y
-  patrones de diseño a aplicar (sección 6).
-- Decisiones de alcance: sin autenticación (decisión consciente, no un olvido), sin pasarela de
-  pago real, sin locking optimista — todas justificadas en sus secciones.
-- Estructura de proyecto y decisiones de stack de frontend/infra (sección 10).
-
-**Pendiente:**
-- Analizar dos templates existentes del candidato (`api`/BE y `web`/FE) para decidir qué se
-  reutiliza vs qué se reescribe — aún no se compartieron las URLs de esos repos en esta sesión.
-- Implementación real del código.
-
-Si eres Claude Code retomando esto: **no re-decidas lo que ya está aquí sin que el usuario lo
-pida explícitamente**. Este spec ya pasó por una ronda de "preguntas correctas" con el candidato.
-Tu trabajo es implementar contra este documento y señalar si algo no es viable técnicamente al
-llegar a ese punto — no rediseñar desde cero.
+**Sample CSV downloaded**: `2026-08-26` (the date of this analysis).
 
 ---
 
-## 0. Índice de módulos
+## Context for whoever picks this project up (Claude Code included)
 
-| Capa | Módulo | Responsabilidad |
+This document is the result of a conversational design process carried out before writing code,
+for a LoanPro take-home technical challenge. The goal is not only to pass the challenge's
+checklist — it is to demonstrate senior architectural judgement by applying a fintech mindset to
+an e-commerce domain.
+
+**Already done:**
+
+- A row-by-row analysis of the real sample CSV (`LoanPro_Code_Challenge_E-Commerce...csv`) — see
+  section 1. It turned up formatting errors, blank rows, deliberate XSS/SQLi payloads, duplicate
+  SKUs with conflicting data, and valid edge cases that must not be rejected.
+- Architecture design (NestJS + React + PostgreSQL), the data model, the CSV import flow with
+  layered validation (section 4.5), the stock concurrency strategy (section 5), and the design
+  patterns to apply (section 6).
+- Scope decisions: no authentication (a conscious decision, not an oversight), no real payment
+  gateway, no optimistic locking — all justified in their sections.
+- Project structure and frontend/infra stack decisions (section 10).
+
+**Outstanding:**
+
+- Analyse two existing candidate templates (`api`/BE and `web`/FE) to decide what is reused versus
+  rewritten — the URLs of those repos had not been shared in this session yet.
+- The actual implementation.
+
+If you are Claude Code picking this up: **do not re-decide what is already here unless the user
+explicitly asks**. This spec has already been through a round of "the right questions" with the
+candidate. Your job is to implement against this document and to flag if something turns out not
+to be technically viable when you get there — not to redesign from scratch.
+
+---
+
+## 0. Module index
+
+| Layer | Module | Responsibility |
 |---|---|---|
-| BE | `products` | CRUD de productos |
-| BE | `catalog-import` | Importación CSV con validación |
-| BE | `search` | Búsqueda de productos |
-| BE | `orders` | Compra, fake payment, control de stock |
-| BE | `common` | Filtros globales, pipes de validación, sanitización |
-| FE | `products-admin` | Pantalla CRUD |
-| FE | `catalog-search` | Buscador |
-| FE | `checkout` | Flujo de compra |
-| Infra | `docker-compose` | Orquestación local (3 contenedores) |
+| BE | `products` | Product CRUD |
+| BE | `catalog-import` | CSV import with validation |
+| BE | `search` | Product search |
+| BE | `orders` | Purchase, fake payment, stock control |
+| BE | `common` | Global filters, validation pipes, sanitisation |
+| FE | `products-admin` | CRUD screen |
+| FE | `catalog-search` | Search |
+| FE | `checkout` | Purchase flow |
+| Infra | `docker-compose` | Local orchestration (3 containers) |
 
 ---
 
-## 1. Hallazgos reales en el CSV de ejemplo
+## 1. Real findings in the sample CSV
 
-Esta sección es la más importante del challenge — decidir qué hacer con estos casos **es** la
-entrevista. Abajo, cada fila problemática con su número de línea real en el archivo.
+This is the most important section of the challenge — deciding what to do with these cases **is**
+the interview. Below, each problematic row with its real line number in the file.
 
-### 1.1 Errores de formato / tipo
+### 1.1 Format and type errors
 
-| Línea | Producto | Problema | Decisión propuesta |
+| Line | Product | Problem | Proposed decision |
 |---|---|---|---|
-| 4 | Wireless Mouse | `price = "$29.99"` (símbolo de moneda) | Sanitizar: strip de símbolos no numéricos antes de parsear. Si falla el parseo → fila rechazada, no asumir. |
-| 7 | Yoga Mat | `price = "free"` (texto, no número) | Rechazar la fila. "free" no es un precio válido — inventar 0.00 sería alterar el dato original silenciosamente. |
-| 16 | Desk Lamp | `stock = -5` (negativo) | Rechazar. Stock negativo no es un estado de negocio válido (no es lo mismo que 0 = agotado). |
-| 50 | Gaming Keyboard | `weight_kg` vacío (coma final sin valor) | Depende del contrato: si el campo es obligatorio → rechazar; si es opcional → `NULL` explícito, nunca `0` (0 kg es un dato falso, no ausencia de dato). |
+| 4 | Wireless Mouse | `price = "$29.99"` (currency symbol) | Sanitise: strip non-numeric symbols before parsing. If parsing fails → reject the row, do not assume. |
+| 7 | Yoga Mat | `price = "free"` (text, not a number) | Reject the row. "free" is not a valid price — inventing 0.00 would silently alter the original datum. |
+| 16 | Desk Lamp | `stock = -5` (negative) | Reject. Negative stock is not a valid business state (it is not the same as 0 = sold out). |
+| 50 | Gaming Keyboard | `weight_kg` empty (trailing comma with no value) | Depends on the contract: if the field is required → reject; if optional → an explicit `NULL`, never `0` (0 kg is a false datum, not an absent one). |
 
-### 1.2 Filas vacías / nombres inválidos
+### 1.2 Blank rows and invalid names
 
-| Línea | Problema | Decisión |
+| Line | Problem | Decision |
 |---|---|---|
-| 25 | `name` vacío | Rechazar — el nombre es la clave de negocio mínima. |
-| 41 | `name` = solo espacios en blanco | Rechazar tras `trim()`. Un string de espacios pasa una validación ingenua de "no vacío". |
-| 62–63 | Fila 100% vacía (`,,,,,,`) | Ignorar silenciosamente (no cuenta como error, es ruido de exportación de Excel/Sheets), pero si reportas, un log a nivel `debug`. |
+| 25 | `name` empty | Reject — the name is the minimum business key. |
+| 41 | `name` = whitespace only | Reject after `trim()`. A string of spaces passes a naive "not empty" check. |
+| 62–63 | 100% blank row (`,,,,,,`) | Ignore silently (it does not count as an error, it is Excel/Sheets export noise), but if reported, log it at `debug` level. |
 
-### 1.3 Seguridad — esto es intencional en el dataset
+### 1.3 Security — this is deliberate in the dataset
 
-| Línea | Producto | Problema | Decisión |
+| Line | Product | Problem | Decision |
 |---|---|---|---|
-| 20 | `<script>alert('xss')</script>` | Payload XSS en `name` | **Rechazar la fila** reportando el campo inválido (*decisión actualizada 2026-08-27*: la versión inicial proponía sanitizar/limpiar, pero guardar el residuo `alert('xss')` es alterar silenciosamente el dato original — inconsistente con la regla del precio "free" — y deja basura que un consumidor sin escape trataría como HTML). El escape de React al renderizar sigue siendo la segunda capa de defensa. |
-| 29 | `Robert'); DROP TABLE products;--` | Clásico Bobby Tables | Con ORM (TypeORM/Prisma) y *parametrized queries* esto ya es inofensivo por diseño — pero se documenta explícitamente en el README como prueba de que el import es seguro contra inyección. **Nunca** construir SQL con concatenación de strings, ni en el import ni en el buscador. |
+| 20 | `<script>alert('xss')</script>` | XSS payload in `name` | **Reject the row**, reporting the invalid field (*decision updated 2026-08-27*: the initial version proposed sanitising, but storing the `alert('xss')` residue silently alters the original datum — inconsistent with the "free" price rule — and leaves rubbish that a consumer without escaping would treat as HTML). React's escaping on render remains the second layer of defence. |
+| 29 | `Robert'); DROP TABLE products;--` | The classic Bobby Tables | With an ORM (TypeORM/Prisma) and *parameterised queries* this is already harmless by design — but it is documented explicitly in the README as proof that the import is safe against injection. **Never** build SQL by string concatenation, neither in the import nor in the search. |
 
-### 1.4 Duplicados — el caso más interesante para discutir en la entrevista
+### 1.4 Duplicates — the most interesting case to discuss in the interview
 
-| Líneas | SKU | Situación |
+| Lines | SKU | Situation |
 |---|---|---|
-| 3 y 36 | `RS-001` | Mismo SKU, **distinto** precio/descripción/stock (producto "actualizado") |
-| 11, 56 y 89 | `BS-021` | Línea 89 es un duplicado **exacto** de la línea 11. La línea 56 tiene el mismo SKU pero precio/stock distintos. |
+| 3 and 36 | `RS-001` | Same SKU, **different** price/description/stock (an "updated" product) |
+| 11, 56 and 89 | `BS-021` | Line 89 is an **exact** duplicate of line 11. Line 56 has the same SKU but a different price and stock. |
 
-**Decisión y por qué** (*actualizada 2026-08-28 — TK-033*): el SKU es la clave natural de negocio,
-no el nombre. Hay que separar **dos situaciones distintas** que la versión inicial de este spec
-trataba igual:
+**Decision and why** (*updated 2026-08-28 — TK-033*): the SKU is the natural business key, not the
+name. Two **distinct situations** have to be separated, which the initial version of this spec
+treated the same:
 
-**1. El SKU se repite dentro del mismo archivo → se RECHAZAN todas sus filas.**
-Ninguna de las filas tiene autoridad sobre la otra: el archivo no trae fecha, versión ni origen
-que permita decidir cuál gana. La versión inicial proponía "gana la última" (upsert secuencial),
-y se descartó por dos razones:
+**1. The SKU repeats within the same file → all of its rows are REJECTED.**
+Neither row has authority over the other: the file carries no date, version or origin that would
+let one win. The initial version proposed "the last one wins" (a sequential upsert), and that was
+dropped for two reasons:
 
-- **Dependía del orden, no del dato.** Ordenar el CSV por nombre antes de subirlo —un clic en
-  Excel— cambiaba el catálogo resultante. El mismo archivo producía dos resultados distintos.
-- **Elegía en silencio sobre datos financieros contradictorios.** No hay base de negocio para
-  afirmar que $94.99 es más correcto que $89.99; "aparece más abajo" no es una fuente de verdad.
+- **It depended on order, not on data.** Sorting the CSV by name before uploading it — one click in
+  Excel — changed the resulting catalog. The same file produced two different results.
+- **It chose silently between contradictory financial data.** There is no business basis for
+  claiming $94.99 is more correct than $89.99; "appears further down" is not a source of truth.
 
-Precedente de industria: PostgreSQL rechaza exactamente este caso —
-`ON CONFLICT DO UPDATE command cannot affect row a second time` — y el `MERGE` del estándar SQL
-lanza un *cardinality violation*. La regla no se inventa: se alinea con lo que el motor ya hace.
-La implementación es en **dos fases**: se valida el archivo completo (incluida la unicidad de la
-clave) y solo entonces se escribe, de modo que el resultado depende del contenido y nunca del orden.
+Industry precedent: PostgreSQL rejects exactly this case —
+`ON CONFLICT DO UPDATE command cannot affect row a second time` — and the SQL standard's `MERGE`
+raises a *cardinality violation*. The rule is not invented: it aligns with what the engine already
+does. The implementation is in **two phases**: the whole file is validated (key uniqueness
+included) and only then is anything written, so the result depends on the content and never on the
+order.
 
-Si en el futuro se quisiera "gana la más reciente", la vía correcta es **añadir una columna
-`updated_at` al contrato del CSV**: eso convierte la supervivencia en una regla de negocio
-verificable en vez de un accidente de posición.
+If "the most recent wins" were wanted in future, the correct route is to **add an `updated_at`
+column to the CSV contract**: that turns survival into a verifiable business rule rather than an
+accident of position.
 
-**2. El SKU ya existe en la base de datos → `UPSERT` (esto no cambia).**
-Aquí el archivo sí tiene autoridad: es una corrección de catálogo.
-- No existe → `INSERT`.
-- Existe con datos idénticos → no-op (`unchanged`, evita ruido).
-- Existe con datos distintos → `UPDATE` + advertencia en el reporte, no error fatal.
+**2. The SKU already exists in the database → `UPSERT` (this does not change).**
+Here the file does have authority: it is a catalog correction.
 
-**Impacto en el CSV de ejemplo**: RS-001 (líneas 2 y 36) y BS-021 (líneas 11, 56 y 89) quedan
-fuera del catálogo con su motivo en el reporte → 85 insertados, 10 rechazados, 2 vacías. Re-subir
-el mismo archivo da `85 unchanged, 0 updated`: contadores estables, señal de un import determinista.
+- Does not exist → `INSERT`.
+- Exists with identical data → no-op (`unchanged`, avoids noise).
+- Exists with different data → `UPDATE` + a warning in the report, not a fatal error.
 
-### 1.5 Casos límite válidos (no son errores, pero hay que probarlos)
+**Impact on the sample CSV**: RS-001 (lines 2 and 36) and BS-021 (lines 11, 56 and 89) stay out of
+the catalog with their reason in the report → 85 inserted, 10 rejected, 2 blank. Re-uploading the
+same file gives `85 unchanged, 0 updated`: stable counters, the signal of a deterministic import.
 
-| Línea | Caso | Por qué importa |
+### 1.5 Valid edge cases (not errors, but they must be tested)
+
+| Line | Case | Why it matters |
 |---|---|---|
-| 47 | `price = 0.00` (Mystery Box) | Válido — un producto puede costar 0. Distinto de `"free"` (texto inválido). |
-| 51 | `stock = 0` (Vintage Clock) | Válido — "agotado", no un error. |
-| 52 | `category` vacío, `stock = 99999`, `weight_kg = 0` | Categoría vacía → mapear a `"Uncategorized"` en vez de rechazar (no es un dato crítico). Stock alto y peso 0 (producto digital) son legítimos. |
-| 3, 5, 53 | Comas dentro de campos con comillas | Un parser CSV real (no `split(',')`) los maneja bien. Es la prueba de que NO debes hacer parsing manual ingenuo. |
-| 59 | Comillas escapadas dentro del nombre (`""Inside""`) | Mismo punto — usar una librería de parseo CSV real (`papaparse`, `csv-parse`), nunca regex casero. |
-| 31, 36, 52 | Unicode (`™`, em dash `—`) | El encoding debe ser UTF-8 de punta a punta (DB, API, front) o esto se corrompe. |
+| 47 | `price = 0.00` (Mystery Box) | Valid — a product can cost 0. Different from `"free"` (invalid text). |
+| 51 | `stock = 0` (Vintage Clock) | Valid — "sold out", not an error. |
+| 52 | `category` empty, `stock = 99999`, `weight_kg = 0` | An empty category → map to `"Uncategorized"` rather than reject (it is not a critical datum). High stock and weight 0 (a digital product) are legitimate. |
+| 3, 5, 53 | Commas inside quoted fields | A real CSV parser (not `split(',')`) handles them fine. It is the proof that you must NOT do naive manual parsing. |
+| 59 | Escaped quotes inside the name (`""Inside""`) | The same point — use a real CSV parsing library (`papaparse`, `csv-parse`), never a homemade regex. |
+| 31, 36, 52 | Unicode (`™`, em dash `—`) | Encoding must be UTF-8 end to end (DB, API, front) or this gets corrupted. |
 
 ---
 
-## 2. Arquitectura general
+## 2. Overall architecture
 
 ```mermaid
 flowchart TB
     subgraph Docker["docker-compose"]
-        FE["React UI<br/>CRUD · Búsqueda · Checkout"]
+        FE["React UI<br/>CRUD · Search · Checkout"]
         BE["NestJS API<br/>Products · Import · Orders"]
         DB[("PostgreSQL")]
     end
@@ -157,20 +160,20 @@ flowchart TB
     BE -- "TypeORM/Prisma" --> DB
 ```
 
-**Por qué PostgreSQL y no Mongo**: los datos son relacionales por naturaleza (`products` ↔
-`order_items` ↔ `orders`) y necesito **integridad referencial** y **transacciones ACID** para
-garantizar que "descontar stock" + "crear orden" ocurran atómicamente. Con Mongo tendría que
-simular transacciones multi-documento — hoy es posible, pero es nadar contracorriente para un
-dominio inherentemente relacional.
+**Why PostgreSQL and not Mongo**: the data is relational by nature (`products` ↔ `order_items` ↔
+`orders`) and I need **referential integrity** and **ACID transactions** to guarantee that
+"discount stock" + "create order" happen atomically. With Mongo I would have to simulate
+multi-document transactions — possible today, but swimming against the current for an inherently
+relational domain.
 
-**Por qué NestJS**: ya lo manejo en producción (arquitectura modular, DI nativa, pipes de
-validación declarativos con `class-validator`, guards, interceptors) — encaja perfecto con lo
-que un evaluador de una fintech espera ver: separación de responsabilidades clara, no un único
-archivo `index.js` con todo.
+**Why NestJS**: I already run it in production (modular architecture, native DI, declarative
+validation pipes with `class-validator`, guards, interceptors) — it fits exactly what a fintech
+reviewer expects to see: a clear separation of responsibilities, not a single `index.js` holding
+everything.
 
 ---
 
-## 3. Modelo de datos
+## 3. Data model
 
 ```mermaid
 erDiagram
@@ -204,152 +207,153 @@ erDiagram
   }
 ```
 
-Decisiones clave del schema:
-- `price` y `weight_kg` son **`DECIMAL`**, nunca `FLOAT`. Dinero con punto flotante binario es un
-  bug clásico de fintech (errores de redondeo). Esto aplica aunque el challenge sea un juguete.
-- `sku` tiene constraint `UNIQUE` a nivel de base de datos, no solo a nivel de aplicación — la
-  garantía real vive en la DB.
-- `unit_price_snapshot` en `order_items`: el precio se **congela** al momento de la compra. Si el
-  producto cambia de precio después, la orden histórica no debe mutar — esto es principio básico
-  de sistemas financieros (inmutabilidad de transacciones pasadas).
-- `idempotency_key` en `orders`: previene compras duplicadas por doble click o reintentos de red
-  (ver sección de concurrencia).
+Key schema decisions:
+
+- `price` and `weight_kg` are **`DECIMAL`**, never `FLOAT`. Money in binary floating point is a
+  classic fintech bug (rounding errors). This applies even though the challenge is a toy.
+- `sku` has a `UNIQUE` constraint at the database level, not only at application level — the real
+  guarantee lives in the DB.
+- `unit_price_snapshot` in `order_items`: the price is **frozen** at purchase time. If the product
+  changes price afterwards, the historical order must not mutate — this is a basic principle of
+  financial systems (immutability of past transactions).
+- `idempotency_key` in `orders`: prevents duplicate purchases from a double click or a network
+  retry (see the concurrency section).
 
 ---
 
-## 4. Flujo de importación CSV
+## 4. CSV import flow
 
 ```mermaid
 flowchart TD
-    A["Usuario sube CSV"] --> B["Parsear con librería CSV real<br/>(no split manual)"]
-    B --> C{"Fila válida?<br/>schema + tipos + trim"}
-    C -- No --> D["Acumular en reporte de errores<br/>fila + motivo, NO se aborta el import"]
-    C -- Sí --> E{"SKU ya existe?"}
-    E -- No --> F["INSERT nuevo producto"]
-    E -- "Sí, datos iguales" --> G["No-op"]
-    E -- "Sí, datos distintos" --> H["UPDATE + registrar en warnings"]
-    D --> I["Resumen final:<br/>N insertados, M actualizados, K rechazados"]
+    A["User uploads a CSV"] --> B["Parse with a real CSV library<br/>(not a manual split)"]
+    B --> C{"Row valid?<br/>schema + types + trim"}
+    C -- No --> D["Accumulate in the error report<br/>row + reason, the import is NOT aborted"]
+    C -- Yes --> E{"SKU already exists?"}
+    E -- No --> F["INSERT a new product"]
+    E -- "Yes, same data" --> G["No-op"]
+    E -- "Yes, different data" --> H["UPDATE + record a warning"]
+    D --> I["Final summary:<br/>N inserted, M updated, K rejected"]
     F --> I
     G --> I
     H --> I
-    I --> J["Respuesta al usuario con detalle por fila"]
+    I --> J["Response to the user with per-row detail"]
 ```
 
-**Decisión de diseño — parcial en vez de todo-o-nada**: si una fila del CSV falla, **no** se
-aborta el archivo completo. Se procesa todo lo válido y se devuelve un reporte detallado
-(fila, columna, motivo del rechazo). Razón: en un import de catálogo real, un archivo de 500
-productos con 3 filas rotas no debería bloquear los 497 buenos. Se documenta como alternativa
-considerada (todo-o-nada) y por qué se descartó — sería más simple, pero menos útil en producción.
+**Design decision — partial rather than all-or-nothing**: if one CSV row fails, the whole file is
+**not** aborted. Everything valid is processed and a detailed report is returned (row, column,
+rejection reason). Reason: in a real catalog import, a 500-product file with 3 broken rows should
+not block the 497 good ones. All-or-nothing is documented as an alternative considered and why it
+was dropped — it would be simpler, but less useful in production.
 
-**Validación técnica**: cada fila pasa por un DTO de NestJS con `class-validator`
-(`@IsNotEmpty`, `@IsNumber`, `@Min(0)`, `@Transform` para limpiar `$` antes de parsear precio,
-`@IsIn([...categorías válidas])` con fallback a `"Uncategorized"`). El sanitizado de `name`
-contra XSS ocurre aquí, antes de tocar la base de datos.
+**Technical validation**: every row passes through a NestJS DTO with `class-validator`
+(`@IsNotEmpty`, `@IsNumber`, `@Min(0)`, `@Transform` to strip `$` before parsing the price,
+`@IsIn([...valid categories])` with a fallback to `"Uncategorized"`). The XSS sanitisation of
+`name` happens here, before anything touches the database.
 
-### Validación campo por campo (con los casos reales del CSV)
+### Field-by-field validation (with the real cases from the CSV)
 
-| Campo | Tipo | Regla | Ejemplo que falla (línea del CSV) | Resultado |
+| Field | Type | Rule | Example that fails (CSV line) | Result |
 |---|---|---|---|---|
-| `name` | string | Requerido, no vacío tras `trim()`, **sin markup HTML** (patrón `<...>` → rechazo) | Línea 25 (vacío), línea 41 (solo espacios), línea 20 (`<script>...`) | Rechaza la fila reportando el campo inválido |
-| `sku` | string | Requerido, único — es la clave de negocio | — (siempre presente en el ejemplo) | Determina si es insert / update / no-op |
-| `description` | string | Opcional, sanitizado contra injection | Línea 29 (`Robert'); DROP TABLE...`) | Se sanea; con ORM parametrizado nunca se ejecuta como SQL |
-| `category` | string/enum | Opcional — si viene vacío, fallback a `"Uncategorized"` | Línea 52 (vacío) | No rechaza, aplica default |
-| `price` | decimal | Requerido, ≥0, limpia símbolos de moneda antes de parsear | Línea 4 (`$29.99`), línea 7 (`"free"`) | `$29.99` → limpia y acepta. `"free"` → rechaza (no es parseable) |
-| `stock` | int | Requerido, ≥0, entero | Línea 16 (`-5`) | Rechaza |
-| `weight_kg` | decimal | Opcional — si viene, debe ser ≥0 | Línea 50 (vacío) | Se guarda `NULL` explícito, nunca `0` |
+| `name` | string | Required, not empty after `trim()`, **no HTML markup** (`<...>` pattern → rejection) | Line 25 (empty), line 41 (whitespace only), line 20 (`<script>...`) | Rejects the row, reporting the invalid field |
+| `sku` | string | Required, unique — it is the business key | — (always present in the example) | Determines insert / update / no-op |
+| `description` | string | Optional, sanitised against injection | Line 29 (`Robert'); DROP TABLE...`) | Sanitised; with a parameterised ORM it never executes as SQL |
+| `category` | string/enum | Optional — if empty, falls back to `"Uncategorized"` | Line 52 (empty) | Does not reject, applies the default |
+| `price` | decimal | Required, ≥0, strips currency symbols before parsing | Line 4 (`$29.99`), line 7 (`"free"`) | `$29.99` → cleaned and accepted. `"free"` → rejected (not parseable) |
+| `stock` | int | Required, ≥0, integer | Line 16 (`-5`) | Rejected |
+| `weight_kg` | decimal | Optional — if present, must be ≥0 | Line 50 (empty) | Stored as an explicit `NULL`, never `0` |
 
-Si cualquier campo falla su validación, la fila entera se rechaza en ese punto — no continúa
-bajando en la cadena — y el motivo exacto queda registrado en el reporte del import batch
-(sección 4.5).
+If any field fails its validation, the whole row is rejected at that point — it does not continue
+down the chain — and the exact reason is recorded in the import batch's report (section 4.5).
 
 ```mermaid
 flowchart TD
-    A["name — requerido, trim, sanitiza XSS"] --> B["sku — requerido, único"]
-    B --> C["price — decimal ≥0, limpia símbolos"]
-    C --> D["stock — entero ≥0"]
-    D --> E["weight_kg (opcional) — decimal ≥0 si viene"]
-    E --> F["Pasa a regla de negocio — upsert por SKU"]
+    A["name — required, trim, XSS sanitised"] --> B["sku — required, unique"]
+    B --> C["price — decimal ≥0, symbols stripped"]
+    C --> D["stock — integer ≥0"]
+    D --> E["weight_kg (optional) — decimal ≥0 if present"]
+    E --> F["On to the business rule — upsert by SKU"]
 ```
 
 ---
 
-## 4.5 Validaciones por capa (defensa en profundidad)
+## 4.5 Layered validation (defence in depth)
 
-Regla general: **cada capa valida como si las anteriores no existieran**. Confiar en que "ya se
-validó arriba" es como se cuelan bugs a producción — y en una fintech eso cuesta dinero real.
+General rule: **every layer validates as if the previous ones did not exist**. Trusting that "it
+was already validated upstream" is how bugs reach production — and in a fintech that costs real
+money.
 
-| Capa | Qué valida | Ejemplo concreto | Herramienta |
+| Layer | What it validates | Concrete example | Tool |
 |---|---|---|---|
-| **1. Frontend (React)** | Solo UX — no es seguridad | Extensión `.csv`, tamaño máx (ej: 5MB), preview antes de enviar | Validación de input HTML5 + JS |
-| **2. Controller (NestJS)** | La request en sí | MIME type real del archivo (no la extensión), tamaño máx en servidor | `FileInterceptor` + pipe custom |
-| **3. Parser CSV** | Estructura del archivo | Headers correctos (7 columnas esperadas), encoding UTF-8, comillas/comas bien formadas | `papaparse` / `csv-parse` — nunca regex casero |
-| **4. DTO por fila** | Tipo y formato de cada campo | `price` decimal ≥0, `stock` entero ≥0, `name` no vacío tras `trim()`, sanitizar XSS | `class-validator` + `@Transform` |
-| **5. Reglas de negocio** | Lógica del dominio | SKU duplicado → ¿insert, update o rechazo?, SKU repetido *dentro del mismo CSV* | Servicio de import |
-| **6. Base de datos** | Última línea de defensa | `UNIQUE(sku)`, `CHECK(price >= 0)`, `NOT NULL` | Constraints de PostgreSQL |
+| **1. Frontend (React)** | UX only — it is not security | `.csv` extension, max size (e.g. 5MB), preview before sending | HTML5 input validation + JS |
+| **2. Controller (NestJS)** | The request itself | The file's real MIME type (not the extension), max size on the server | `FileInterceptor` + a custom pipe |
+| **3. CSV parser** | The file's structure | Correct headers (7 expected columns), UTF-8 encoding, well-formed quotes and commas | `papaparse` / `csv-parse` — never a homemade regex |
+| **4. Per-row DTO** | The type and format of each field | `price` decimal ≥0, `stock` integer ≥0, `name` not empty after `trim()`, XSS sanitised | `class-validator` + `@Transform` |
+| **5. Business rules** | Domain logic | Duplicate SKU → insert, update or reject?, SKU repeated *within the same CSV* | The import service |
+| **6. Database** | The last line of defence | `UNIQUE(sku)`, `CHECK(price >= 0)`, `NOT NULL` | PostgreSQL constraints |
 
-La capa 1 es la única que **no** es seguridad — es solo para que el usuario no espere 10 segundos
-para enterarse de que subió un `.xlsx`. Todo lo demás aplica aunque el frontend ya haya "aprobado"
-el archivo.
+Layer 1 is the only one that is **not** security — it exists so the user does not wait 10 seconds
+to find out they uploaded an `.xlsx`. Everything else applies even when the frontend has already
+"approved" the file.
 
 ```mermaid
 flowchart TD
-    A["1. Frontend — extensión .csv, tamaño máx"] --> B["2. Controller — MIME type real, tamaño en servidor"]
-    B --> C["3. Parser CSV — headers, encoding, comillas/comas"]
-    C --> D["4. DTO por fila — tipo, formato, sanitización XSS"]
-    D --> E["5. Reglas de negocio — SKU duplicado: insert/update/rechazo"]
-    E --> F["6. Base de datos — UNIQUE, CHECK, NOT NULL"]
+    A["1. Frontend — .csv extension, max size"] --> B["2. Controller — real MIME type, size on the server"]
+    B --> C["3. CSV parser — headers, encoding, quotes and commas"]
+    C --> D["4. Per-row DTO — type, format, XSS sanitisation"]
+    D --> E["5. Business rules — duplicate SKU: insert/update/reject"]
+    E --> F["6. Database — UNIQUE, CHECK, NOT NULL"]
 ```
 
-### Proceso completo de subida (con versionado)
+### The full upload process (with versioning)
 
-No es solo "parsear y guardar productos" — cada import genera su propio registro histórico.
+It is not just "parse and save products" — every import produces its own historical record.
 
 ```mermaid
 flowchart LR
-    A["Usuario sube CSV<br/>multipart/form-data"] --> B["Crea Import Batch<br/>status = processing"]
-    B --> C["Guarda archivo original<br/>S3 / volumen local"]
-    C --> D["Procesa filas<br/>insert / update / rechaza"]
-    D --> E["Cierra el batch<br/>status = completed + resumen"]
+    A["User uploads a CSV<br/>multipart/form-data"] --> B["Create an Import Batch<br/>status = processing"]
+    B --> C["Store the original file<br/>S3 / local volume"]
+    C --> D["Process the rows<br/>insert / update / reject"]
+    D --> E["Close the batch<br/>status = completed + summary"]
     D --> F["Products<br/>batch_id FK"]
 ```
 
-Cada import queda como un registro consultable — no se sobrescribe nada silenciosamente.
+Every import remains a queryable record — nothing is silently overwritten.
 
-### ¿Guardar versiones de cada subida? Sí — en una fintech es casi obligatorio
+### Store versions of every upload? Yes — in a fintech it is close to mandatory
 
-Sin esto, si mañana alguien pregunta *"¿por qué el precio de este producto cambió el martes?"*,
-no hay respuesta. Eso es inaceptable en una empresa de préstamos donde cada dato debe ser
-trazable.
+Without it, if somebody asks tomorrow *"why did this product's price change on Tuesday?"*, there is
+no answer. That is unacceptable in a lending company where every datum must be traceable.
 
-**Nivel ideal (producción real)**
+**Ideal level (real production)**
 
-| Elemento | Qué guarda | Para qué sirve |
+| Element | What it stores | What it is for |
 |---|---|---|
-| `import_batches` | Metadata de la subida: fecha, usuario, nombre de archivo, status, contadores | Auditoría — "quién importó qué y cuándo" |
-| Archivo original guardado | El CSV crudo tal como se subió (S3 o volumen) | Re-procesar o auditar el dato fuente exacto |
-| Reporte por fila | JSON con detalle de cada fila (aceptada/rechazada + motivo) | Debugging — el usuario ve por qué su fila 7 falló |
-| `products.last_batch_id` | Qué batch tocó el producto por última vez | Trazabilidad producto → import que lo originó |
+| `import_batches` | Upload metadata: date, user, filename, status, counters | Auditing — "who imported what and when" |
+| The original file stored | The raw CSV as it was uploaded (S3 or a volume) | Reprocess or audit the exact source datum |
+| Per-row report | JSON detailing each row (accepted/rejected + reason) | Debugging — the user sees why their row 7 failed |
+| `products.last_batch_id` | Which batch last touched the product | Traceability from product to the import that produced it |
 
-**Nivel mínimo viable para el challenge (tiempo limitado)**
+**Minimum viable level for the challenge (limited time)**
 
-No hace falta el nivel "producción real" completo para demostrar criterio — basta con implementar
-lo barato y documentar conscientemente lo que se deja fuera:
+The full "real production" level is not needed to demonstrate judgement — it is enough to implement
+what is cheap and consciously document what is left out:
 
-1. **Implementar**: `import_batches` con status + contadores + reporte de errores en JSON (barato
-   de construir, es lo que más se nota en la entrevista).
-2. **Documentar como "futuro"** en el README: guardar el archivo crudo en blob storage y un log de
-   cambios campo por campo por producto. Muestra que se pensó en ello sin gastar tiempo que no hay.
+1. **Implement**: `import_batches` with status + counters + a JSON error report (cheap to build,
+   and the part most noticed in the interview).
+2. **Document as "future"** in the README: storing the raw file in blob storage and a field-by-field
+   change log per product. It shows the thought was there without spending time that does not
+   exist.
 
 ---
 
-## 5. Concurrencia — el punto que una fintech sí va a preguntar
+## 5. Concurrency — the point a fintech really will ask about
 
-Escenario real: dos usuarios compran el **último producto en stock** al mismo tiempo.
+The real scenario: two users buy the **last product in stock** at the same time.
 
 ```mermaid
 sequenceDiagram
-    participant U1 as Usuario A
-    participant U2 as Usuario B
+    participant U1 as User A
+    participant U2 as User B
     participant API as NestJS
     participant DB as PostgreSQL
 
@@ -357,203 +361,204 @@ sequenceDiagram
     U2->>API: POST /orders (product X, qty 1)
     API->>DB: BEGIN TRANSACTION (A)
     API->>DB: SELECT stock FOR UPDATE (A)
-    API->>DB: BEGIN TRANSACTION (B) — espera lock
+    API->>DB: BEGIN TRANSACTION (B) — waits for the lock
     DB-->>API: stock = 1 (A)
     API->>DB: UPDATE stock = 0, INSERT order (A)
     API->>DB: COMMIT (A)
-    DB-->>API: lock liberado, stock = 0 (B)
-    API->>DB: valida stock < qty solicitada
-    API-->>U2: 409 Conflict — sin stock suficiente
-    API-->>U1: 201 Created — orden confirmada
+    DB-->>API: lock released, stock = 0 (B)
+    API->>DB: validates stock < requested qty
+    API-->>U2: 409 Conflict — not enough stock
+    API-->>U1: 201 Created — order confirmed
 ```
 
-**Mecanismo**: `SELECT ... FOR UPDATE` dentro de una transacción (lock pesimista) al leer el
-stock antes de descontarlo. Alternativa considerada: **locking optimista** (columna `version` +
-`UPDATE ... WHERE version = X`, reintentar si falla). Descarté optimista para este caso porque
-la contención esperada es baja (no es un sistema de alta concurrencia real) y el lock pesimista
-es más simple de razonar correctamente en una entrevista tomada en casa con tiempo limitado — lo
-documento como trade-off consciente, no como que no conozco la alternativa.
+**Mechanism**: `SELECT ... FOR UPDATE` inside a transaction (a pessimistic lock) when reading stock
+before discounting it. Alternative considered: **optimistic locking** (a `version` column +
+`UPDATE ... WHERE version = X`, retrying on failure). Optimistic was dropped for this case because
+expected contention is low (this is not a genuinely high-concurrency system) and a pessimistic lock
+is simpler to reason about correctly in a take-home with limited time — documented as a conscious
+trade-off, not as ignorance of the alternative.
 
-**Idempotencia**: el endpoint de compra acepta un `idempotency_key` (generado por el front al
-iniciar el checkout). Si la misma key llega dos veces (doble click, reintento de red), la segunda
-llamada devuelve la orden ya creada en vez de crear una duplicada. Esto es exactamente el patrón
-que usan pasarelas de pago reales — relevante mencionarlo porque LoanPro procesa dinero.
+**Idempotency**: the purchase endpoint accepts an `idempotency_key` (generated by the front when
+the checkout starts). If the same key arrives twice (double click, network retry), the second call
+returns the already-created order instead of creating a duplicate. This is exactly the pattern real
+payment gateways use — worth mentioning because LoanPro processes money.
 
 ---
 
-## 6. Patrones de diseño aplicados (out-of-the-box, no reinventados)
+## 6. Design patterns applied (out of the box, not reinvented)
 
-| Patrón | Dónde | Por qué |
+| Pattern | Where | Why |
 |---|---|---|
-| **Repository** | Acceso a datos vía TypeORM/Prisma repositories | Desacopla lógica de negocio de la persistencia — facilita testear con mocks. |
-| **DTO + Pipe de validación** | Todos los endpoints de entrada | Nest lo trae out-of-the-box con `class-validator`. Rechaza requests inválidos antes de llegar al controlador. |
-| **Strategy** | `PaymentProvider` interface con implementación `FakePaymentProvider` | Si mañana se conecta Stripe/otro, se implementa la interfaz sin tocar el resto de `orders`. Es la forma correcta de "fakear" un pago sin dejar deuda técnica. |
-| **Unit of Work (vía transacción de DB)** | Creación de orden + descuento de stock | Ambas operaciones ocurren o ninguna ocurre. |
-| **Global Exception Filter** | `common/filters` | Todas las excepciones (validación, no encontrado, conflicto de stock) devuelven un shape de error consistente — no stack traces crudos al cliente. |
-| **CQS ligero** | Separar `search` (lectura) de `products` CRUD (escritura) | El buscador puede optimizarse distinto (índices, cache) sin acoplarse al CRUD transaccional. |
+| **Repository** | Data access through TypeORM/Prisma repositories | Decouples business logic from persistence — makes testing with mocks easier. |
+| **DTO + validation pipe** | Every input endpoint | Nest brings it out of the box with `class-validator`. Rejects invalid requests before they reach the controller. |
+| **Strategy** | A `PaymentProvider` interface with a `FakePaymentProvider` implementation | If Stripe or another provider is connected tomorrow, you implement the interface without touching the rest of `orders`. It is the correct way to "fake" a payment without leaving technical debt. |
+| **Unit of Work (through a DB transaction)** | Order creation + stock discount | Both operations happen or neither does. |
+| **Global Exception Filter** | `common/filters` | Every exception (validation, not found, stock conflict) returns a consistent error shape — no raw stack traces to the client. |
+| **Light CQS** | Separating `search` (read) from `products` CRUD (write) | The search can be optimised differently (indexes, cache) without coupling to the transactional CRUD. |
 
 ---
 
-## 7. Manejo de errores — contrato de respuesta
+## 7. Error handling — the response contract
 
-Todos los errores de la API siguen un shape consistente (vía Exception Filter global):
+Every API error follows a consistent shape (through the global Exception Filter):
 
 ```json
 {
   "statusCode": 400,
   "error": "VALIDATION_ERROR",
-  "message": "El campo price debe ser un número decimal positivo",
+  "message": "The price field must be a positive decimal number",
   "path": "/products",
   "timestamp": "2026-08-26T10:00:00Z"
 }
 ```
 
-Para el import CSV específicamente, la respuesta incluye detalle por fila:
+For the CSV import specifically, the response includes per-row detail:
 
 ```json
 {
   "summary": { "inserted": 88, "updated": 3, "rejected": 5 },
   "rejected": [
-    { "row": 7, "reason": "price no es un número válido: 'free'" },
-    { "row": 16, "reason": "stock no puede ser negativo: -5" }
+    { "row": 7, "reason": "price is not a valid number: 'free'" },
+    { "row": 16, "reason": "stock must not be negative: -5" }
   ]
 }
 ```
 
 ---
 
-## 8. Seguridad — resumen
+## 8. Security — summary
 
-- Sanitización de `name`/`description` contra XSS a nivel de entrada (no confiar solo en el
-  escape automático de React).
-- ORM con queries parametrizadas — cero SQL concatenado, cero riesgo del payload de la línea 29.
-- Validación de tipo estricta en cada campo del CSV antes de tocar la DB.
-- CORS configurado explícitamente en NestJS (no `*` en un contexto "enterprise-grade").
-- Variables de entorno para credenciales de DB — nunca hardcodeadas ni en el repo.
-
----
-
-## 9. Qué NO se está implementando (y por qué se documenta así)
-
-- Autenticación/autorización de usuarios — fuera del alcance explícito del challenge, se menciona
-  como "siguiente paso natural" en el README.
-- Pasarela de pago real — el challenge pide explícitamente fakearla.
-- Locking optimista para stock — trade-off documentado en la sección 5.
-- Paginación avanzada en búsqueda (cursor-based) — se implementa paginación simple por
-  offset/limit, suficiente para el volumen del dataset de ejemplo; se documenta como algo a
-  revisar si el catálogo creciera a millones de filas.
-
-> **Corrección parcial (TK-049, 2026-08-31).** El envío estaba aquí como una sola exclusión y
-> resultó ser dos cosas distintas. La orden **sí guarda la dirección de entrega**: el checkout la
-> pedía y la descartaba, así que el detalle no podía mostrarla y pedirla era teatro. Lo que sigue
-> fuera es el **costo** de envío —tarifas, transportistas, impuestos—: el total se deriva
-> exclusivamente de las líneas compradas. Se guarda **dónde** se entrega, no cuánto cuesta llevarlo.
-> Tampoco hay libreta de direcciones reutilizable, porque comprar sigue siendo anónimo y no hay
-> cuenta a la que asociarlas.
+- Sanitisation of `name`/`description` against XSS at the input layer (not relying only on React's
+  automatic escaping).
+- An ORM with parameterised queries — zero concatenated SQL, zero risk from the line 29 payload.
+- Strict type validation on every CSV field before touching the DB.
+- CORS configured explicitly in NestJS (not `*` in an "enterprise-grade" context).
+- Environment variables for DB credentials — never hardcoded, never in the repo.
 
 ---
 
-## 10. Estructura del proyecto y decisiones de stack (frontend/infra)
+## 9. What is NOT being implemented (and why it is documented this way)
 
-### 10.1 Estructura de carpetas
+- User authentication and authorisation — outside the challenge's explicit scope, mentioned as the
+  "natural next step" in the README.
+- A real payment gateway — the challenge explicitly asks to fake it.
+- Optimistic locking for stock — the trade-off is documented in section 5.
+- Advanced search pagination (cursor-based) — simple offset/limit pagination is implemented, enough
+  for the sample dataset's volume; documented as something to revisit if the catalog grew to
+  millions of rows.
+
+> **Partial correction (TK-049, 2026-08-31).** Shipping was here as a single exclusion and turned
+> out to be two different things. The order **does store the delivery address**: the checkout was
+> asking for it and discarding it, so the detail could not show it and asking for it was theatre.
+> What stays out is the **cost** of shipping — rates, carriers, taxes: the total derives
+> exclusively from the purchased lines. Where it is delivered is stored, not what delivering it
+> costs. There is no reusable address book either, because buying remains anonymous and there is no
+> account to attach one to.
+
+---
+
+## 10. Project structure and stack decisions (frontend/infra)
+
+### 10.1 Folder structure
 
 ```
 loanpro-ecommerce-challenge/
-├── docker-compose.yml       # único compose que orquesta todo — api + web + db
+├── docker-compose.yml       # the single compose orchestrating everything — api + web + db
 ├── README.md
 ├── docs/
-│   └── OPEN_SPEC.md          # este documento
+│   └── OPEN_SPEC.md          # this document
 ├── .claude/
-│   └── skills/               # ver 10.7
-├── api/                       # NestJS — analizar template existente antes de decidir qué reusar
+│   └── skills/               # see 10.7
+├── api/                       # NestJS — analyse the existing template before deciding what to reuse
 │   ├── src/
 │   ├── Dockerfile
-│   └── docker-compose.yml     # candidato a eliminar si compite con el de la raíz
-└── web/                       # React SPA — analizar template existente
+│   └── docker-compose.yml     # a candidate for removal if it competes with the root one
+└── web/                       # React SPA — analyse the existing template
     ├── src/
     ├── Dockerfile
     └── ...
 ```
 
-Regla: **un solo `docker-compose.yml` en la raíz orquesta todo**. Si el template de `api` trae
-su propio compose, se decide cuál manda tras revisar el contenido real (pendiente de URLs).
+Rule: **a single `docker-compose.yml` at the root orchestrates everything**. If the `api` template
+brings its own compose, which one wins is decided after reviewing the real content (pending URLs).
 
-### 10.2 Autenticación (*decisión actualizada 2026-08-27 — TK-031*)
+### 10.2 Authentication (*decision updated 2026-08-27 — TK-031*)
 
-Versión inicial: sin auth, dejando el punto de extensión listo pero sin construirlo. **Decisión
-vigente**: la auth se construye, pero acotada a lo que realmente lo justifica. El disparador fue
-concreto: `POST /products/import` hace upsert masivo del catálogo, y dejar esa operación abierta
-al mundo no se sostiene ni en un ejercicio.
+Initial version: no auth, leaving the extension point ready but unbuilt. **Decision in force**:
+auth is built, but scoped to what actually justifies it. The trigger was concrete:
+`POST /products/import` performs a bulk upsert of the catalog, and leaving that operation open to
+the world does not hold up even in an exercise.
 
-La frontera, deliberada:
+The boundary, deliberately:
 
-- **Público**: catálogo, búsqueda, detalle y **la compra**. Un cliente compra sin cuenta, como en
-  cualquier e-commerce real. Cerrar el checkout habría sido resolver un problema que no existe.
-- **Protegido** (JWT): alta y gestión de productos, import CSV y su historial, diagnóstico de
-  infraestructura y administración de usuarios.
+- **Public**: catalog, search, detail and **the purchase**. A customer buys with no account, as in
+  any real e-commerce. Closing the checkout would have solved a problem that does not exist.
+- **Protected** (JWT): product creation and management, the CSV import and its history,
+  infrastructure diagnostics and user administration.
 
-Implementación: guard global con opt-out explícito (`@Public()`), de modo que el sistema **falla
-cerrado** — un endpoint nuevo nace protegido y olvidar marcarlo público produce un 401 evidente,
-en vez del fallo silencioso de olvidar protegerlo. Sin roles: cualquier usuario autenticado
-gestiona el catálogo (initial.md no los pide y añadirlos sería alcance inventado).
+Implementation: a global guard with an explicit opt-out (`@Public()`), so the system **fails
+closed** — a new endpoint is born protected and forgetting to mark it public produces an obvious
+401, rather than the silent failure of forgetting to protect it. No roles: any authenticated user
+manages the catalog (initial.md does not ask for them and adding them would be invented scope).
 
-Se sigue evitando el "mock de login a medias" que esta sección rechazaba: el login es real contra
-el API, con un usuario sembrado por migración (`demo@demo.com` / `demo`) documentado en el README
-para que el evaluador entre sin fricción.
+The "half-mocked login" this section rejected is still avoided: the login is real against the API,
+with a user seeded by migration (`demo@demo.com` / `demo`) documented in the README so the reviewer
+gets in without friction.
 
-### 10.3 Datos iniciales (*decisión actualizada 2026-08-27 — TK-030*)
+### 10.3 Initial data (*decision updated 2026-08-27 — TK-030*)
 
-Versión inicial: seed automático del CSV al boot. **Decisión vigente**: la app arranca con el
-catálogo **vacío** — todos los datos de negocio los crea el usuario interactuando con el sitio
-(CRUD o import CSV desde la UI, que sigue probando el pipeline real de punta a punta). Lo único
-sembrado es un **usuario demo** (`demo@demo.com` / `demo`) vía migración de datos idempotente,
-para poder hacer login. Las migraciones sí corren solas al boot — cero pasos manuales.
+Initial version: automatic seed of the CSV at boot. **Decision in force**: the app starts with an
+**empty** catalog — all business data is created by the user interacting with the site (CRUD or CSV
+import from the UI, which still exercises the real pipeline end to end). The only thing seeded is a
+**demo user** (`demo@demo.com` / `demo`) through an idempotent data migration, so a login is
+possible. The migrations do run by themselves at boot — zero manual steps.
 
-### 10.4 Frontend — TanStack sobre Redux
+### 10.4 Frontend — TanStack over Redux
 
 | | TanStack Query | Redux (+Toolkit) |
 |---|---|---|
-| Qué resuelve | Estado del servidor (fetch, cache, refetch, loading/error) | Estado global de cliente arbitrario |
-| Para este challenge | Productos, búsqueda, checkout — todo es estado de servidor | No hay estado de UI compartido que lo justifique |
-| Boilerplate | Mínimo | Actions/reducers/slices — sobra para 3 pantallas |
+| What it solves | Server state (fetch, cache, refetch, loading/error) | Arbitrary global client state |
+| For this challenge | Products, search, checkout — it is all server state | There is no shared UI state to justify it |
+| Boilerplate | Minimal | Actions/reducers/slices — overkill for 3 screens |
 
-**Decisión**: `@tanstack/react-query` para todo el fetching + routing con `react-router-dom` (o
-`@tanstack/react-router` si el template ya lo trae maduro — pendiente de confirmar con el código
-real). Redux queda descartado por sobre-ingeniería para el alcance de este challenge.
+**Decision**: `@tanstack/react-query` for all fetching + routing with `react-router-dom` (or
+`@tanstack/react-router` if the template already ships it mature — to be confirmed against the real
+code). Redux is dropped as over-engineering for this challenge's scope.
 
-### 10.5 Comunicación FE ↔ BE en local
+### 10.5 FE ↔ BE communication locally
 
-- `web` llama a `api` vía `VITE_API_URL` fuera de Docker — dentro de Docker, los contenedores se
-  resuelven por nombre de servicio (`api`), no `localhost`.
-- CORS explícito en NestJS apuntando al origin de `web`, nunca `*`.
+- `web` calls `api` through `VITE_API_URL` outside Docker — inside Docker, containers resolve each
+  other by service name (`api`), not `localhost`.
+- Explicit CORS in NestJS pointing at `web`'s origin, never `*`.
 
-### 10.6 Seguridad adicional (complementa sección 8)
+### 10.6 Additional security (complements section 8)
 
-- `helmet` en NestJS — headers HTTP seguros, una línea de setup.
-- Rate limiting (`@nestjs/throttler`) en el endpoint de import — evita abuso subiendo CSVs en loop.
+- `helmet` in NestJS — secure HTTP headers, one line of setup.
+- Rate limiting (`@nestjs/throttler`) on the import endpoint — prevents abuse by uploading CSVs in
+  a loop.
 
-### 10.7 Skills de Claude Code a crear
+### 10.7 Claude Code skills to create
 
-Para que la generación de código futura siga un estándar consistente en vez de improvisar
-convenciones cada vez:
+So that future code generation follows a consistent standard instead of improvising conventions
+each time:
 
-| Skill | Qué documenta |
+| Skill | What it documents |
 |---|---|
-| `nest-conventions` | Estructura de módulos, naming de DTOs, uso de `class-validator`, patrón de exception filter |
-| `react-component-standards` | Estructura de carpetas de componentes, convención de hooks, uso de TanStack Query |
-| `openspec-workflow` | Cómo referenciar este documento al generar código nuevo — cada feature se valida contra el spec antes de codificar |
+| `nest-conventions` | Module structure, DTO naming, use of `class-validator`, the exception filter pattern |
+| `react-component-standards` | Component folder structure, hook conventions, use of TanStack Query |
+| `openspec-workflow` | How to reference this document when generating new code — every feature is validated against the spec before coding |
 
-### 10.8 Pendiente antes de implementar
+### 10.8 Outstanding before implementing
 
-- [ ] Analizar repo `api` template existente — versión de Nest, ORM incluido, estructura de
-      módulos, Dockerfile.
-- [ ] Analizar repo `web` template existente — versión de React, router incluido, componentes
-      reutilizables.
-- [ ] Confirmar cuál `docker-compose.yml` manda (raíz vs el que trae `api`).
+- [ ] Analyse the existing `api` template repo — Nest version, included ORM, module structure,
+      Dockerfile.
+- [ ] Analyse the existing `web` template repo — React version, included router, reusable
+      components.
+- [ ] Confirm which `docker-compose.yml` wins (root vs the one `api` ships).
 
 ---
 
-## 11. Cómo correr el proyecto
+## 11. How to run the project
 
 ```bash
 docker-compose up --build
@@ -562,5 +567,5 @@ docker-compose up --build
 # Postgres: localhost:5432
 ```
 
-Al levantar, `api` corre migraciones automáticamente (schema + usuario demo `demo@demo.com` /
-`demo`). El catálogo arranca vacío: los productos se crean desde la UI (CRUD o import CSV).
+On startup, `api` runs migrations automatically (schema + the demo user `demo@demo.com` / `demo`).
+The catalog starts empty: products are created from the UI (CRUD or CSV import).

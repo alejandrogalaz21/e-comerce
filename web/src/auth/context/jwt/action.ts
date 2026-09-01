@@ -14,9 +14,6 @@ export type SignUpParams = {
   lastName: string;
 };
 
-/** **************************************
- * Sign in
- *************************************** */
 export const signInWithPassword = async ({ email, password }: SignInParams): Promise<void> => {
   const res = await axios.post(endpoints.auth.signIn, { email, password });
 
@@ -29,9 +26,6 @@ export const signInWithPassword = async ({ email, password }: SignInParams): Pro
   setSession(accessToken);
 };
 
-/** **************************************
- * Sign up
- *************************************** */
 export const signUp = async ({
   email,
   password,
@@ -47,9 +41,6 @@ export const signUp = async ({
   }
 };
 
-/** **************************************
- * Sign out
- *************************************** */
 export const signOut = async (): Promise<void> => {
   setSession(null);
 };

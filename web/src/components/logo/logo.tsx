@@ -27,11 +27,6 @@ export const Logo = forwardRef<HTMLDivElement, LogoProps>(
 
     const PRIMARY_DARK = theme.vars.palette.primary.dark;
 
-    /*
-     * OR using local (public folder)
-     * const logo = ( <Box alt="logo" component="img" src={`${CONFIG.site.basePath}/logo/logo-single.svg`} width={width} height={height} /> );
-     */
-
     const logo = (
       <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 512 512">
         <defs>

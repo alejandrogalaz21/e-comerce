@@ -9,6 +9,7 @@ import type {
   IImportBatchDetail,
   IProductListParams,
   IImportBatchListParams,
+  ApiProductHistoryEntry,
 } from 'src/types/product';
 
 import axiosInstance, { endpoints } from 'src/lib/axios';
@@ -18,12 +19,14 @@ import {
   toProductItem,
   toImportResult,
   toImportBatchDetail,
+  toProductHistoryEntry,
 } from './product.mapper';
 
 export async function getProducts(
   params: IProductListParams
 ): Promise<IPaginatedResponse<IProductItem>> {
-  const { page, limit, q, category, minPrice, maxPrice, inStock, sortBy, sortDir } = params;
+  const { page, limit, q, category, minPrice, maxPrice, inStock, status, sortBy, sortDir } =
+    params;
 
   const res = await axiosInstance.get<IPaginatedResponse<ApiProduct>>(endpoints.product.list, {
     params: {
@@ -34,6 +37,7 @@ export async function getProducts(
       ...(minPrice !== undefined ? { minPrice } : {}),
       ...(maxPrice !== undefined ? { maxPrice } : {}),
       ...(inStock !== undefined ? { inStock } : {}),
+      ...(status ? { status } : {}),
       ...(sortBy ? { sortBy } : {}),
       ...(sortDir ? { sortDir } : {}),
     },
@@ -48,6 +52,13 @@ export async function getProductCategories(): Promise<IProductCategory[]> {
 
 export async function getProduct(productId: string): Promise<IProductItem> {
   const res = await axiosInstance.get<ApiProduct>(endpoints.product.details(productId));
+  return toProductItem(res.data);
+}
+
+export async function getProductWhateverItsStatus(productId: string): Promise<IProductItem> {
+  const res = await axiosInstance.get<ApiProduct>(endpoints.product.details(productId), {
+    params: { status: 'all' },
+  });
   return toProductItem(res.data);
 }
 
@@ -66,6 +77,30 @@ export async function updateProduct(
 
 export async function deleteProduct(productId: string): Promise<void> {
   await axiosInstance.delete(endpoints.product.delete(productId));
+}
+
+export async function discontinueProduct(productId: string): Promise<IProductItem> {
+  const res = await axiosInstance.patch<ApiProduct>(endpoints.product.discontinue(productId));
+
+  return toProductItem(res.data);
+}
+
+export async function restoreProduct(productId: string): Promise<IProductItem> {
+  const res = await axiosInstance.patch<ApiProduct>(endpoints.product.restore(productId));
+
+  return toProductItem(res.data);
+}
+
+export async function getProductHistory(productId: string, params: { page?: number } = {}) {
+  const res = await axiosInstance.get<IPaginatedResponse<ApiProductHistoryEntry>>(
+    endpoints.product.history(productId),
+    { params }
+  );
+
+  return {
+    entries: res.data.data.map(toProductHistoryEntry),
+    pagination: res.data.pagination,
+  };
 }
 
 export async function importProductsCsv(file: File): Promise<IImportResult> {

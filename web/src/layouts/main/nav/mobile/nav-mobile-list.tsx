@@ -27,16 +27,13 @@ export function NavList({ data }: NavListProps) {
 
   const renderNavItem = (
     <NavItem
-      // slots
       path={data.path}
       icon={data.icon}
       title={data.title}
-      // state
       active={active}
       hasChild={!!data.children}
       open={data.children && !!openMenu}
       externalLink={isExternalLink(data.path)}
-      // actions
       onClick={handleToggleMenu}
     />
   );

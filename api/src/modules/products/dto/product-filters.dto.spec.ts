@@ -159,6 +159,31 @@ describe('ProductFiltersDto validation', () => {
     })
   })
 
+  describe('catalog status', () => {
+    it('accepts the three states the catalog can be asked for', async () => {
+      for (const status of ['active', 'discontinued', 'all'] as const) {
+        // eslint-disable-next-line no-await-in-loop
+        const dto = await transform({ status })
+
+        expect(dto.status).toBe(status)
+      }
+    })
+
+    it('rejects an unknown state and names the valid ones', async () => {
+      const messages = await expectRejection({ status: 'retired' })
+
+      expect(messages.join(' ')).toContain('status')
+      expect(messages.join(' ')).toContain('active')
+      expect(messages.join(' ')).toContain('discontinued')
+    })
+
+    it('leaves the status undefined when not requested, so the service decides the default', async () => {
+      const dto = await transform({ page: '1', limit: '10' })
+
+      expect(dto.status).toBeUndefined()
+    })
+  })
+
   it('rejects unknown query parameters', async () => {
     await expectRejection({ orderBy: 'price' })
   })

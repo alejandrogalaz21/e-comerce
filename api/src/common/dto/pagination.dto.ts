@@ -4,12 +4,6 @@ import { IsInt, IsOptional, Max, Min } from 'class-validator'
 
 export const MAX_PAGE_SIZE = 100
 
-/**
- * Validated as integers with a floor and a ceiling. As numeric strings, `-1`
- * and `1.5` passed validation and reached Postgres as a negative OFFSET, which
- * answers a client mistake with a 500, and an unbounded page size let a single
- * request ask for the whole table.
- */
 export class PaginationDTO {
   @ApiPropertyOptional({ example: 1, default: 1, minimum: 1 })
   @IsOptional()

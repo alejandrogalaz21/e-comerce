@@ -1,9 +1,5 @@
 import { HttpStatus } from '@nestjs/common'
 
-/**
- * The single catalogue of machine-readable error codes. A client branches on
- * these, so a code must keep meaning the same thing across responses.
- */
 export const ERROR_CODES = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   UNAUTHORIZED: 'UNAUTHORIZED',
@@ -34,7 +30,6 @@ const BY_STATUS: Partial<Record<HttpStatus, ErrorCode>> = {
   [HttpStatus.TOO_MANY_REQUESTS]: ERROR_CODES.TOO_MANY_REQUESTS
 }
 
-/** Used only when the exception did not carry a code of its own. */
 export function codeForStatus(status: number): ErrorCode {
   return BY_STATUS[status as HttpStatus] ?? ERROR_CODES.INTERNAL_ERROR
 }

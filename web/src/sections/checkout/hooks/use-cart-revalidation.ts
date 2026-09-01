@@ -1,4 +1,3 @@
-
 import { useMemo, useEffect } from 'react';
 import { useQueries } from '@tanstack/react-query';
 
@@ -11,13 +10,6 @@ import { reconcileCart } from '../cart-reconcile';
 
 import type { CartLookup } from '../cart-reconcile';
 
-/**
- * Contrasts the cart against the catalog and writes back what changed.
- *
- * Runs when the visitor opens the cart and when the checkout starts — the two
- * moments where prices are read and a decision is made. Revalidating on every
- * quantity click would multiply requests without changing any decision of theirs.
- */
 export function useCartRevalidation(enabled: boolean = true) {
   const checkout = useCheckoutContext();
 
@@ -28,8 +20,6 @@ export function useCartRevalidation(enabled: boolean = true) {
       queryKey: productKeys.detail(id),
       queryFn: () => getProduct(id),
       enabled,
-      // A cart is read after being left alone for a while; the answer that
-      // matters is the current one, not one cached from the last visit.
       staleTime: 0,
       retry: false,
     })),
@@ -44,8 +34,6 @@ export function useCartRevalidation(enabled: boolean = true) {
       acc[id] = toLookup(queries[index]);
       return acc;
     }, {});
-    // The queries array is rebuilt on every render; what identifies this result
-    // is which ids were asked for and whether they have all answered.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ids, settled, queries.map((query) => query.dataUpdatedAt + String(query.isError)).join('|')]);
 
@@ -70,16 +58,16 @@ export function useCartRevalidation(enabled: boolean = true) {
   };
 }
 
-/**
- * A product the catalog answers 404 for is not a failed lookup: it was withdrawn.
- * Anything else — no network, a server that is down — is a cart that could not be
- * verified, and treating that as a withdrawal would empty carts over a bad
- * connection.
- */
-function toLookup(query: { data?: unknown; error: unknown; isError: boolean }): CartLookup {
-  if (query.data) return { status: 'found', product: query.data as never };
+export function toLookup(query: {
+  data?: unknown;
+  error: unknown;
+  isError: boolean;
+}): CartLookup {
+  if (query.isError) {
+    return statusOf(query.error) === 404 ? { status: 'gone' } : { status: 'unverified' };
+  }
 
-  if (query.isError && statusOf(query.error) === 404) return { status: 'gone' };
+  if (query.data) return { status: 'found', product: query.data as never };
 
   return { status: 'unverified' };
 }

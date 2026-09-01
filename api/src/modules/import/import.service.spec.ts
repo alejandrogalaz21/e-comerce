@@ -6,6 +6,7 @@ import { ImportService } from './import.service'
 import { ImportRowNormalizer } from './import-row.normalizer'
 import { ImportBatch } from './import-batch.entity'
 import { Product } from '@/modules/products/entities/product.entity'
+import { ProductHistory } from '@/modules/products/entities/product-history.entity'
 import { ProductsService } from '@/modules/products/products.service'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 
@@ -80,6 +81,10 @@ describe('ImportService', () => {
         {
           provide: getRepositoryToken(Product),
           useValue: mockProductRepository
+        },
+        {
+          provide: getRepositoryToken(ProductHistory),
+          useValue: { findAndCount: jest.fn().mockResolvedValue([[], 0]) }
         },
         {
           provide: getRepositoryToken(ImportBatch),
@@ -229,7 +234,6 @@ describe('ImportService', () => {
       )
 
       expect(result.summary.inserted).toBe(0)
-      // The offending name travels with the row, so the report shows what was wrong.
       expect(result.rejected[0]).toEqual({
         line: 2,
         sku: 'XS-001',
@@ -314,6 +318,36 @@ describe('ImportService', () => {
       ])
       expect(mockProductRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({ price: '94.99', stock: 120 })
+      )
+    })
+
+    it('puts a discontinued sku back on sale and reports it as updated', async () => {
+      mockProductRepository.findOne.mockResolvedValue(
+        existingProduct({
+          discontinuedAt: new Date('2026-09-01T10:00:00.000Z')
+        })
+      )
+
+      const result = await service.importCsv(
+        csvFile([
+          'Running Shoes,RS-001,Lightweight running shoes for daily training,Footwear,89.99,150,0.35'
+        ])
+      )
+
+      expect(result.summary).toEqual(
+        expect.objectContaining({ inserted: 0, updated: 1, unchanged: 0 })
+      )
+      expect(result.warnings).toEqual([
+        {
+          line: 2,
+          sku: 'RS-001',
+          name: 'Running Shoes',
+          message:
+            'sku existed but was discontinued — updated and put back on sale'
+        }
+      ])
+      expect(mockProductRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ discontinuedAt: null })
       )
     })
 

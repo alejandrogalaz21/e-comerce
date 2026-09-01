@@ -22,8 +22,6 @@ const authEndpoints = {
 
 const axiosInstance = axios.create({
   baseURL: CONFIG.site.serverUrl,
-  // Repeat the key for array params (`q=a&q=b`) instead of axios' default `q[]=a`,
-  // which the API does not parse.
   paramsSerializer: { indexes: null },
 });
 
@@ -36,7 +34,6 @@ function redirectToSignIn() {
 
   const { pathname, search } = window.location;
 
-  // The public shop must never be pushed to login by a stale token.
   if (!pathname.startsWith(paths.dashboard.root)) {
     return;
   }
@@ -92,6 +89,9 @@ export const endpoints = {
     },
     update: (id: string) => `/api/v1/products/${id}`,
     delete: (id: string) => `/api/v1/products/${id}`,
+    discontinue: (id: string) => `/api/v1/products/${id}/discontinue`,
+    restore: (id: string) => `/api/v1/products/${id}/restore`,
+    history: (id: string) => `/api/v1/products/${id}/history`,
   },
   purchase: {
     create: '/api/v1/orders',

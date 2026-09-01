@@ -1,9 +1,6 @@
 import type { Theme, Components } from '@mui/material/styles';
 
 const MuiCard: Components<Theme>['MuiCard'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       position: 'relative',
@@ -15,17 +12,11 @@ const MuiCard: Components<Theme>['MuiCard'] = {
 };
 
 const MuiCardHeader: Components<Theme>['MuiCardHeader'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: {
     titleTypographyProps: { variant: 'h6' },
     subheaderTypographyProps: { variant: 'body2', marginTop: '4px' },
   },
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       padding: theme.spacing(3, 3, 0),
@@ -34,9 +25,6 @@ const MuiCardHeader: Components<Theme>['MuiCardHeader'] = {
 };
 
 const MuiCardContent: Components<Theme>['MuiCardContent'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: { root: ({ theme }) => ({ padding: theme.spacing(3) }) },
 };
 

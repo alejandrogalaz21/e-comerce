@@ -29,14 +29,8 @@ export function createTheme(
     shouldSkipGeneratingVar,
   };
 
-  /**
-   * 1.Update values from settings before creating theme.
-   */
   const updateTheme = updateCoreWithSettings(initialTheme, settings);
 
-  /**
-   * 2.Create theme + add locale + update component with settings.
-   */
   const theme = extendTheme(
     updateTheme,
     localeComponents,
@@ -56,7 +50,6 @@ function shouldSkipGeneratingVar(keys: string[], value: string | number): boolea
     'cssVarPrefix',
     'unstable_sxConfig',
     'typography',
-    // 'transitions',
   ];
 
   const skipPaletteKeys: {
@@ -78,26 +71,3 @@ function shouldSkipGeneratingVar(keys: string[], value: string | number): boolea
 
   return keys.some((key) => skipGlobalKeys?.includes(key));
 }
-
-/**
-* createTheme without @settings and @locale components.
-*
- ```jsx
-export function createTheme(): Theme {
-  const initialTheme = {
-    colorSchemes,
-    shadows: shadows('light'),
-    customShadows: customShadows('light'),
-    shape: { borderRadius: 8 },
-    components,
-    typography,
-    cssVarPrefix: '',
-    shouldSkipGeneratingVar,
-  };
-
-  const theme = extendTheme(initialTheme, overridesTheme);
-
-  return theme;
-}
- ```
-*/

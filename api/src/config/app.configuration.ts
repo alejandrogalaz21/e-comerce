@@ -1,17 +1,9 @@
-// src/config/app.configuration.ts
 import { randomBytes } from 'crypto'
 import { registerAs } from '@nestjs/config'
 
 const WEAK_JWT_SECRETS = ['changeme', 'secret', 'password', 'jwt', 'test']
 const MIN_JWT_SECRET_LENGTH = 16
 
-/**
- * A signing key is the whole authentication system. An unset one used to reach
- * passport as `undefined`, and a placeholder committed to a compose file is
- * public knowledge — anyone can mint an administrator token with it. So a weak
- * value stops the boot, and an absent one is generated: sessions then die with
- * the process, which is loud and harmless, unlike a secret everybody knows.
- */
 export function resolveJwtSecret(
   raw: string | undefined,
   logger: Pick<Console, 'warn'> = console
@@ -45,20 +37,9 @@ export default registerAs('app', () => ({
   port: process.env.PORT ? parseInt(process.env.PORT) : 8080,
   jwtSecret: resolveJwtSecret(process.env.JWT_SECRET),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
-  /**
-   * How many reverse proxies sit in front of the API. Rate limiting counts by
-   * client IP, and behind a proxy every request carries the proxy's address
-   * unless Express is told how far down the X-Forwarded-For chain to trust.
-   * Zero means a direct connection: the header is ignored, so nobody can forge
-   * an address to get a fresh counter.
-   */
   trustProxyHops: process.env.TRUST_PROXY_HOPS
     ? parseInt(process.env.TRUST_PROXY_HOPS, 10)
     : 0,
-  /**
-   * Comma-separated list of origins allowed to call the API. Defaults to the
-   * web container's origin: an "enterprise-grade" API does not answer '*'.
-   */
   corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:3000')
     .split(',')
     .map(origin => origin.trim())

@@ -48,7 +48,8 @@ export class Order {
   @ApiProperty({
     enum: PaymentMethod,
     example: PaymentMethod.CARD,
-    description: 'How the buyer chose to pay. Null on orders placed before it was recorded',
+    description:
+      'How the buyer chose to pay. Null on orders placed before it was recorded',
     nullable: true,
     required: false
   })
@@ -73,8 +74,6 @@ export class Order {
   @Column('varchar', { name: 'decline_reason', length: 255, nullable: true })
   declineReason: string | null
 
-  // Where the order goes. Nullable because orders placed before deliveries were
-  // recorded have none; the DTO is what requires it from now on.
   @ApiProperty({ example: 'Ada Lovelace', nullable: true, required: false })
   @Column('varchar', { name: 'ship_name', length: 255, nullable: true })
   shipName: string | null

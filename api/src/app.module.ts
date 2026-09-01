@@ -1,4 +1,3 @@
-// src/app.module.ts
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { APP_GUARD } from '@nestjs/core'
@@ -7,16 +6,12 @@ import {
   ThrottlerModule,
   ThrottlerOptions
 } from '@nestjs/throttler'
-// Config
 import { PgConfig, AppConfig, RedisConfig, ThrottleConfig } from '@/config'
-// Database
 import { PgModule } from '@/database/postgres/pg.module'
 import { RedisModule } from '@/database/redis/redis.module'
-// Common
 import { CommonModule } from '@/common/common.module'
 import { LoggerMiddleware } from '@/common/middleware/logger.middleware'
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard'
-// Business Modules
 import { UsersModule } from '@/modules/users/users.module'
 import { AuthModule } from '@/modules/auth/auth.module'
 import { ProductsModule } from '@/modules/products/products.module'
@@ -59,7 +54,6 @@ import { StatusModule } from '@/modules/status/status.module'
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Apply LoggerMiddleware to all routes
     consumer.apply(LoggerMiddleware).forRoutes('*')
   }
 }

@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 import { fCurrency } from 'src/utils/format-number';
 
 import { Iconify } from 'src/components/iconify';
-import { CategoryIcon } from 'src/components/logo/CategoryIcons';
+import { CategoryIcon } from 'src/components/category-icon';
 
 import { CartLineChanges } from './cart-change-notice';
 import { IncrementerButton } from '../product/components/incrementer-button';

@@ -4,7 +4,6 @@ import { paginationItemClasses } from '@mui/material/PaginationItem';
 
 import { varAlpha, stylesMode } from '../../styles';
 
-// NEW VARIANT
 declare module '@mui/material/Pagination' {
   interface PaginationPropsVariantOverrides {
     soft: true;
@@ -53,23 +52,9 @@ const softVariant: Record<string, ComponentsVariants<Theme>['MuiPagination']> = 
 };
 
 const MuiPagination: Components<Theme>['MuiPagination'] = {
-  /** **************************************
-   * VARIANTS
-   *************************************** */
-  variants: [
-    /**
-     * @variant soft
-     */
-    ...[...softVariant.standardColor!, ...softVariant.colors!],
-  ],
+  variants: [...[...softVariant.standardColor!, ...softVariant.colors!]],
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
-    /**
-     * @variant text
-     */
     text: ({ ownerState, theme }) => ({
       [`& .${paginationItemClasses.root}`]: {
         [`&.${paginationItemClasses.selected}`]: {
@@ -86,9 +71,6 @@ const MuiPagination: Components<Theme>['MuiPagination'] = {
         },
       },
     }),
-    /**
-     * @variant outlined
-     */
     outlined: ({ ownerState, theme }) => ({
       [`& .${paginationItemClasses.root}`]: {
         borderColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.24),

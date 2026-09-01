@@ -12,14 +12,12 @@ export const paths = {
     checkout: `/product/checkout`,
     details: (id: string) => `/product/${id}`,
   },
-  // AUTH
   auth: {
     jwt: {
       signIn: `${ROOTS.AUTH}/jwt/sign-in`,
       signUp: `${ROOTS.AUTH}/jwt/sign-up`,
     },
   },
-  // DASHBOARD
   dashboard: {
     root: ROOTS.DASHBOARD,
     status: `${ROOTS.DASHBOARD}/status`,

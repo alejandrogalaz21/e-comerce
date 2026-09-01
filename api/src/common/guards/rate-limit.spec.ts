@@ -13,12 +13,6 @@ import { ThrottleConfig, THROTTLE } from '@/config'
 import { OrdersController } from '@/modules/orders/orders.controller'
 import { OrdersService } from '@/modules/orders/orders.service'
 
-/**
- * The metadata assertions in security.spec.ts prove the decorator was written.
- * They cannot prove it still applies: renaming the `default` rule, or renaming
- * the handler, silently disconnects the ceiling while leaving the metadata
- * exactly where it was. Only a real request reaching a real guard shows that.
- */
 describe('rate limiting, as the guard actually applies it', () => {
   let app: INestApplication
 
@@ -40,9 +34,6 @@ describe('rate limiting, as the guard actually applies it', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true, load: [ThrottleConfig] }),
-        // The same wiring as app.module.ts: a ceiling read through the config
-        // namespace rather than hardcoded here, so the test breaks if the
-        // module stops feeding the guard.
         ThrottlerModule.forRootAsync({
           useFactory: (configService: ConfigService) => [
             configService.get<ThrottlerOptions>('throttle.default')
@@ -83,8 +74,6 @@ describe('rate limiting, as the guard actually applies it', () => {
   })
 
   it('applies the route ceiling, not the far looser global one', () => {
-    // If this ever stops holding, the two tests above stop meaning anything:
-    // they would pass by exhausting the global limit instead.
     expect(THROTTLE.placeOrder.limit).toBeLessThan(THROTTLE.default.limit)
   })
 })

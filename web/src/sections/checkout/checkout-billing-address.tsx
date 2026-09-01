@@ -17,8 +17,6 @@ import { useCartRevalidation } from './hooks/use-cart-revalidation';
 export function CheckoutBillingAddress() {
   const checkout = useCheckoutContext();
 
-  // Every screen that shows a total shows a reconciled one: this step displays
-  // the summary too, so it cannot be the one that skips the check.
   const { unverified } = useCartRevalidation();
 
   const addressForm = useBoolean();

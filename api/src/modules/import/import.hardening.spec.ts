@@ -11,6 +11,7 @@ import { ImportService } from './import.service'
 import { ImportRowNormalizer } from './import-row.normalizer'
 import { ImportBatch } from './import-batch.entity'
 import { Product } from '@/modules/products/entities/product.entity'
+import { ProductHistory } from '@/modules/products/entities/product-history.entity'
 import { ProductsService } from '@/modules/products/products.service'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 
@@ -73,6 +74,10 @@ describe('ImportService (adversarial input hardening)', () => {
         {
           provide: getRepositoryToken(Product),
           useValue: mockProductRepository
+        },
+        {
+          provide: getRepositoryToken(ProductHistory),
+          useValue: { findAndCount: jest.fn().mockResolvedValue([[], 0]) }
         },
         {
           provide: getRepositoryToken(ImportBatch),

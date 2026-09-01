@@ -8,8 +8,12 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  restoreProduct,
   importProductsCsv,
+  getProductHistory,
+  discontinueProduct,
   getProductCategories,
+  getProductWhateverItsStatus,
 } from 'src/actions/product';
 
 import { toast } from 'src/components/snackbar';
@@ -21,7 +25,9 @@ export const productKeys = {
   lists: () => [...productKeys.all, 'list'] as const,
   list: (params: IProductListParams) => [...productKeys.lists(), params] as const,
   detail: (id: string) => [...productKeys.all, 'detail', id] as const,
+  adminDetail: (id: string) => [...productKeys.all, 'detail', id, 'any-status'] as const,
   categories: () => [...productKeys.all, 'categories'] as const,
+  history: (id: string) => [...productKeys.all, 'history', id] as const,
 };
 
 export function getErrorMessage(error: unknown): string {
@@ -81,6 +87,26 @@ export function useGetProduct(productId: string) {
   };
 }
 
+/**
+ * The dashboard reaches a product whatever its catalog status, so a discontinued
+ * one can still be reviewed and restored. Its own key keeps the shop's cache,
+ * which must keep seeing the 404, out of it.
+ */
+export function useGetProductForAdmin(productId: string) {
+  const query = useQuery({
+    queryKey: productKeys.adminDetail(productId),
+    queryFn: () => getProductWhateverItsStatus(productId),
+    enabled: !!productId,
+  });
+
+  return {
+    product: query.data,
+    productLoading: query.isLoading,
+    productError: query.error,
+    productValidating: query.isFetching,
+  };
+}
+
 export function useCreateProduct() {
   const queryClient = useQueryClient();
 
@@ -111,6 +137,52 @@ export function useUpdateProduct() {
   });
 }
 
+export function useGetProductHistory(productId: string) {
+  const query = useQuery({
+    queryKey: productKeys.history(productId),
+    queryFn: () => getProductHistory(productId),
+    enabled: Boolean(productId),
+  });
+
+  return {
+    entries: query.data?.entries ?? [],
+    isPending: query.isPending,
+    isError: query.isError,
+  };
+}
+
+export function useDiscontinueProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => discontinueProduct(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: productKeys.categories() });
+      queryClient.invalidateQueries({ queryKey: productKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: productKeys.history(id) });
+      toast.success('Product taken off the catalog');
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
+export function useRestoreProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => restoreProduct(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: productKeys.categories() });
+      queryClient.invalidateQueries({ queryKey: productKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: productKeys.history(id) });
+      toast.success('Product back on the catalog');
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  });
+}
+
 export function useImportProducts() {
   const queryClient = useQueryClient();
 
@@ -135,6 +207,21 @@ export function useDeleteProduct() {
       queryClient.invalidateQueries({ queryKey: productKeys.categories() });
       toast.success('Product deleted');
     },
-    onError: (error) => toast.error(getErrorMessage(error)),
+    // A sold product cannot be deleted, and the operation the administrator
+    // wanted is the other one. Saying only "conflict" leaves them stuck.
+    onError: (error) =>
+      isSoldProductConflict(error)
+        ? toast.error(
+            'This product has sales and cannot be deleted. Take it off the catalog instead.'
+          )
+        : toast.error(getErrorMessage(error)),
   });
+}
+
+function isSoldProductConflict(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { error?: string }).error === 'RESOURCE_IN_USE'
+  );
 }

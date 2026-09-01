@@ -1,18 +1,16 @@
 import { Controller, Get, Inject } from '@nestjs/common'
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags
-} from '@nestjs/swagger'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { InjectDataSource } from '@nestjs/typeorm'
 import { DataSource } from 'typeorm'
 import Redis from 'ioredis'
 import { REDIS_CLIENT } from '@/database/redis/redis.module'
+import { ApiUnauthorizedResponse } from '@/common/swagger/api-responses'
+
+import { ApiDatabaseStatus, ApiRedisStatus } from './docs/status.api-docs'
 
 @ApiTags('status')
 @ApiBearerAuth('jwt')
-@ApiResponse({ status: 401, description: 'Missing or invalid access token' })
+@ApiUnauthorizedResponse()
 @Controller('status')
 export class StatusController {
   constructor(
@@ -21,11 +19,7 @@ export class StatusController {
   ) {}
 
   @Get('redis')
-  @ApiOperation({
-    summary: 'Redis round-trip demo (INCR + PING + INFO)',
-    description:
-      'Writes and reads real data in Redis. Never returns 500: if Redis is down it responds with ok=false.'
-  })
+  @ApiRedisStatus()
   async redisStatus() {
     const startedAt = Date.now()
     try {
@@ -52,11 +46,7 @@ export class StatusController {
   }
 
   @Get('db')
-  @ApiOperation({
-    summary: 'PostgreSQL read demo (NOW + version + products count)',
-    description:
-      'Queries real data from Postgres through TypeORM. Never returns 500: if the DB is down it responds with ok=false.'
-  })
+  @ApiDatabaseStatus()
   async dbStatus() {
     const startedAt = Date.now()
     try {

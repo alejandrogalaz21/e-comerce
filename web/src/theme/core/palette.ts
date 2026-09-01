@@ -52,43 +52,32 @@ declare module '@mui/material' {
 
 export type ColorType = 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error';
 
-// Grey
 export const grey = createPaletteChannel(COLORS.grey);
 
-// Primary
 export const primary = createPaletteChannel(COLORS.primary);
 
-// Secondary
 export const secondary = createPaletteChannel(COLORS.secondary);
 
-// Info
 export const info = createPaletteChannel(COLORS.info);
 
-// Success
 export const success = createPaletteChannel(COLORS.success);
 
-// Warning
 export const warning = createPaletteChannel(COLORS.warning);
 
-// Error
 export const error = createPaletteChannel(COLORS.error);
 
-// Common
 export const common = createPaletteChannel(COLORS.common);
 
-// Text
 export const text = {
   light: createPaletteChannel({ primary: grey[800], secondary: grey[600], disabled: grey[500] }),
   dark: createPaletteChannel({ primary: '#FFFFFF', secondary: grey[500], disabled: grey[600] }),
 };
 
-// Background
 export const background = {
   light: createPaletteChannel({ paper: '#FFFFFF', default: '#FFFFFF', neutral: grey[200] }),
   dark: createPaletteChannel({ paper: grey[800], default: grey[900], neutral: '#28323D' }),
 };
 
-// Action
 export const baseAction = {
   hover: varAlpha(grey['500Channel'], 0.08),
   selected: varAlpha(grey['500Channel'], 0.16),
@@ -104,9 +93,6 @@ export const action = {
   dark: { ...baseAction, active: grey[500] },
 };
 
-/*
- * Base palette
- */
 export const basePalette = {
   primary,
   secondary,

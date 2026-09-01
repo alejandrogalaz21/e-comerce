@@ -9,11 +9,6 @@ import { CONFIG } from 'src/config-global';
 
 import { remToPx, varAlpha, mediaQueries } from './utils';
 
-/**
- * Usage:
- * ...hideScrollX,
- * ...hideScrollY,
- */
 export const hideScrollX: CSSObject = {
   msOverflowStyle: 'none',
   scrollbarWidth: 'none',
@@ -28,10 +23,6 @@ export const hideScrollY: CSSObject = {
   '&::-webkit-scrollbar': { display: 'none' },
 };
 
-/**
- * Usage:
- * ...textGradient(`to right, ${theme.vars.palette.text.primary}, ${alpha(theme.vars.palette.text.primary, 0.2)}`
- */
 export function textGradient(color: string): CSSObject {
   return {
     background: `linear-gradient(${color})`,
@@ -43,10 +34,6 @@ export function textGradient(color: string): CSSObject {
   };
 }
 
-/**
- * Usage:
- * ...borderGradient({ color: `to right, ${theme.vars.palette.text.primary}, ${alpha(theme.vars.palette.text.primary, 0.2)}`, padding: '4px' }),
- */
 export type BorderGradientProps = {
   color?: string;
   padding?: string;
@@ -62,7 +49,6 @@ export function borderGradient(props?: BorderGradientProps): CSSObject {
     position: 'absolute',
     borderRadius: 'inherit',
     padding: props?.padding ?? '2px',
-    //
     mask: 'linear-gradient(#FFF 0 0) content-box, linear-gradient(#FFF 0 0)',
     WebkitMask: 'linear-gradient(#FFF 0 0) content-box, linear-gradient(#FFF 0 0)',
     maskComposite: 'exclude',
@@ -73,10 +59,6 @@ export function borderGradient(props?: BorderGradientProps): CSSObject {
   };
 }
 
-/**
- * Usage:
- * ...bgGradient({ color: `to right, ${theme.vars.palette.grey[900]} 25%, ${varAlpha(theme.vars.palette.primary.darkerChannel, 0.88)}`, imgUrl: '/assets/background/overlay.png' }),
- */
 export type BgGradientProps = {
   color: string;
   imgUrl?: string;
@@ -94,10 +76,6 @@ export function bgGradient({ color, imgUrl }: BgGradientProps): CSSObject {
   return { background: `linear-gradient(${color})` };
 }
 
-/**
- * Usage:
- * ...bgBlur({ color: `varAlpha(theme.vars.palette.background.paperChannel, 0.8)`, imgUrl: '/assets/background/overlay.png', blur: 6 }),
- */
 export type BgBlurProps = {
   color: string;
   blur?: number;
@@ -130,10 +108,6 @@ export function bgBlur({ color, blur = 6, imgUrl }: BgBlurProps): CSSObject {
   };
 }
 
-/**
- * Usage:
- * ...maxLine({ line: 2, persistent: theme.typography.caption }),
- */
 export type MediaFontSize = {
   [key: string]: {
     fontSize: React.CSSProperties['fontSize'];
@@ -187,10 +161,6 @@ export function maxLine({ line, persistent }: MaxLineProps): CSSObject {
   return baseStyles;
 }
 
-/**
- * Usage:
- * ...paper({ theme, color: varAlpha(theme.vars.palette.background.paperChannel, 0.9), dropdown: true }),
- */
 type PaperProps = {
   theme: Theme;
   color?: string;
@@ -216,10 +186,6 @@ export function paper({ theme, color, dropdown }: PaperProps) {
   };
 }
 
-/**
- * Usage:
- * ...menuItem(theme)
- */
 export function menuItem(theme: Theme) {
   return {
     ...theme.typography.body2,

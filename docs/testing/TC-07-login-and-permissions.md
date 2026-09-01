@@ -1,67 +1,67 @@
-# TC-07 · Login, sesión y matriz de permisos
+# TC-07 · Login, session and the permission matrix
 
 | | |
 |---|---|
-| **Estado** | ⬜ **Por ejecutar** |
-| **Fecha** | — |
+| **Status** | ⬜ **To run** |
+| **Date** | — |
 | **Tickets** | TK-014, TK-050 |
-| **Proceso** | [P-06](../processes/P-06-authentication.md) |
+| **Process** | [P-06](../processes/P-06-authentication.md) |
 
-## Objetivo
+## Goal
 
-Verificar quién puede hacer qué. En este proyecto la autenticación no protege la compra —
-**comprar es público a propósito** — sino la administración del catálogo. Ese matiz es el que
-merece comprobarse a mano: es fácil suponer que un e-commerce exige cuenta para pagar, y aquí la
-decisión es la contraria.
+Verify who can do what. In this project authentication does not protect the purchase — **buying is
+public on purpose** — it protects catalog administration. That nuance is the one worth checking by
+hand: it is easy to assume an e-commerce requires an account to pay, and here the decision is the
+opposite.
 
-El otro punto es que el guard **falla cerrado**: un endpoint nuevo nace protegido y hay que
-declararlo `@Public()` para abrirlo. Un olvido produce un `401` visible, nunca un agujero silencioso.
+The other point is that the guard **fails closed**: a new endpoint is born protected and has to be
+declared `@Public()` to open it. An oversight produces a visible `401`, never a silent hole.
 
-## La matriz que se está probando
+## The matrix under test
 
 ```
-   PUBLICO (sin token)               PROTEGIDO (Bearer JWT)
+   PUBLIC (no token)                 PROTECTED (Bearer JWT)
    -------------------------         ----------------------------------
    GET  /products                    POST   /products
    GET  /products/:id                PATCH  /products/:id
    GET  /products/categories         DELETE /products/:id
-   POST /orders     <-- comprar      POST   /products/import
+   POST /orders     <-- buying       POST   /products/import
    POST /auth/sign-in                GET    /products/import/batches
-   GET  /health                      GET    /orders    <-- administrar
+   GET  /health                      GET    /orders    <-- administering
                                      GET    /orders/:id
                                      GET    /status/redis
                                      GET    /status/db
                                      GET    /auth/me
-                                     POST   /auth/sign-up   <-- ojo
+                                     POST   /auth/sign-up   <-- note
 ```
 
-`POST /auth/sign-up` **requiere sesión**. Una cuenta aquí solo otorga administración del catálogo,
-así que un alta abierta dejaría que cualquiera se auto-concediera esos derechos.
+`POST /auth/sign-up` **requires a session**. An account here only grants catalog administration, so
+open registration would let anyone hand themselves those rights.
 
-## Precondiciones
+## Preconditions
 
 ```bash
 docker compose up -d --build
 API=http://localhost:4000/api/v1
 ```
 
-Cuenta sembrada por migración: `demo@demo.com` / `demo`.
+Account seeded by migration: `demo@demo.com` / `demo`.
 
 ---
 
-## 1 · Iniciar sesión devuelve un token y ninguna contraseña
+## 1 · Signing in returns a token and no password
 
-### Pasos
+### Steps
 
 ```bash
 curl -s -X POST "$API/auth/sign-in" -H 'Content-Type: application/json' \
   -d '{"email":"demo@demo.com","password":"demo"}' | tee /tmp/signin.json
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] `200` con un cuerpo que trae `accessToken` y los datos públicos del usuario.
-- [ ] **No aparece `password` por ningún lado**, ni hasheada:
+- [ ] `200` with a body carrying `accessToken` and the user's public data.
+- [ ] **`password` appears nowhere**, not even hashed:
 
 ```bash
 grep -c password /tmp/signin.json
@@ -71,13 +71,14 @@ grep -c password /tmp/signin.json
   0
 ```
 
-- [ ] **No aparece `refreshToken`.** Se eliminó a propósito: el que se emitía iba firmado con el
-      mismo secreto y el mismo payload que el de acceso, así que la estrategia JWT lo aceptaba como
-      tal — era un token de acceso con siete días de vida y nada que lo rotara ni lo revocara.
-- [ ] El email se normaliza: iniciar sesión con `  DEMO@DEMO.COM  ` funciona igual (el DTO hace
-      `trim` y `lowercase`).
+- [ ] **`refreshToken` does not appear.** It was removed on purpose: the one that used to be issued
+      was signed with the same secret and the same payload as the access token, so the JWT strategy
+      accepted it as one — it was an access token with a seven-day life and nothing to rotate or
+      revoke it.
+- [ ] The email is normalised: signing in with `  DEMO@DEMO.COM  ` works the same (the DTO trims
+      and lowercases).
 
-Guarda el token para el resto del caso:
+Save the token for the rest of the case:
 
 ```bash
 TOKEN=$(grep -o '"accessToken":"[^"]*"' /tmp/signin.json | cut -d'"' -f4)
@@ -85,55 +86,55 @@ TOKEN=$(grep -o '"accessToken":"[^"]*"' /tmp/signin.json | cut -d'"' -f4)
 
 ---
 
-## 2 · Credenciales incorrectas fallan de forma indistinguible
+## 2 · Wrong credentials fail indistinguishably
 
-### Pasos
-
-```bash
-curl -s -w "\nHTTP %{http_code}\n" -X POST "$API/auth/sign-in" -H 'Content-Type: application/json' \
-  -d '{"email":"demo@demo.com","password":"incorrecta"}'
-
-curl -s -w "\nHTTP %{http_code}\n" -X POST "$API/auth/sign-in" -H 'Content-Type: application/json' \
-  -d '{"email":"noexiste@demo.com","password":"demo"}'
-```
-
-### Resultado esperado
-
-- [ ] Ambos devuelven **`401`** con el **mismo** mensaje: `Invalid credentials`.
-- [ ] La respuesta **no distingue** entre "el usuario no existe" y "la contraseña está mal". Esa
-      diferencia sería un enumerador de cuentas gratis.
-- [ ] Desde la UI (`/auth/jwt/sign-in`): error en línea, la pantalla no navega, el formulario
-      conserva el email.
-
-### Y el email malformado, que es otra cosa
+### Steps
 
 ```bash
 curl -s -w "\nHTTP %{http_code}\n" -X POST "$API/auth/sign-in" -H 'Content-Type: application/json' \
-  -d '{"email":"esto-no-es-un-email","password":"demo"}'
+  -d '{"email":"demo@demo.com","password":"wrong"}'
+
+curl -s -w "\nHTTP %{http_code}\n" -X POST "$API/auth/sign-in" -H 'Content-Type: application/json' \
+  -d '{"email":"nobody@demo.com","password":"demo"}'
 ```
 
-- [ ] **`400`**, no `401`. Es un fallo de validación, no de credenciales, y el sobre de error trae
-      `message` como lista.
+### Expected result
+
+- [ ] Both return **`401`** with the **same** message: `Invalid credentials`.
+- [ ] The response **does not distinguish** between "the user does not exist" and "the password is
+      wrong". That difference would be a free account enumerator.
+- [ ] From the UI (`/auth/jwt/sign-in`): inline error, the screen does not navigate, the form keeps
+      the email.
+
+### And the malformed email, which is a different thing
+
+```bash
+curl -s -w "\nHTTP %{http_code}\n" -X POST "$API/auth/sign-in" -H 'Content-Type: application/json' \
+  -d '{"email":"this-is-not-an-email","password":"demo"}'
+```
+
+- [ ] **`400`**, not `401`. It is a validation failure, not a credential one, and the error envelope
+      carries `message` as a list.
 
 ---
 
-## 3 · El token abre lo protegido y su ausencia lo cierra
+## 3 · The token opens what is protected, and its absence closes it
 
-### Pasos
+### Steps
 
 ```bash
 for r in "GET $API/orders" "GET $API/status/db" "GET $API/status/redis" "GET $API/products/import/batches" "GET $API/auth/me"; do
   set -- $r
-  echo -n "$2  sin token: "
+  echo -n "$2  no token: "
   curl -s -o /dev/null -w "%{http_code}" -X "$1" "$2"
-  echo -n "   con token: "
+  echo -n "   with token: "
   curl -s -o /dev/null -w "%{http_code}\n" -X "$1" "$2" -H "Authorization: Bearer $TOKEN"
 done
 ```
 
-### Resultado esperado
+### Expected result
 
-| Ruta | Sin token | Con token |
+| Route | No token | With token |
 |---|---|---|
 | `GET /orders` | `401` | `200` |
 | `GET /status/db` | `401` | `200` |
@@ -141,16 +142,16 @@ done
 | `GET /products/import/batches` | `401` | `200` |
 | `GET /auth/me` | `401` | `200` |
 
-- [ ] Las cinco devuelven `401` sin token. **Ninguna** devuelve `200` con datos parciales.
-- [ ] `GET /auth/me` con token devuelve el usuario del token, sin `password`.
+- [ ] All five return `401` without a token. **None** returns `200` with partial data.
+- [ ] `GET /auth/me` with a token returns the token's user, without `password`.
 
 ---
 
-## 4 · Lo público sigue siendo público
+## 4 · What is public stays public
 
-Cerrar la tienda resolvería un problema que no existe.
+Closing the shop would solve a problem that does not exist.
 
-### Pasos
+### Steps
 
 ```bash
 curl -s -o /dev/null -w "GET  /products            %{http_code}\n" "$API/products"
@@ -158,177 +159,177 @@ curl -s -o /dev/null -w "GET  /products/categories %{http_code}\n" "$API/product
 curl -s -o /dev/null -w "GET  /health              %{http_code}\n" "$API/health"
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] Los tres devuelven **`200` sin token**.
-- [ ] En el navegador, en ventana privada y sin sesión: `/` y el detalle de un producto **renderizan**,
-      no redirigen.
-- [ ] Y lo más importante: **una compra anónima se completa**. Ver [TC-05](TC-05-purchase-flow.md)
-      check 1 y [TC-06](TC-06-concurrency-and-races.md) — todos los pedidos de esos casos se disparan
-      sin token.
+- [ ] All three return **`200` without a token**.
+- [ ] In the browser, in a private window with no session: `/` and a product detail **render**, they
+      do not redirect.
+- [ ] And most importantly: **an anonymous purchase completes**. See
+      [TC-05](TC-05-purchase-flow.md) check 1 and [TC-06](TC-06-concurrency-and-races.md) — every
+      order in those cases is fired without a token.
 
 ---
 
-## 5 · Escribir en el catálogo exige sesión
+## 5 · Writing to the catalog requires a session
 
-### Pasos
+### Steps
 
 ```bash
-curl -s -o /dev/null -w "POST   sin token: %{http_code}\n" -X POST "$API/products" \
-  -H 'Content-Type: application/json' -d '{"sku":"TEST-001","name":"Prueba","price":1,"stock":1}'
+curl -s -o /dev/null -w "POST   no token: %{http_code}\n" -X POST "$API/products" \
+  -H 'Content-Type: application/json' -d '{"sku":"TEST-001","name":"Test","price":1,"stock":1}'
 
-curl -s -o /dev/null -w "DELETE sin token: %{http_code}\n" -X DELETE "$API/products/00000000-0000-0000-0000-000000000000"
+curl -s -o /dev/null -w "DELETE no token: %{http_code}\n" -X DELETE "$API/products/00000000-0000-0000-0000-000000000000"
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] Ambas **`401`**, y el `401` llega **antes** que cualquier validación: un payload inválido sin
-      token sigue siendo `401`, no `400`. El guard corre primero.
-- [ ] Con token, el mismo `POST` devuelve `201`.
-- [ ] Desde la UI, abrir `/dashboard/product` sin sesión redirige a login, y tras autenticarse
-      aterriza **en la ruta que se pidió**, no en la raíz del dashboard.
+- [ ] Both **`401`**, and the `401` arrives **before** any validation: an invalid payload without a
+      token is still `401`, not `400`. The guard runs first.
+- [ ] With a token, the same `POST` returns `201`.
+- [ ] From the UI, opening `/dashboard/product` without a session redirects to login, and after
+      authenticating lands **on the route that was requested**, not on the dashboard root.
 
 ---
 
-## 6 · El alta de usuarios no es pública
+## 6 · User registration is not public
 
-### Pasos
+### Steps
 
 ```bash
-curl -s -o /dev/null -w "sign-up sin token: %{http_code}\n" -X POST "$API/auth/sign-up" \
+curl -s -o /dev/null -w "sign-up no token: %{http_code}\n" -X POST "$API/auth/sign-up" \
   -H 'Content-Type: application/json' \
-  -d '{"email":"intruso@test.com","password":"12345678","name":"Intruso","phone":"+15550000000"}'
+  -d '{"email":"intruder@test.com","password":"12345678","name":"Intruder","phone":"+15550000000"}'
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] **`401`.** Este es el caso que más sorprende y el que más conviene dejar registrado.
-- [ ] Con un token válido, el mismo alta funciona (`201`), y repetirla con el mismo email devuelve
-      **`400 Email already registered`**.
-
----
-
-## 7 · La sesión sobrevive a una recarga y el logout la termina
-
-### Pasos
-
-1. Inicia sesión en la UI y navega a **Product → Product catalog**.
-2. Recarga la página con F5.
-3. Cierra sesión.
-4. Pulsa el botón *atrás* del navegador.
-
-### Resultado esperado
-
-- [ ] Tras la recarga sigues dentro, en la misma ruta, sin parpadeo de login.
-- [ ] Tras el logout, *atrás* **no** devuelve la pantalla protegida: redirige a login.
-- [ ] El token desaparece del almacenamiento del navegador.
+- [ ] **`401`.** This is the most surprising case and the one most worth recording.
+- [ ] With a valid token the same registration works (`201`), and repeating it with the same email
+      returns **`400 Email already registered`**.
 
 ---
 
-## 8 · Un token expirado o alterado se rechaza
+## 7 · The session survives a reload and logout ends it
 
-El token vive **`1d`** por defecto (`JWT_EXPIRES_IN`), así que esperar a que caduque no es práctico.
-Se comprueba manipulándolo, que prueba lo mismo: la firma es lo que manda.
+### Steps
 
-### Pasos
+1. Sign in through the UI and navigate to **Product → Product catalog**.
+2. Reload the page with F5.
+3. Sign out.
+4. Press the browser's *back* button.
+
+### Expected result
+
+- [ ] After the reload you are still in, on the same route, with no login flicker.
+- [ ] After signing out, *back* does **not** return the protected screen: it redirects to login.
+- [ ] The token disappears from browser storage.
+
+---
+
+## 8 · An expired or tampered token is refused
+
+The token lives **`1d`** by default (`JWT_EXPIRES_IN`), so waiting for it to expire is not
+practical. It is checked by tampering, which proves the same thing: the signature is what decides.
+
+### Steps
 
 ```bash
-# Un caracter cambiado en la firma
-curl -s -o /dev/null -w "firma rota:   %{http_code}\n" "$API/orders" -H "Authorization: Bearer ${TOKEN}x"
+# One character changed in the signature
+curl -s -o /dev/null -w "broken sig:  %{http_code}\n" "$API/orders" -H "Authorization: Bearer ${TOKEN}x"
 
-# Un token con forma valida pero inventado
-curl -s -o /dev/null -w "inventado:    %{http_code}\n" "$API/orders" -H "Authorization: Bearer a.b.c"
+# A token with a valid shape but made up
+curl -s -o /dev/null -w "made up:     %{http_code}\n" "$API/orders" -H "Authorization: Bearer a.b.c"
 
-# Sin el prefijo Bearer
-curl -s -o /dev/null -w "sin Bearer:   %{http_code}\n" "$API/orders" -H "Authorization: $TOKEN"
+# Without the Bearer prefix
+curl -s -o /dev/null -w "no Bearer:   %{http_code}\n" "$API/orders" -H "Authorization: $TOKEN"
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] Los tres devuelven **`401`**.
-- [ ] Ninguno devuelve `500`: un token basura es una credencial inválida, no un fallo del servidor.
-- [ ] El cuerpo del error respeta el sobre común (`statusCode`, `error`, `message`, `path`,
-      `timestamp`) — ver [P-07](../processes/P-07-error-contract.md).
+- [ ] All three return **`401`**.
+- [ ] None returns `500`: a junk token is an invalid credential, not a server failure.
+- [ ] The error body respects the shared envelope (`statusCode`, `error`, `message`, `path`,
+      `timestamp`) — see [P-07](../processes/P-07-error-contract.md).
 
-Para probar la expiración de verdad, levanta la API con un token de un segundo:
+To test expiry for real, bring the API up with a one-second token:
 
 ```bash
 docker compose stop api
 JWT_EXPIRES_IN=1s docker compose up -d api
 ```
 
-- [ ] Inicia sesión, espera dos segundos y llama a `GET /auth/me`: **`401`**.
-- [ ] En la UI, la sesión caduca y devuelve a login sin quedarse en una pantalla rota.
+- [ ] Sign in, wait two seconds and call `GET /auth/me`: **`401`**.
+- [ ] In the UI, the session expires and returns to login without getting stuck on a broken screen.
 
-> Acuérdate de volver a levantar la API sin esa variable.
+> Remember to bring the API back up without that variable.
 
 ---
 
-## 9 · El login está limitado por tasa
+## 9 · Login is rate limited
 
-`POST /auth/sign-in` declara su propio límite: **30 por minuto** (`AUTH_RATE_LIMIT`). El techo
-global es 300/min, que para un endpoint de credenciales equivale a no tener ninguno.
+`POST /auth/sign-in` declares its own ceiling: **30 per minute** (`AUTH_RATE_LIMIT`). The global
+ceiling is 300/min, which for a credential endpoint is the same as having none.
 
-### Pasos
+### Steps
 
 ```bash
 for i in $(seq 1 35); do
   curl -s -o /dev/null -w "%{http_code} " -X POST "$API/auth/sign-in" \
-    -H 'Content-Type: application/json' -d '{"email":"demo@demo.com","password":"malapass"}'
+    -H 'Content-Type: application/json' -d '{"email":"demo@demo.com","password":"wrongpass"}'
 done; echo
 ```
 
-### Resultado esperado
+### Expected result
 
 ```
   401 401 401 ... (x30) ... 429 429 429 429 429
 ```
 
-- [ ] Los primeros ~30 son `401`; a partir de ahí **`429 TOO_MANY_REQUESTS`**.
-- [ ] El `429` es un error traducido, no un `500`.
-- [ ] Tras un minuto, la ventana se reinicia y vuelve a responder `401`.
+- [ ] The first ~30 are `401`; from there on **`429 TOO_MANY_REQUESTS`**.
+- [ ] The `429` is a translated error, not a `500`.
+- [ ] After a minute the window resets and it answers `401` again.
 
-> Es un límite pensado para frenar un script, no a una persona. Si te estorba ejecutando los otros
-> casos, súbelo con `AUTH_RATE_LIMIT`.
+> It is a ceiling meant to stop a script, not a person. If it gets in the way while running the
+> other cases, raise it with `AUTH_RATE_LIMIT`.
 
 ---
 
-## 10 · La importación registra quién la ejecutó
+## 10 · The import records who ran it
 
-El único punto donde la sesión deja rastro en los datos.
+The only place where the session leaves a trace in the data.
 
-### Pasos
+### Steps
 
-1. Con sesión iniciada, importa un CSV en **Product → Import CSV**.
-2. Ve a **Product → Import history** y abre el lote.
+1. Signed in, import a CSV at **Product → Import CSV**.
+2. Go to **Product → Import history** and open the batch.
 
-### Resultado esperado
+### Expected result
 
-- [ ] El lote muestra **Imported by** con `demo@demo.com`.
-- [ ] Vía API:
+- [ ] The batch shows **Imported by** with `demo@demo.com`.
+- [ ] Via the API:
 
 ```bash
 curl -s "$API/products/import/batches" -H "Authorization: Bearer $TOKEN" | grep -o '"importedBy":"[^"]*"' | head
 ```
 
-- [ ] Lotes anteriores a que existiera la atribución muestran `null`, y la pantalla los renderiza
-      con una raya, no se rompe.
+- [ ] Batches older than the attribution feature show `null`, and the screen renders them with a
+      dash rather than breaking.
 
 ---
 
-## Resultado
+## Result
 
-| # | Caso | Resultado |
+| # | Case | Result |
 |---|---|---|
-| 1 | Login devuelve token, sin `password` ni `refreshToken` | |
-| 2 | Credenciales malas son indistinguibles entre sí | |
-| 3 | Rutas protegidas: `401` sin token, `200` con token | |
-| 4 | La tienda y la compra siguen siendo públicas | |
-| 5 | Escribir en el catálogo exige sesión | |
-| 6 | `sign-up` no es público | |
-| 7 | La sesión sobrevive a recarga; el logout la termina | |
-| 8 | Token expirado o alterado → `401` | |
-| 9 | Límite de tasa en el login → `429` | |
-| 10 | La importación registra al usuario | |
+| 1 | Login returns a token, no `password` or `refreshToken` | |
+| 2 | Bad credentials are indistinguishable from each other | |
+| 3 | Protected routes: `401` without a token, `200` with one | |
+| 4 | The shop and the purchase stay public | |
+| 5 | Writing to the catalog requires a session | |
+| 6 | `sign-up` is not public | |
+| 7 | The session survives a reload; logout ends it | |
+| 8 | Expired or tampered token → `401` | |
+| 9 | Rate limit on login → `429` | |
+| 10 | The import records the user | |
 
-**Notas:**
+**Notes:**

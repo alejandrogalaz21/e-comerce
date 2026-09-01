@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Optional } from '@nestjs/common'
+import {
+  Injectable,
+  NotFoundException,
+  Optional,
+  UnauthorizedException
+} from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DeepPartial, Repository } from 'typeorm'
 
@@ -7,10 +12,13 @@ import { UpdateProductDto } from './dto/update-product.dto'
 import {
   DEFAULT_PRODUCT_SORT_DIRECTION,
   DEFAULT_PRODUCT_SORT_FIELD,
+  DEFAULT_PRODUCT_STATUS,
   ProductFiltersDto,
-  ProductSortField
+  ProductSortField,
+  ProductStatus
 } from './dto/product-filters.dto'
 import { ProductCategoryDto } from './dto/product-category.dto'
+import { PaginationDTO } from '@/common/dto/pagination.dto'
 import { PaginationHelper } from '@/common/pagination/pagination.helper'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 import { escapeLikeWildcards } from '@/common/transformers/sanitize.transformer'
@@ -18,6 +26,7 @@ import { translateDatabaseError } from '@/common/filters/database-error.translat
 import { CacheService } from '@/database/redis/cache.service'
 
 import { Product } from './entities/product.entity'
+import { ProductHistory } from './entities/product-history.entity'
 
 @Injectable()
 export class ProductsService {
@@ -29,19 +38,18 @@ export class ProductsService {
     updatedAt: 'product.updatedAt'
   }
 
-  /** Everything the catalog caches lives under this prefix, so one write clears it all. */
   static readonly CACHE_PREFIX = 'products'
 
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @InjectRepository(ProductHistory)
+    private readonly historyRepository: Repository<ProductHistory>,
     private readonly paginationBuilder: PaginationResponseBuilder<Product>,
-    // Optional so the service still works — uncached — wherever Redis is not
-    // wired, which is every unit test and any deployment without it.
+    private readonly historyPaginationBuilder: PaginationResponseBuilder<ProductHistory>,
     @Optional() private readonly cache?: CacheService
   ) {}
 
-  /** Public so the import module can clear the catalog once per batch. */
   async invalidateCache(): Promise<void> {
     await this.cache?.invalidatePrefix(ProductsService.CACHE_PREFIX)
   }
@@ -64,7 +72,9 @@ export class ProductsService {
     }
   }
 
-  async findAll(filters: ProductFiltersDto = {}) {
+  async findAll(filters: ProductFiltersDto = {}, canSeeDiscontinued = false) {
+    this.assertMaySee(filters.status, canSeeDiscontinued)
+
     const cacheKey = CacheService.buildKey(
       `${ProductsService.CACHE_PREFIX}:list`,
       filters as Record<string, unknown>
@@ -94,10 +104,15 @@ export class ProductsService {
       .skip(offset)
       .take(limit)
 
+    const status = filters.status ?? DEFAULT_PRODUCT_STATUS
+    if (status === 'active') {
+      query.andWhere('product.discontinued_at IS NULL')
+    } else if (status === 'discontinued') {
+      query.andWhere('product.discontinued_at IS NOT NULL')
+    }
+
     const terms = filters.q?.map(value => value.trim()).filter(Boolean)
     if (terms?.length) {
-      // Several terms are a union: the admin asks for "these products", not for
-      // rows matching all of them at once.
       const clauses = terms.map(
         (_, index) =>
           `(product.name ILIKE :term${index} OR product.sku ILIKE :term${index} OR product.description ILIKE :term${index} OR product.category ILIKE :term${index})`
@@ -155,6 +170,7 @@ export class ProductsService {
       .createQueryBuilder('product')
       .select('product.category', 'category')
       .addSelect('COUNT(*)', 'count')
+      .where('product.discontinued_at IS NULL')
       .groupBy('product.category')
       .orderBy('product.category', 'ASC')
       .getRawMany<{ category: string; count: string }>()
@@ -169,7 +185,38 @@ export class ProductsService {
     return categories
   }
 
-  async findOne(id: string): Promise<Product> {
+  async findOne(
+    id: string,
+    status: ProductStatus = DEFAULT_PRODUCT_STATUS,
+    canSeeDiscontinued = false
+  ): Promise<Product> {
+    this.assertMaySee(status, canSeeDiscontinued)
+
+    const product = await this.productRepository.findOneBy({ id })
+    const missing =
+      !product ||
+      (status === 'active' && !!product.discontinuedAt) ||
+      (status === 'discontinued' && !product.discontinuedAt)
+
+    if (missing)
+      throw new NotFoundException(`Product with id '${id}' not found`)
+
+    return product
+  }
+
+  private assertMaySee(
+    status: ProductStatus | undefined,
+    canSeeDiscontinued: boolean
+  ): void {
+    if (!status || status === DEFAULT_PRODUCT_STATUS) return
+    if (canSeeDiscontinued) return
+
+    throw new UnauthorizedException(
+      'Reading discontinued products requires a session'
+    )
+  }
+
+  private async findOneWhateverItsStatus(id: string): Promise<Product> {
     const product = await this.productRepository.findOneBy({ id })
 
     if (!product)
@@ -178,11 +225,51 @@ export class ProductsService {
     return product
   }
 
+  async discontinue(id: string): Promise<Product> {
+    const product = await this.findOneWhateverItsStatus(id)
+
+    if (product.discontinuedAt) return product
+
+    product.discontinuedAt = new Date()
+    const saved = await this.productRepository.save(product)
+    await this.invalidateCache()
+
+    return saved
+  }
+
+  async restore(id: string): Promise<Product> {
+    const product = await this.findOneWhateverItsStatus(id)
+
+    if (!product.discontinuedAt) return product
+
+    product.discontinuedAt = null
+    const saved = await this.productRepository.save(product)
+    await this.invalidateCache()
+
+    return saved
+  }
+
+  async findHistory(id: string, filters: PaginationDTO = {}) {
+    const { page, limit, offset } = PaginationHelper.parse(filters)
+
+    const [entries, total] = await this.historyRepository.findAndCount({
+      where: { productId: id },
+      order: { changedAt: 'DESC' },
+      skip: offset,
+      take: limit
+    })
+
+    if (total === 0 && !(await this.productRepository.existsBy({ id })))
+      throw new NotFoundException(`Product with id '${id}' not found`)
+
+    return this.historyPaginationBuilder.build(entries, total, page, limit)
+  }
+
   async update(
     id: string,
     updateProductDto: UpdateProductDto
   ): Promise<Product> {
-    const product = await this.findOne(id)
+    const product = await this.findOneWhateverItsStatus(id)
     this.productRepository.merge(product, this.toEntityData(updateProductDto))
 
     try {
@@ -200,14 +287,12 @@ export class ProductsService {
   }
 
   async remove(id: string): Promise<void> {
-    const product = await this.findOne(id)
+    const product = await this.findOneWhateverItsStatus(id)
 
     try {
       await this.productRepository.remove(product)
       await this.invalidateCache()
     } catch (error) {
-      // A product that appears in an order is protected by a RESTRICT foreign
-      // key. That refusal is a conflict, not an internal failure.
       translateDatabaseError(error, {
         resource: 'Product',
         field: 'sku',

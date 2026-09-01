@@ -2,6 +2,8 @@ import { INestApplication, ValidationPipe } from '@nestjs/common'
 import { Test, TestingModule } from '@nestjs/testing'
 import * as request from 'supertest'
 
+import { OptionalJwtAuthGuard } from '@/common/guards/optional-jwt-auth.guard'
+
 import { ProductsController } from './products.controller'
 import { ProductsService } from './products.service'
 
@@ -16,14 +18,20 @@ describe('ProductsController routing', () => {
     findOne: jest.fn().mockResolvedValue(null),
     create: jest.fn(),
     update: jest.fn(),
-    remove: jest.fn()
+    remove: jest.fn(),
+    discontinue: jest.fn(),
+    restore: jest.fn(),
+    findHistory: jest.fn().mockResolvedValue({ data: [], pagination: {} })
   }
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [ProductsController],
       providers: [{ provide: ProductsService, useValue: productsService }]
-    }).compile()
+    })
+      .overrideGuard(OptionalJwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile()
 
     app = moduleFixture.createNestApplication()
     app.useGlobalPipes(
@@ -89,7 +97,27 @@ describe('ProductsController routing', () => {
         inStock: true,
         sortBy: 'updatedAt',
         sortDir: 'desc'
-      })
+      }),
+      false
     )
+  })
+
+  it('routes /products/:id/history to findHistory, not to the :id handler', async () => {
+    const id = '0d6cd087-3f2e-4f30-b0aa-cf9c93b1c0d5'
+
+    await request(app.getHttpServer())
+      .get(`/products/${id}/history`)
+      .expect(200)
+
+    expect(productsService.findHistory).toHaveBeenCalled()
+    expect(productsService.findOne).not.toHaveBeenCalled()
+  })
+
+  it('rejects a history request whose id is not a uuid before touching the service', async () => {
+    await request(app.getHttpServer())
+      .get('/products/not-a-uuid/history')
+      .expect(400)
+
+    expect(productsService.findHistory).not.toHaveBeenCalled()
   })
 })

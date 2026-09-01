@@ -8,13 +8,11 @@ import {
 
 import { Exclude } from 'class-transformer'
 
-// Enum for user roles
 export enum UserRole {
   SYSTEM_ADMIN = 'SYSTEM_ADMIN',
   ADMIN = 'ADMIN',
   USER = 'USER'
 }
-// Enum for user status
 export enum UserStatus {
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',

@@ -2,10 +2,6 @@ const INVALID_CREDENTIALS = 'Incorrect email or password.';
 
 const FALLBACK = 'Something went wrong. Please try again.';
 
-/**
- * The axios response interceptor rejects with the API error body, so an auth failure
- * arrives here as `{ statusCode, message }` rather than as an Error.
- */
 export function getAuthErrorMessage(error: unknown): string {
   if (!error) {
     return FALLBACK;

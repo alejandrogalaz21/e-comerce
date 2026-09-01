@@ -30,7 +30,6 @@ export function attachAccessToken<T extends RequestConfigLike>(config: T, token:
   return config;
 }
 
-/** A 401 answered by the sign-in/sign-up call itself is a failed login, not an expired session. */
 export function shouldClearSessionOnUnauthorized(
   status: number | undefined,
   requestUrl: string | undefined,
@@ -53,7 +52,6 @@ export function buildSignInHref(signInPath: string, returnTo: string): string {
   return `${signInPath}?${params.toString()}`;
 }
 
-/** Only same-site paths are accepted as a post-login destination, never absolute URLs. */
 export function safeReturnTo(returnTo: string | null, fallback: string): string {
   if (!returnTo || !returnTo.startsWith('/') || returnTo.startsWith('//')) {
     return fallback;

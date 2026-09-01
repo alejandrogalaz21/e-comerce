@@ -7,9 +7,6 @@ import { outlinedInputClasses } from '@mui/material/OutlinedInput';
 import { varAlpha } from '../../styles';
 
 const MuiInputBase: Components<Theme>['MuiInputBase'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       [`&.${inputBaseClasses.disabled}`]: {
@@ -19,7 +16,6 @@ const MuiInputBase: Components<Theme>['MuiInputBase'] = {
     input: ({ theme }) => ({
       fontSize: theme.typography.pxToRem(15),
       [theme.breakpoints.down('sm')]: {
-        // This will prevent zoom in Safari min font size ~ 16px
         fontSize: theme.typography.pxToRem(16),
       },
       '&::placeholder': {
@@ -31,9 +27,6 @@ const MuiInputBase: Components<Theme>['MuiInputBase'] = {
 };
 
 const MuiInput: Components<Theme>['MuiInput'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     underline: ({ theme }) => ({
       '&::before': { borderBottomColor: varAlpha(theme.vars.palette.grey['500Channel'], 0.32) },
@@ -43,9 +36,6 @@ const MuiInput: Components<Theme>['MuiInput'] = {
 };
 
 const MuiOutlinedInput: Components<Theme>['MuiOutlinedInput'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       [`&.${outlinedInputClasses.focused}`]: {
@@ -74,14 +64,8 @@ const MuiOutlinedInput: Components<Theme>['MuiOutlinedInput'] = {
 };
 
 const MuiFilledInput: Components<Theme>['MuiFilledInput'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: { disableUnderline: true },
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       borderRadius: theme.shape.borderRadius,

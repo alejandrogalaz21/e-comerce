@@ -5,11 +5,6 @@ type Props = {
   value: string;
 };
 
-/**
- * A delivery detail as the order recorded it. Orders placed before deliveries
- * were recorded have none, and the dash says so rather than leaving a cell that
- * reads as a failed load.
- */
 export function PurchaseText({ value }: Props) {
   if (!value) {
     return (

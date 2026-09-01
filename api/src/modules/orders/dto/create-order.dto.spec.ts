@@ -91,9 +91,9 @@ describe('CreateOrderDto', () => {
 
   describe('paymentMethod', () => {
     it('records how the buyer chose to pay', async () => {
-      expect(
-        await messagesFor({ paymentMethod: PaymentMethod.PAYPAL })
-      ).toBe('[]')
+      expect(await messagesFor({ paymentMethod: PaymentMethod.PAYPAL })).toBe(
+        '[]'
+      )
     })
 
     it('refuses an order that does not say how it was paid', async () => {
@@ -102,11 +102,6 @@ describe('CreateOrderDto', () => {
       )
     })
 
-    /**
-     * Cash on delivery is deliberately not a method: the order would be charged
-     * through the simulated provider and stored as paid, claiming money nobody
-     * handed over.
-     */
     it.each(['cash', 'crypto', 'CARD'])('refuses %s', async value => {
       expect(await messagesFor({ paymentMethod: value })).toContain(
         'paymentMethod must be one of: card, paypal'
@@ -118,9 +113,9 @@ describe('CreateOrderDto', () => {
     it('refuses a delivery with no email to write to', async () => {
       const { email, ...withoutEmail } = ADDRESS
 
-      expect(
-        await messagesFor({ shippingAddress: withoutEmail })
-      ).toContain('email')
+      expect(await messagesFor({ shippingAddress: withoutEmail })).toContain(
+        'email'
+      )
     })
 
     it.each(['ada', 'ada@', '@example.com', 'ada example.com'])(
@@ -138,6 +133,29 @@ describe('CreateOrderDto', () => {
       })
 
       expect(dto.shippingAddress.email).toBe('ada@example.com')
+    })
+  })
+
+  describe('the amount', () => {
+    it.each(['total', 'price', 'amount', 'totalAmount', 'discount'])(
+      'refuses %s in the body: the catalog decides what an order costs',
+      async field => {
+        expect(await messagesFor({ [field]: 0.01 })).toContain(field)
+      }
+    )
+
+    it('refuses a price smuggled onto a line', async () => {
+      const messages = await messagesFor({
+        items: [
+          {
+            productId: '0d6cd087-3f2e-4f30-b0aa-cf9c93b1c0d5',
+            quantity: 1,
+            unitPriceSnapshot: 0.01
+          }
+        ]
+      })
+
+      expect(messages).toContain('unitPriceSnapshot')
     })
   })
 })

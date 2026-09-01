@@ -37,7 +37,6 @@ export const Image = forwardRef<HTMLSpanElement, ImageProps>(
     {
       ratio,
       disabledEffect = false,
-      //
       alt,
       src,
       delayTime,
@@ -51,7 +50,6 @@ export const Image = forwardRef<HTMLSpanElement, ImageProps>(
       visibleByDefault,
       wrapperClassName,
       useIntersectionObserver,
-      //
       slotProps,
       sx,
       ...other

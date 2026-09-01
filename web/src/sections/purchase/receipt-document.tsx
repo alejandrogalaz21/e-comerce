@@ -23,7 +23,6 @@ const styles = StyleSheet.create({
 
 const money = (value: number) => `$${value.toFixed(2)}`;
 
-/** Kept apart from the download helper so the PDF library is only pulled in on demand. */
 export function buildReceiptDocument(purchase: IPurchase) {
   return (
     <Document title={`Receipt ${purchase.id}`}>
@@ -34,7 +33,9 @@ export function buildReceiptDocument(purchase: IPurchase) {
           <Text style={styles.muted}>{`Order ${purchase.id}`}</Text>
           <Text style={styles.muted}>{new Date(purchase.createdAt).toUTCString()}</Text>
           {purchase.paymentMethod ? (
-            <Text style={styles.muted}>{`Paid by ${paymentMethodLabel(purchase.paymentMethod)}`}</Text>
+            <Text
+              style={styles.muted}
+            >{`Paid by ${paymentMethodLabel(purchase.paymentMethod)}`}</Text>
           ) : null}
           {purchase.paymentReference ? (
             <Text style={styles.muted}>{`Payment ${purchase.paymentReference}`}</Text>

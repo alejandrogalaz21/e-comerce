@@ -2,12 +2,6 @@ import { test, expect } from '@playwright/test';
 
 import { ANONYMOUS_STATE } from './support/auth';
 
-/**
- * The public storefront, seen the way a visitor sees it. These run without a
- * session on purpose: the shop is the front door and must work with no account.
- */
-
-/** The header links to /product/checkout, so a bare /product/ match is not a card. */
 const PRODUCT_LINK = 'a[href*="/product/"]:not([href*="checkout"])';
 
 test.describe.configure({ mode: 'serial' });
@@ -50,7 +44,10 @@ test.describe('storefront', () => {
   test('a category chip filters, and the address remembers it', async ({ page }) => {
     await page.goto('/');
 
-    const chip = page.locator('.MuiChip-root').filter({ hasText: /Electronics/ }).first();
+    const chip = page
+      .locator('.MuiChip-root')
+      .filter({ hasText: /Electronics/ })
+      .first();
     await expect(chip).toBeVisible();
     await chip.click();
 
@@ -89,7 +86,6 @@ test.describe('storefront', () => {
     const cards = page.locator('.MuiCard-root');
     await expect(cards.first()).toBeVisible();
 
-    // The placeholder image the cards used to share is gone.
     await expect(page.locator('img[src*="placeholder.svg"]')).toHaveCount(0);
   });
 
@@ -106,8 +102,6 @@ test.describe('storefront', () => {
     await page.locator(PRODUCT_LINK).first().click();
     await expect(page.getByRole('button', { name: 'Add to cart' })).toBeVisible();
 
-    // It used to be a fixed pill mounted only inside the shop view, so it
-    // vanished exactly here.
     await expect(page.getByRole('button', { name: 'Open cart' })).toBeVisible();
   });
 

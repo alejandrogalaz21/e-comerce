@@ -10,11 +10,6 @@ import { createShadowColor, customShadows as coreCustomShadows } from '../core/c
 
 import type { ThemeComponents, ThemeUpdateOptions } from '../types';
 
-/**
- * [1] settings @primaryColor
- * [2] settings @contrast
- */
-
 export function updateCoreWithSettings(
   theme: ThemeUpdateOptions,
   settings: SettingsState
@@ -28,9 +23,7 @@ export function updateCoreWithSettings(
       light: {
         palette: {
           ...colorSchemes?.light?.palette,
-          /** [1] */
           primary: getPalettePrimary(settings.primaryColor),
-          /** [2] */
           background: {
             ...colorSchemes?.light?.palette?.background,
             default: getBackgroundDefault(settings.contrast),
@@ -41,14 +34,12 @@ export function updateCoreWithSettings(
       dark: {
         palette: {
           ...colorSchemes?.dark?.palette,
-          /** [1] */
           primary: getPalettePrimary(settings.primaryColor),
         },
       },
     },
     customShadows: {
       ...customShadows,
-      /** [1] */
       primary:
         settings.primaryColor === 'default'
           ? coreCustomShadows('light').primary
@@ -60,7 +51,6 @@ export function updateCoreWithSettings(
 export function updateComponentsWithSettings(settings: SettingsState) {
   const components: ThemeComponents = {};
 
-  /** [2] */
   if (settings.contrast === 'hight') {
     const MuiCard: Components<Theme>['MuiCard'] = {
       styleOverrides: {
@@ -94,7 +84,6 @@ const PRIMARY_COLORS = {
 };
 
 function getPalettePrimary(primaryColorName: SettingsState['primaryColor']) {
-  /** [1] */
   const selectedPrimaryColor = PRIMARY_COLORS[primaryColorName];
   const updatedPrimaryPalette = createPaletteChannel(selectedPrimaryColor);
 
@@ -102,6 +91,5 @@ function getPalettePrimary(primaryColorName: SettingsState['primaryColor']) {
 }
 
 function getBackgroundDefault(contrast: SettingsState['contrast']) {
-  /** [2] */
   return contrast === 'default' ? '#FFFFFF' : coreGreyPalette[200];
 }

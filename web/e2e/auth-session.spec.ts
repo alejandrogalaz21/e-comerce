@@ -81,7 +81,6 @@ test.describe('dashboard without a session', () => {
     await expect(page.locator('.MuiAlert-standardError')).toBeVisible();
     await expect(page).toHaveURL(/\/auth\/jwt\/sign-in$/);
 
-    // No redirect loop: the screen is still usable a moment later.
     await page.waitForTimeout(1_000);
     await expect(page).toHaveURL(/\/auth\/jwt\/sign-in$/);
     await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();

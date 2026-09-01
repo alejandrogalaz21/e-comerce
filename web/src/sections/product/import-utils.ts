@@ -25,16 +25,11 @@ export function importStatusColor(status: IImportBatchStatus): LabelColor {
 
 type ImportStatusMeta = {
   label: string;
-  /** Legend text: what the status means for the row it marks. */
   hint: string;
   color: LabelColor;
   icon: string;
 };
 
-/**
- * The single place where a report status decides how it looks. Summary cards,
- * table badges and the legend all read from here, so they cannot drift apart.
- */
 export const IMPORT_STATUS_META = {
   total: {
     label: 'Total rows',
@@ -76,10 +71,6 @@ export const IMPORT_STATUS_META = {
 
 export type IImportStatus = keyof typeof IMPORT_STATUS_META;
 
-/**
- * Cards paint with text color tokens and badges with LabelColor. The LabelColor is
- * the stored value because the reverse mapping is not one-to-one.
- */
 const STATUS_TEXT_COLOR: Record<LabelColor, string> = {
   default: 'text.secondary',
   primary: 'primary.main',
@@ -94,7 +85,6 @@ export function importStatusTextColor(status: IImportStatus): string {
   return STATUS_TEXT_COLOR[IMPORT_STATUS_META[status].color];
 }
 
-/** The statuses a row of the review table can carry, in the order the legend lists them. */
 export const IMPORT_ISSUE_STATUSES = ['rejected', 'updated', 'skipped'] as const;
 
 export function toImportIssueRows(

@@ -13,6 +13,7 @@ const apiProduct: ApiProduct = {
   price: '89.99',
   stock: 25,
   weightKg: '0.350',
+  discontinuedAt: null,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
 };

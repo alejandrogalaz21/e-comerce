@@ -17,18 +17,9 @@ const SIZE = {
 };
 
 const MuiSlider: Components<Theme>['MuiSlider'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: { size: 'small' },
 
-  /** **************************************
-   * VARIANTS
-   *************************************** */
   variants: [
-    /**
-     * @color inherit
-     */
     {
       props: ({ ownerState }) => ownerState.color === 'inherit',
       style: ({ theme }) => ({
@@ -39,9 +30,6 @@ const MuiSlider: Components<Theme>['MuiSlider'] = {
         },
       }),
     },
-    /**
-     * @state disabled
-     */
     {
       props: ({ ownerState }) => !!ownerState.disabled,
       style: ({ theme }) => ({
@@ -55,9 +43,6 @@ const MuiSlider: Components<Theme>['MuiSlider'] = {
     },
   ],
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       [`& .${sliderClasses.thumb}`]: {

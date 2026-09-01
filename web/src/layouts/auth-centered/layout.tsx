@@ -21,9 +21,6 @@ export function AuthCenteredLayout({ sx, children }: AuthCenteredLayoutProps) {
 
   return (
     <LayoutSection
-      /** **************************************
-       * Header
-       *************************************** */
       headerSection={
         <HeaderBase
           disableElevation
@@ -37,13 +34,7 @@ export function AuthCenteredLayout({ sx, children }: AuthCenteredLayoutProps) {
           sx={{ position: { [layoutQuery]: 'fixed' } }}
         />
       }
-      /** **************************************
-       * Footer
-       *************************************** */
       footerSection={null}
-      /** **************************************
-       * Style
-       *************************************** */
       cssVars={{
         '--layout-auth-content-width': '420px',
       }}

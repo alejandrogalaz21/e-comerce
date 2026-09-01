@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 import { ProductsService } from '@/modules/products/products.service'
 import { Product } from '@/modules/products/entities/product.entity'
+import { ProductHistory } from '@/modules/products/entities/product-history.entity'
 import { ChargeResult } from '@/modules/payment/payment.interface'
 
 import { Order } from './entities/order.entity'
@@ -20,12 +21,6 @@ const SHIPPING = {
   zipCode: '62701',
   country: 'United States'
 }
-/**
- * Locking and deadlock ordering are properties of Postgres, not of the service:
- * a mocked repository would assert that the code calls FOR UPDATE, never that
- * FOR UPDATE does its job. These run against a real database and skip when there
- * is none, so `npm test` still passes without Docker.
- */
 const CONNECTION = {
   host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT || 5432),
@@ -35,6 +30,15 @@ const CONNECTION = {
 }
 
 const SKU_PREFIX = 'CONCURRENCY-TEST-'
+
+function productsServiceFor(source: DataSource): ProductsService {
+  return new ProductsService(
+    source.getRepository(Product),
+    source.getRepository(ProductHistory),
+    new PaginationResponseBuilder<Product>(),
+    new PaginationResponseBuilder<ProductHistory>()
+  )
+}
 
 let dataSource: DataSource | null = null
 
@@ -49,7 +53,7 @@ async function connect(): Promise<DataSource | null> {
   const candidate = new DataSource({
     type: 'postgres',
     ...CONNECTION,
-    entities: [Product, Order, OrderItem],
+    entities: [Product, ProductHistory, Order, OrderItem],
     migrations: ['src/database/migrations/*.ts'],
     synchronize: false,
     logging: false
@@ -148,13 +152,13 @@ describe('OrdersService against a real database', () => {
           items: [{ productId, quantity: 1 }],
           idempotencyKey: `${SKU_PREFIX}buyer-a`,
           shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+          paymentMethod: PaymentMethod.CARD
         }),
         service.create({
           items: [{ productId, quantity: 1 }],
           idempotencyKey: `${SKU_PREFIX}buyer-b`,
           shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+          paymentMethod: PaymentMethod.CARD
         })
       ])
 
@@ -182,8 +186,8 @@ describe('OrdersService against a real database', () => {
           service.create({
             items: [{ productId, quantity: 1 }],
             idempotencyKey: `${SKU_PREFIX}rush-${index}`,
-          shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+            shippingAddress: SHIPPING,
+            paymentMethod: PaymentMethod.CARD
           })
         )
       )
@@ -213,7 +217,7 @@ describe('OrdersService against a real database', () => {
           ],
           idempotencyKey: `${SKU_PREFIX}forward`,
           shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+          paymentMethod: PaymentMethod.CARD
         }),
         service.create({
           items: [
@@ -222,7 +226,7 @@ describe('OrdersService against a real database', () => {
           ],
           idempotencyKey: `${SKU_PREFIX}reverse`,
           shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+          paymentMethod: PaymentMethod.CARD
         })
       ])
 
@@ -239,7 +243,7 @@ describe('OrdersService against a real database', () => {
     const order = {
       items: [{ productId, quantity: 2 }],
       idempotencyKey: `${SKU_PREFIX}same-key`,
-          shippingAddress: SHIPPING,
+      shippingAddress: SHIPPING,
       paymentMethod: PaymentMethod.CARD
     }
 
@@ -265,19 +269,56 @@ describe('OrdersService against a real database', () => {
       service.create({
         items: [{ productId, quantity: 3 }],
         idempotencyKey: `${SKU_PREFIX}declined`,
-          shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+        shippingAddress: SHIPPING,
+        paymentMethod: PaymentMethod.CARD
       })
     ).rejects.toMatchObject({ status: 402 })
 
     expect(await stockOf(source, productId)).toBe(7)
 
     const [failed] = await source.query(
-      `SELECT "status" FROM "orders" WHERE "idempotency_key" = $1`,
+      `SELECT "id", "status", "total_amount", "decline_reason"
+         FROM "orders" WHERE "idempotency_key" = $1`,
       [`${SKU_PREFIX}declined`]
     )
     expect(failed.status).toBe('FAILED')
+    expect(failed.decline_reason).toBe('card declined by the issuer')
   })
+
+  maybe(
+    'the declined order keeps the lines it was attempted with',
+    async () => {
+      const source = dataSource!
+      const productId = await seedProduct(source, 'DECLINED-LINES', 7)
+      const service = serviceFor(source, {
+        charge: async (): Promise<ChargeResult> => ({
+          status: 'declined',
+          reason: 'card declined by the issuer'
+        })
+      })
+
+      await expect(
+        service.create({
+          items: [{ productId, quantity: 3 }],
+          idempotencyKey: `${SKU_PREFIX}declined-lines`,
+          shippingAddress: SHIPPING,
+          paymentMethod: PaymentMethod.CARD
+        })
+      ).rejects.toMatchObject({ status: 402 })
+
+      const lines = await source.query(
+        `SELECT i."sku", i."quantity", i."unit_price_snapshot"
+           FROM "order_items" i
+           JOIN "orders" o ON o."id" = i."order_id"
+          WHERE o."idempotency_key" = $1`,
+        [`${SKU_PREFIX}declined-lines`]
+      )
+
+      expect(lines).toHaveLength(1)
+      expect(lines[0].quantity).toBe(3)
+      expect(lines[0].unit_price_snapshot).toBe('10.00')
+    }
+  )
 
   maybe('refuses to delete a product that appears in an order', async () => {
     const source = dataSource!
@@ -287,23 +328,54 @@ describe('OrdersService against a real database', () => {
     await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${SKU_PREFIX}sold-one`,
-          shippingAddress: SHIPPING,
+      shippingAddress: SHIPPING,
       paymentMethod: PaymentMethod.CARD
     })
 
-    const products = new ProductsService(
-      source.getRepository(Product),
-      new PaginationResponseBuilder<Product>()
-    )
+    const products = productsServiceFor(source)
 
-    // The RESTRICT foreign key is what refuses this; it must surface as a
-    // conflict rather than escaping as an internal failure.
     await expect(products.remove(productId)).rejects.toMatchObject({
       status: 409,
       response: { error: 'RESOURCE_IN_USE' }
     })
 
     expect(await stockOf(source, productId)).toBe(4)
+  })
+
+  maybe('discontinues a sold product that cannot be deleted', async () => {
+    const source = dataSource!
+    const productId = await seedProduct(source, 'RETIRED', 5)
+    const service = serviceFor(source)
+
+    await service.create({
+      items: [{ productId, quantity: 1 }],
+      idempotencyKey: `${SKU_PREFIX}sold-then-retired`,
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
+    })
+
+    const products = productsServiceFor(source)
+
+    await expect(products.remove(productId)).rejects.toMatchObject({
+      status: 409
+    })
+
+    const retired = await products.discontinue(productId)
+    expect(retired.discontinuedAt).toBeInstanceOf(Date)
+
+    await expect(products.findOne(productId)).rejects.toMatchObject({
+      status: 404
+    })
+
+    const [line] = await source.query(
+      `SELECT "unit_price_snapshot" FROM "order_items" WHERE "product_id" = $1`,
+      [productId]
+    )
+    expect(line.unit_price_snapshot).toBe('10.00')
+
+    const back = await products.restore(productId)
+    expect(back.discontinuedAt).toBeNull()
+    await expect(products.findOne(productId)).resolves.toBeDefined()
   })
 
   maybe(
@@ -316,8 +388,8 @@ describe('OrdersService against a real database', () => {
       const { order } = await service.create({
         items: [{ productId, quantity: 1 }],
         idempotencyKey: `${SKU_PREFIX}snapshot`,
-          shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+        shippingAddress: SHIPPING,
+        paymentMethod: PaymentMethod.CARD
       })
 
       await source.query(

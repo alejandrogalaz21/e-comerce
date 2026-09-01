@@ -2,24 +2,10 @@ import { request } from '@playwright/test';
 
 import type { APIRequestContext } from '@playwright/test';
 
-/**
- * Shared authentication helpers for the e2e suite.
- *
- * The browser session is provided by the `setup` project (see `e2e/auth.setup.ts`):
- * it signs in once through the UI and writes the storage state to STORAGE_STATE,
- * which `playwright.config.ts` feeds to the `chromium` project. Specs therefore start
- * already authenticated; a spec that needs an anonymous browser opts out with
- * `test.use({ storageState: ANONYMOUS_STATE })`.
- *
- * The API request contexts used for setup/cleanup are not covered by the browser
- * storage state, so they sign in over HTTP and carry an explicit bearer token.
- */
-
 export const API_URL = process.env.E2E_API_URL ?? 'http://localhost:4000';
 
 export const DEMO_CREDENTIALS = { email: 'demo@demo.com', password: 'demo' };
 
-/** Relative to the Playwright config directory; gitignored. */
 export const STORAGE_STATE = 'e2e/.auth/demo-user.json';
 
 export const ANONYMOUS_STATE = { cookies: [], origins: [] };
@@ -46,7 +32,6 @@ export async function fetchAccessToken(): Promise<string> {
   }
 }
 
-/** API request context that carries the demo user's bearer token. */
 export async function createAuthenticatedApiContext(): Promise<APIRequestContext> {
   const accessToken = await fetchAccessToken();
 
@@ -56,7 +41,6 @@ export async function createAuthenticatedApiContext(): Promise<APIRequestContext
   });
 }
 
-/** Deletes in small batches: a single burst of ~100 concurrent DELETEs makes the API drop sockets. */
 const DELETE_BATCH_SIZE = 10;
 
 export async function deleteProducts(
@@ -73,8 +57,6 @@ export async function deleteProducts(
       batch.map(async (id) => ({ id, res: await api.delete(`/api/v1/products/${id}`) }))
     );
 
-    // A product that appears in an order is protected by a RESTRICT foreign key.
-    // That refusal is correct behaviour, so it is collected rather than thrown.
     results.forEach(({ id, res }) => {
       if (res.status() === 409) refused.push(id);
     });

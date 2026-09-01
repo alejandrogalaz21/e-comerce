@@ -42,7 +42,6 @@ export const Default: Story = {
   },
 };
 
-/** The offending value is shown as text, so markup is visible instead of rendered. */
 export const RejectedByItsName: Story = {
   args: {
     rows: [

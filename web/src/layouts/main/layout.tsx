@@ -44,9 +44,6 @@ export function MainLayout({ sx, data, children }: MainLayoutProps) {
       <NavMobile data={navData} open={mobileNavOpen.value} onClose={mobileNavOpen.onFalse} />
 
       <LayoutSection
-        /** **************************************
-         * Header
-         *************************************** */
         headerSection={
           <HeaderBase
             layoutQuery={layoutQuery}
@@ -73,13 +70,7 @@ export function MainLayout({ sx, data, children }: MainLayoutProps) {
             }}
           />
         }
-        /** **************************************
-         * Footer
-         *************************************** */
         footerSection={homePage ? <HomeFooter /> : <Footer />}
-        /** **************************************
-         * Style
-         *************************************** */
         sx={sx}
       >
         <Main>{children}</Main>

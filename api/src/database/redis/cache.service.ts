@@ -3,29 +3,14 @@ import Redis from 'ioredis'
 
 import { REDIS_CLIENT } from './redis.constants'
 
-/**
- * A cache that can never decide whether a request is answered. Every access is
- * wrapped: a read that fails falls through to the caller's own computation, and
- * a write that fails is swallowed. An optimisation that can take the service
- * down is not an optimisation.
- */
 @Injectable()
 export class CacheService {
   private readonly logger = new Logger(CacheService.name)
 
-  /**
-   * A safety net for what explicit invalidation cannot cover: a write straight to
-   * the database, or an invalidation lost to a Redis blip.
-   */
   static readonly DEFAULT_TTL_SECONDS = 300
 
   constructor(@Inject(REDIS_CLIENT) private readonly client: Redis) {}
 
-  /**
-   * The key is built from the already-validated DTO with its fields sorted, not
-   * from the raw URL: `?q=a&q=b` and `?q=b&q=a` ask for the same thing, and
-   * parameter order should not create a second entry.
-   */
   static buildKey(
     prefix: string,
     params: Record<string, unknown> = {}
@@ -69,14 +54,6 @@ export class CacheService {
     }
   }
 
-  /**
-   * Invalidation drops the whole prefix rather than individual entries. Working
-   * out which cached queries a new product belongs to is a hard problem — it
-   * joins any search matching its text and any price range containing it — and
-   * getting it wrong means serving stale data silently, the worst failure a
-   * cache has. The catalog is written rarely and read often, which is exactly
-   * when this trade pays.
-   */
   async invalidatePrefix(prefix: string): Promise<void> {
     try {
       const keys = await this.client.keys(`${prefix}:*`)

@@ -10,7 +10,6 @@ export const varFade = (props?: VariantsType) => {
   const easeOut = props?.easeOut;
 
   return {
-    // IN
     in: {
       initial: { opacity: 0 },
       animate: { opacity: 1, transition: varTranEnter },
@@ -37,7 +36,6 @@ export const varFade = (props?: VariantsType) => {
       exit: { x: distance, opacity: 0, transition: varTranExit({ durationOut, easeOut }) },
     },
 
-    // OUT
     out: {
       initial: { opacity: 1 },
       animate: { opacity: 0, transition: varTranEnter({ durationIn, easeIn }) },

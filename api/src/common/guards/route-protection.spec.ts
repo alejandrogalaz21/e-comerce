@@ -6,8 +6,8 @@ import { HealthController } from '@/modules/health/health.controller'
 import { ImportController } from '@/modules/import/import.controller'
 import { OrdersController } from '@/modules/orders/orders.controller'
 import { ProductsController } from '@/modules/products/products.controller'
+import { OptionalJwtAuthGuard } from './optional-jwt-auth.guard'
 import { StatusController } from '@/modules/status/status.controller'
-import { UsersController } from '@/modules/users/users.controller'
 
 type ControllerClass = new (...args: never[]) => unknown
 
@@ -44,16 +44,12 @@ const PROTECTED_SURFACE: [string, ControllerClass, string][] = [
   ['GET /status/redis', StatusController, 'redisStatus'],
   ['GET /status/db', StatusController, 'dbStatus'],
   ['GET /auth/me', AuthController, 'getProfile'],
-  // An account is only good for administering the catalog here, so an open
-  // sign-up would hand those rights to anyone who found the endpoint.
   ['POST /auth/sign-up', AuthController, 'signup'],
   ['GET /orders', OrdersController, 'findAll'],
   ['GET /orders/:id', OrdersController, 'findOne'],
-  ['POST /users', UsersController, 'create'],
-  ['GET /users', UsersController, 'findAll'],
-  ['GET /users/:id', UsersController, 'findOne'],
-  ['PATCH /users/:id', UsersController, 'update'],
-  ['DELETE /users/:id', UsersController, 'remove']
+  ['PATCH /products/:id/discontinue', ProductsController, 'discontinue'],
+  ['PATCH /products/:id/restore', ProductsController, 'restore'],
+  ['GET /products/:id/history', ProductsController, 'findHistory']
 ]
 
 describe('public/protected boundary', () => {
@@ -65,6 +61,22 @@ describe('public/protected boundary', () => {
     '%s requires a session',
     (_route, controller, method) => {
       expect(isPublic(controller, method)).toBe(false)
+    }
+  )
+
+  it.each([
+    ['GET /products', 'findAll'],
+    ['GET /products/:id', 'findOne']
+  ])(
+    '%s authenticates the caller without demanding it, so asking for discontinued products can be refused',
+    (_route, method) => {
+      const guards: unknown[] =
+        Reflect.getMetadata(
+          '__guards__',
+          ProductsController.prototype[method]
+        ) ?? []
+
+      expect(guards).toContain(OptionalJwtAuthGuard)
     }
   )
 
@@ -81,8 +93,7 @@ describe('public/protected boundary', () => {
       ImportController,
       OrdersController,
       ProductsController,
-      StatusController,
-      UsersController
+      StatusController
     ]
 
     const handlers = controllers.flatMap(controller =>

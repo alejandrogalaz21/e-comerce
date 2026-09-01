@@ -6,10 +6,6 @@ import { parsePurchaseFilters, serializePurchaseFilters } from '../purchase-para
 
 import type { IPurchaseFilters } from '../purchase-params';
 
-/**
- * The address is the state, the same way the product list and the shop work:
- * back navigates filters, and a filtered view can be shared as a link.
- */
 export function usePurchaseParams() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -30,8 +26,6 @@ export function usePurchaseParams() {
     (changes: Partial<IPurchaseFilters>) => {
       const next = { ...state, ...changes };
 
-      // Anything but paging returns to page one: page 5 of a new result set is
-      // usually empty.
       if (!('page' in changes)) next.page = 1;
 
       navigateTo(next);

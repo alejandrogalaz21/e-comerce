@@ -170,8 +170,6 @@ export function PurchaseListView() {
     />
   );
 
-  // An empty catalog of orders and a search that matched nothing need opposite
-  // actions: one has nothing to look at, the other has a criterion to drop.
   const renderEmpty = filtered ? (
     <EmptyContent
       filled

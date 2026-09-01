@@ -5,24 +5,21 @@ import {
   UnauthorizedException,
   Get
 } from '@nestjs/common'
+import { ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
-import { AuthService } from './auth.service'
-import { UsersService } from '../users/users.service'
-import { CreateUserDto } from '../users/dto/create-user.dto'
-import { SignInDto } from './dto/sign-in.dto'
-import { Public } from '@/common/decorators/public.decorator'
+
 import {
   AuthenticatedUser,
   CurrentUser
 } from '@/common/decorators/current-user.decorator'
+import { Public } from '@/common/decorators/public.decorator'
+import { THROTTLE } from '@/config'
 
-// Loose enough for a person and for the end-to-end suite, useless for a script:
-// the global ceiling is 300/min because the status page polls, which for a
-// credential endpoint is the same as having no limit at all.
-const SIGN_IN_RATE_LIMIT = process.env.AUTH_RATE_LIMIT
-  ? parseInt(process.env.AUTH_RATE_LIMIT, 10)
-  : 30
+import { CreateUserDto } from '../users/dto/create-user.dto'
+import { UsersService } from '../users/users.service'
+import { AuthService } from './auth.service'
+import { ApiCurrentUser, ApiSignIn, ApiSignUp } from './docs/auth.api-docs'
+import { SignInDto } from './dto/sign-in.dto'
 
 @ApiTags('auth')
 @Controller('auth')
@@ -32,27 +29,16 @@ export class AuthController {
     private readonly usersService: UsersService
   ) {}
 
-  /**
-   * Deliberately not public. Buying needs no account, and the only thing an
-   * account grants here is catalog administration, so an open sign-up would let
-   * anyone hand themselves those rights.
-   */
   @Post('sign-up')
-  @ApiBearerAuth('jwt')
-  @ApiOperation({ summary: 'Create an account (requires an existing session)' })
-  @ApiResponse({ status: 401, description: 'Missing or invalid access token' })
+  @ApiSignUp()
   async signup(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto)
   }
 
   @Post('sign-in')
   @Public()
-  @Throttle({ default: { ttl: 60_000, limit: SIGN_IN_RATE_LIMIT } })
-  @ApiResponse({
-    status: 200,
-    description: 'Access token and public user data'
-  })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @Throttle({ default: THROTTLE.signIn })
+  @ApiSignIn()
   async signin(@Body() body: SignInDto) {
     const user = await this.authService.validateUser(body.email, body.password)
     if (!user) {
@@ -62,8 +48,7 @@ export class AuthController {
   }
 
   @Get('me')
-  @ApiBearerAuth('jwt')
-  @ApiResponse({ status: 401, description: 'Missing or invalid access token' })
+  @ApiCurrentUser()
   async getProfile(@CurrentUser() user: AuthenticatedUser) {
     return this.usersService.findOne(user.userId)
   }

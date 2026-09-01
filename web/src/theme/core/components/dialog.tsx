@@ -1,9 +1,6 @@
 import type { Theme, Components } from '@mui/material/styles';
 
 const MuiDialog: Components<Theme>['MuiDialog'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     paper: ({ ownerState, theme }) => ({
       boxShadow: theme.customShadows.dialog,
@@ -15,16 +12,10 @@ const MuiDialog: Components<Theme>['MuiDialog'] = {
 };
 
 const MuiDialogTitle: Components<Theme>['MuiDialogTitle'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: { root: ({ theme }) => ({ padding: theme.spacing(3) }) },
 };
 
 const MuiDialogContent: Components<Theme>['MuiDialogContent'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({ padding: theme.spacing(0, 3) }),
     dividers: ({ theme }) => ({
@@ -36,14 +27,8 @@ const MuiDialogContent: Components<Theme>['MuiDialogContent'] = {
 };
 
 const MuiDialogActions: Components<Theme>['MuiDialogActions'] = {
-  /** **************************************
-   * DEFAULT PROPS
-   *************************************** */
   defaultProps: { disableSpacing: true },
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     root: ({ theme }) => ({
       padding: theme.spacing(3),

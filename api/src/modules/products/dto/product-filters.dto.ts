@@ -65,6 +65,10 @@ function toBoolean(raw: unknown): unknown {
   return raw
 }
 
+export const PRODUCT_STATUSES = ['active', 'discontinued', 'all'] as const
+export type ProductStatus = (typeof PRODUCT_STATUSES)[number]
+export const DEFAULT_PRODUCT_STATUS: ProductStatus = 'active'
+
 export class ProductFiltersDto extends PaginationDTO {
   @ApiPropertyOptional({
     example: 'camping',
@@ -148,4 +152,16 @@ export class ProductFiltersDto extends PaginationDTO {
   @Transform(({ value }) => trimText(value))
   @IsIn([...PRODUCT_SORT_DIRECTIONS])
   sortDir?: ProductSortDirection
+
+  @ApiPropertyOptional({
+    enum: PRODUCT_STATUSES,
+    example: 'active',
+    description: `Catalog status. Defaults to ${DEFAULT_PRODUCT_STATUS}, so a consumer that does not know this parameter keeps seeing what it saw before. Distinct from inStock: sold out is on sale with no units, discontinued is no longer sold`
+  })
+  @IsOptional()
+  @Transform(({ value }) => trimText(value))
+  @IsIn([...PRODUCT_STATUSES], {
+    message: `status must be one of: ${PRODUCT_STATUSES.join(', ')}`
+  })
+  status?: ProductStatus
 }

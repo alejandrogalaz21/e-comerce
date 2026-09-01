@@ -2,7 +2,6 @@ import type { Theme, Components } from '@mui/material/styles';
 
 import { badgeClasses } from '@mui/material/Badge';
 
-// NEW VARIANT
 declare module '@mui/material/Badge' {
   interface BadgePropsVariantOverrides {
     alway: true;
@@ -28,13 +27,7 @@ const baseStyles = (theme: Theme) => ({
 });
 
 const MuiBadge: Components<Theme>['MuiBadge'] = {
-  /** **************************************
-   * VARIANTS
-   *************************************** */
   variants: [
-    /**
-     * @variant online
-     */
     {
       props: ({ ownerState }) => ownerState.variant === 'online',
       style: ({ theme }) => ({
@@ -44,9 +37,6 @@ const MuiBadge: Components<Theme>['MuiBadge'] = {
         },
       }),
     },
-    /**
-     * @variant alway
-     */
     {
       props: ({ ownerState }) => ownerState.variant === 'alway',
       style: ({ theme }) => ({
@@ -58,9 +48,6 @@ const MuiBadge: Components<Theme>['MuiBadge'] = {
         },
       }),
     },
-    /**
-     * @variant busy
-     */
     {
       props: ({ ownerState }) => ownerState.variant === 'busy',
       style: ({ theme }) => ({
@@ -71,9 +58,6 @@ const MuiBadge: Components<Theme>['MuiBadge'] = {
         },
       }),
     },
-    /**
-     * @variant offline
-     */
     {
       props: ({ ownerState }) => ownerState.variant === 'offline',
       style: ({ theme }) => ({
@@ -84,18 +68,12 @@ const MuiBadge: Components<Theme>['MuiBadge'] = {
         },
       }),
     },
-    /**
-     * @variant invisible
-     */
     {
       props: ({ ownerState }) => ownerState.variant === 'invisible',
       style: { [`& .${badgeClasses.badge}`]: { display: 'none' } },
     },
   ],
 
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: { dot: { borderRadius: '50%' } },
 };
 

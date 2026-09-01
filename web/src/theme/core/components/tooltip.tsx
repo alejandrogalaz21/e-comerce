@@ -5,9 +5,6 @@ import { tooltipClasses } from '@mui/material/Tooltip';
 import { stylesMode } from '../../styles';
 
 const MuiTooltip: Components<Theme>['MuiTooltip'] = {
-  /** **************************************
-   * STYLE
-   *************************************** */
   styleOverrides: {
     tooltip: ({ theme }) => ({
       backgroundColor: theme.vars.palette.grey[800],

@@ -75,10 +75,7 @@ test.describe('product import batch history', () => {
     const grid = page.getByRole('grid');
     await expect(grid).toBeVisible();
 
-    const row = grid
-      .locator('[role="row"]')
-      .filter({ hasText: 'loanpro-sample.csv' })
-      .first();
+    const row = grid.locator('[role="row"]').filter({ hasText: 'loanpro-sample.csv' }).first();
     await expect(row).toBeVisible({ timeout: 15_000 });
 
     await expect(row).toContainText(/completed/i);
@@ -93,14 +90,9 @@ test.describe('product import batch history', () => {
     const grid = page.getByRole('grid');
     await expect(grid).toBeVisible();
 
-    const row = grid
-      .locator('[role="row"]')
-      .filter({ hasText: 'loanpro-sample.csv' })
-      .first();
+    const row = grid.locator('[role="row"]').filter({ hasText: 'loanpro-sample.csv' }).first();
     await expect(row).toBeVisible({ timeout: 15_000 });
 
-    // The grid re-renders when the background refetch settles, which can swallow
-    // the first click on the row action, so retry the click until the URL changes.
     await expect(async () => {
       await row.locator('button[aria-label="View report"]').click();
       await expect(page).toHaveURL(/\/dashboard\/product\/import\/batches\/[0-9a-f-]+$/, {

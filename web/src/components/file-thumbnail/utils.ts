@@ -2,7 +2,6 @@ import { CONFIG } from 'src/config-global';
 
 import type { ExtendFile } from './types';
 
-// Define more types here
 const FORMAT_PDF = ['pdf'];
 const FORMAT_TEXT = ['txt'];
 const FORMAT_PHOTOSHOP = ['psd'];
@@ -118,7 +117,6 @@ export function fileNameByUrl(fileUrl: string) {
 }
 
 export function fileData(file: File | string) {
-  // From url
   if (typeof file === 'string') {
     return {
       preview: file,
@@ -131,7 +129,6 @@ export function fileData(file: File | string) {
     };
   }
 
-  // From file
   return {
     name: file.name,
     size: file.size,

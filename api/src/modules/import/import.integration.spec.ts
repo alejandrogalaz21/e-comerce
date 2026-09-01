@@ -7,25 +7,10 @@ import { ImportService } from './import.service'
 import { ImportRowNormalizer } from './import-row.normalizer'
 import { ImportBatch } from './import-batch.entity'
 import { Product } from '@/modules/products/entities/product.entity'
+import { ProductHistory } from '@/modules/products/entities/product-history.entity'
 import { ProductsService } from '@/modules/products/products.service'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 
-/**
- * Runs the import service against the real challenge fixture
- * (test/fixtures/loanpro-sample.csv: header line 1 + 97 data rows, lines 2-98).
- *
- * Expected numbers derived from the fixture content:
- * - rejected by validation (5): line 7 (price 'free'), 16 (stock -5), 20 (HTML
- *   markup in name), 25 (empty name), 41 (whitespace-only name). Line 29 is
- *   ACCEPTED: its sku 'SQL-001' is valid and the SQLi payload lives in the
- *   name, which is harmless data.
- * - rejected as duplicate skus (5): RS-001 on lines 2 and 36, BS-021 on lines
- *   11, 56 and 89. A sku must appear at most once per file, so every occurrence
- *   is rejected instead of letting row order decide the winner.
- * - skippedEmpty (2): lines 62 and 63.
- * - updated: 0 — no accepted sku exists in the database beforehand.
- * - inserted: 97 - 10 - 2 = 85.
- */
 describe('ImportService (integration with the real fixture)', () => {
   const fixturePath = join(
     __dirname,
@@ -74,6 +59,10 @@ describe('ImportService (integration with the real fixture)', () => {
         ProductsService,
         PaginationResponseBuilder,
         { provide: getRepositoryToken(Product), useValue: productRepository },
+        {
+          provide: getRepositoryToken(ProductHistory),
+          useValue: { findAndCount: jest.fn().mockResolvedValue([[], 0]) }
+        },
         { provide: getRepositoryToken(ImportBatch), useValue: batchRepository }
       ]
     }).compile()
@@ -218,7 +207,6 @@ describe('ImportService (integration with the real fixture)', () => {
     expect(productsBySku.get('RS-001')).toBeUndefined()
     expect(productsBySku.get('BS-021')).toBeUndefined()
 
-    // Same name, different sku: these are distinct products and must survive.
     expect(productsBySku.get('RS-050')).toBeDefined()
     expect(productsBySku.get('BS-099')).toBeDefined()
   })

@@ -76,10 +76,6 @@ export function AnimateText({
       sx={{
         p: 0,
         m: 0,
-        /**
-         * Utilities for improving accessibility with screen readers.
-         * https://v1.tailwindcss.com/docs/screen-readers
-         */
         [`& .${animateTextClasses.srOnly}`]: {
           p: 0,
           width: '1px',

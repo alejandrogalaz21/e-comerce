@@ -23,8 +23,6 @@ export function PurchaseStatusLabel({ status, declineReason }: Props) {
     </Label>
   );
 
-  // Why an order failed is the first thing anyone asks; the tooltip answers it
-  // without opening the order. A paid one has nothing to explain.
   if (status !== 'FAILED' || !declineReason) return label;
 
   return (

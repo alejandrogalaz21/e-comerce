@@ -1,11 +1,5 @@
-/**
- * The purchase contract served by the API. It is deliberately separate from
- * `order.ts`, which is the template's own order domain and belongs to screens
- * this change does not touch.
- */
 export type IPurchaseStatus = 'PENDING' | 'PAID' | 'FAILED';
 
-/** How the buyer chose to pay. Null on orders placed before it was recorded. */
 export type IPaymentMethod = 'card' | 'paypal';
 
 export type ApiPurchaseItem = {
@@ -17,11 +11,9 @@ export type ApiPurchaseItem = {
   unitPriceSnapshot: string;
 };
 
-/** The delivery address, as the order recorded it. */
 export type IShippingAddress = {
   name: string;
   phone: string;
-  /** Empty on orders placed before the checkout asked for it. */
   email: string;
   address: string;
   city: string;
@@ -70,7 +62,6 @@ export type IPurchase = {
   declineReason: string | null;
   idempotencyKey: string;
   items: IPurchaseItem[];
-  /** Absent on orders placed before deliveries were recorded. */
   shippingAddress: IShippingAddress | null;
 };
 
@@ -90,7 +81,6 @@ export type IPlacePurchasePayload = {
   shippingAddress: IShippingAddress;
 };
 
-/** A line the catalog could not fulfil, as reported by a 409. */
 export type IStockConflict = {
   sku: string;
   requested: number;
@@ -104,6 +94,5 @@ export type IPlacePurchaseError = {
   kind: IPurchaseErrorKind;
   message: string;
   conflict?: IStockConflict;
-  /** The product the API could not find, when the failure points at one line. */
   missingProductId?: string;
 };

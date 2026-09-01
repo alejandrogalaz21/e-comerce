@@ -5,13 +5,9 @@ import { PaginationResponseBuilder } from '@/common/pagination/pagination-respon
 import { CacheService } from '@/database/redis/cache.service'
 
 import { Product } from './entities/product.entity'
+import { ProductHistory } from './entities/product-history.entity'
 import { ProductsService } from './products.service'
 
-/**
- * The catalog is read far more often than it is written, which is the case the
- * cache exists for. What matters is that a write is never served stale and that
- * a cache failure never reaches the caller.
- */
 describe('ProductsService caching', () => {
   let service: ProductsService
   let store: Map<string, unknown>
@@ -19,6 +15,7 @@ describe('ProductsService caching', () => {
   const queryBuilder = {
     orderBy: jest.fn().mockReturnThis(),
     addOrderBy: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     select: jest.fn().mockReturnThis(),
     addSelect: jest.fn().mockReturnThis(),
@@ -27,6 +24,11 @@ describe('ProductsService caching', () => {
     take: jest.fn().mockReturnThis(),
     getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
     getRawMany: jest.fn().mockResolvedValue([])
+  }
+
+  const historyRepository = {
+    findAndCount: jest.fn().mockResolvedValue([[], 0]),
+    existsBy: jest.fn().mockResolvedValue(true)
   }
 
   const mockRepository = {
@@ -57,6 +59,10 @@ describe('ProductsService caching', () => {
         ProductsService,
         PaginationResponseBuilder,
         { provide: getRepositoryToken(Product), useValue: mockRepository },
+        {
+          provide: getRepositoryToken(ProductHistory),
+          useValue: historyRepository
+        },
         { provide: CacheService, useValue: cache }
       ]
     }).compile()
@@ -125,6 +131,34 @@ describe('ProductsService caching', () => {
       expect(queryBuilder.getManyAndCount).toHaveBeenCalledTimes(2)
     })
 
+    it('drops the cache when a product is discontinued', async () => {
+      mockRepository.findOneBy.mockResolvedValue({
+        id: 'x',
+        sku: 'X-1',
+        discontinuedAt: null
+      })
+
+      await service.findAll({ page: 1 })
+      await service.discontinue('x')
+      await service.findAll({ page: 1 })
+
+      expect(queryBuilder.getManyAndCount).toHaveBeenCalledTimes(2)
+    })
+
+    it('drops the cache when a product is restored', async () => {
+      mockRepository.findOneBy.mockResolvedValue({
+        id: 'x',
+        sku: 'X-1',
+        discontinuedAt: new Date('2026-09-01T10:00:00.000Z')
+      })
+
+      await service.findAll({ page: 1 })
+      await service.restore('x')
+      await service.findAll({ page: 1 })
+
+      expect(queryBuilder.getManyAndCount).toHaveBeenCalledTimes(2)
+    })
+
     it('drops the categories along with the listings', async () => {
       await service.findCategories()
       await service.create({
@@ -140,7 +174,6 @@ describe('ProductsService caching', () => {
   })
 
   describe('when Redis is down', () => {
-    /** A real CacheService over a failing client: the swallow must hold end to end. */
     const failing = () =>
       new CacheService({
         get: jest.fn().mockRejectedValue(new Error('connection refused')),
@@ -152,7 +185,9 @@ describe('ProductsService caching', () => {
     it('still serves the catalog, computed against the database', async () => {
       const degraded = new ProductsService(
         mockRepository as never,
+        historyRepository as never,
         new PaginationResponseBuilder<Product>(),
+        new PaginationResponseBuilder<ProductHistory>(),
         failing()
       )
 
@@ -163,7 +198,9 @@ describe('ProductsService caching', () => {
     it('still writes, even though invalidation cannot reach Redis', async () => {
       const degraded = new ProductsService(
         mockRepository as never,
+        historyRepository as never,
         new PaginationResponseBuilder<Product>(),
+        new PaginationResponseBuilder<ProductHistory>(),
         failing()
       )
 
@@ -175,7 +212,9 @@ describe('ProductsService caching', () => {
     it('works with no cache wired at all', async () => {
       const uncached = new ProductsService(
         mockRepository as never,
-        new PaginationResponseBuilder<Product>()
+        historyRepository as never,
+        new PaginationResponseBuilder<Product>(),
+        new PaginationResponseBuilder<ProductHistory>()
       )
 
       await expect(uncached.findAll({ page: 1 })).resolves.toBeDefined()

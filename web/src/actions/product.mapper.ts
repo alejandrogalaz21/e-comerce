@@ -7,6 +7,8 @@ import type {
   IProductPayload,
   IProductFormValues,
   IImportBatchDetail,
+  IProductHistoryEntry,
+  ApiProductHistoryEntry,
 } from 'src/types/product';
 
 export function toProductItem(dto: ApiProduct): IProductItem {
@@ -19,17 +21,16 @@ export function toProductItem(dto: ApiProduct): IProductItem {
     price: Number(dto.price),
     stock: dto.stock,
     weightKg: dto.weightKg === null ? null : Number(dto.weightKg),
+    discontinuedAt: dto.discontinuedAt ?? null,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
   };
 }
 
-/** Batches created before import attribution existed carry no `importedBy`. */
 export function toImportBatch(dto: IImportBatch): IImportBatch {
   return { ...dto, importedBy: dto.importedBy ?? null };
 }
 
-/** Batches stored before a report section existed carry it as null or partial. */
 export function toImportReport(report: Partial<IImportReport> | null | undefined): IImportReport {
   return {
     rejected: report?.rejected ?? [],
@@ -61,4 +62,30 @@ export function toApiPayload(values: IProductFormValues): IProductPayload {
     stock: values.stock,
     ...(weightKg !== '' && { weightKg: Number(weightKg) }),
   };
+}
+
+/**
+ * A history entry carries the whole row before and after. The screen only needs
+ * what moved, and it needs it as "from -> to": "the price changed" does not
+ * answer the question that brings somebody to a history in the first place.
+ */
+export function toProductHistoryEntry(dto: ApiProductHistoryEntry): IProductHistoryEntry {
+  return {
+    id: dto.id,
+    operation: dto.operation,
+    changedAt: dto.changedAt,
+    changes: dto.changedFields.map((field) => ({
+      field,
+      from: readField(dto.oldData, field),
+      to: readField(dto.newData, field),
+    })),
+  };
+}
+
+function readField(data: Record<string, unknown> | null, field: string): string | null {
+  const value = data?.[field];
+
+  if (value === undefined || value === null) return null;
+
+  return String(value);
 }

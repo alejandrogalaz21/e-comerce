@@ -70,7 +70,6 @@ export function AddressNewForm({ open, onClose, onCreate }: Props) {
         phoneNumber: data.phoneNumber,
         email: data.email,
         fullAddress: `${data.address}, ${data.city}, ${data.state}, ${data.country}, ${data.zipCode}`,
-        // The one-line form is for display; the order is stored in parts.
         street: data.address,
         city: data.city,
         state: data.state,

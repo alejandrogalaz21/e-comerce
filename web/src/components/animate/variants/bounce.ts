@@ -9,7 +9,6 @@ export const varBounce = (props?: VariantsType) => {
   const easeOut = props?.easeOut;
 
   return {
-    // IN
     in: {
       initial: {},
       animate: {
@@ -80,7 +79,6 @@ export const varBounce = (props?: VariantsType) => {
       },
     },
 
-    // OUT
     out: { animate: { scale: [0.9, 1.1, 0.3], opacity: [1, 1, 0] } },
     outUp: { animate: { y: [-12, 24, -720], scaleY: [0.985, 0.9, 3], opacity: [1, 1, 0] } },
     outDown: { animate: { y: [12, -24, 720], scaleY: [0.985, 0.9, 3], opacity: [1, 1, 0] } },

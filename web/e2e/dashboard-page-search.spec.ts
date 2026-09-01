@@ -2,11 +2,6 @@ import { test, expect } from '@playwright/test';
 
 import type { Page } from '@playwright/test';
 
-/**
- * The searchbar is chrome, not a data surface: it reads the dashboard nav, so no
- * fixture products are needed. The suite starts authenticated (see support/auth.ts).
- */
-
 const SHORTCUT = 'Control+k';
 
 const dialog = (page: Page) => page.getByRole('dialog');

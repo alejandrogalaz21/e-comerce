@@ -17,7 +17,7 @@ import { fCurrency } from 'src/utils/format-number';
 
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
-import { CategoryIcon } from 'src/components/logo/CategoryIcons';
+import { CategoryIcon } from 'src/components/category-icon';
 
 import { useCheckoutContext } from 'src/sections/checkout/context';
 import { isPurchasable } from 'src/sections/checkout/cart-reconcile';
@@ -25,18 +25,11 @@ import { IncrementerButton } from 'src/sections/product/components/incrementer-b
 import { useCartRevalidation } from 'src/sections/checkout/hooks/use-cart-revalidation';
 import { CartLineChanges, CartChangeNotice } from 'src/sections/checkout/cart-change-notice';
 
-/**
- * Lives in the header rather than inside the shop view, so the cart does not
- * disappear the moment a visitor opens a product. Opening it shows what is in
- * there without leaving the page: seeing your cart should not cost you your place.
- */
 export function MiniCart() {
   const open = useBoolean();
 
   const checkout = useCheckoutContext();
 
-  // Only while the drawer is open: a cart nobody is looking at has no decision
-  // to inform, and polling the catalog behind the header would be noise.
   const { unverified } = useCartRevalidation(open.value);
 
   const empty = !checkout.items.length;

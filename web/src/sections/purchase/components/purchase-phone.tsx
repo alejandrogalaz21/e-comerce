@@ -9,12 +9,6 @@ type Props = {
   phone: string;
 };
 
-/**
- * The number is stored in international format, so the country it belongs to is
- * information the value already carries: no column is needed to show the flag
- * the checkout form showed while it was typed. A number that cannot be parsed is
- * shown as it was recorded rather than hidden.
- */
 export function PurchasePhone({ phone }: Props) {
   if (!phone) {
     return (

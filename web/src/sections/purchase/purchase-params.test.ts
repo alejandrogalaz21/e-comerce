@@ -35,10 +35,6 @@ describe('parsePurchaseFilters', () => {
     });
   });
 
-  /**
-   * A status nobody chose must not reach the API, which answers 400 for it. A
-   * hand-edited or stale link degrades to "no status filter" instead.
-   */
   it('drops a status the system does not have', () => {
     expect(parse('status=REFUNDED').status).toBe('');
   });
@@ -92,10 +88,6 @@ describe('hasInvertedRange', () => {
 });
 
 describe('toPurchaseQuery', () => {
-  /**
-   * Empty criteria are omitted rather than sent blank: `status=` would fail the
-   * enum validation on the API for a filter the visitor never applied.
-   */
   it('omits the criteria that are not set', () => {
     expect(toPurchaseQuery(parse(''))).toEqual({ page: 1, limit: 20 });
   });
@@ -110,10 +102,6 @@ describe('toPurchaseQuery', () => {
     });
   });
 
-  /**
-   * An order placed on the evening of the 31st is stored on the 1st in UTC, so
-   * the day has to reach the API as the visitor's own local range.
-   */
   it('sends the picked days as local instants, not bare dates', () => {
     const query = toPurchaseQuery(parse('dateFrom=2026-08-20&dateTo=2026-08-31'));
 

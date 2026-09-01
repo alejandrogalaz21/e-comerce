@@ -1,46 +1,46 @@
-# TC-08 · Status, salud y degradación de dependencias
+# TC-08 · Status, health and dependency degradation
 
 | | |
 |---|---|
-| **Estado** | ⬜ **Por ejecutar** |
-| **Fecha** | — |
+| **Status** | ⬜ **To run** |
+| **Date** | — |
 | **Tickets** | TK-006, TK-011 |
-| **Pantalla** | `/dashboard/status` |
+| **Screen** | `/dashboard/status` |
 
-## Objetivo
+## Goal
 
-El módulo `status` existe para demostrar que Postgres y Redis están **realmente conectados** — no
-mockeados — y para hacer visible qué pasa cuando uno de los dos se cae.
+The `status` module exists to prove that Postgres and Redis are **really connected** — not mocked —
+and to make visible what happens when one of the two goes down.
 
-La propiedad que se prueba aquí es una sola y es la interesante: **una dependencia caída no produce
-un `500`**. Produce un `200` con `ok: false` y un motivo. Un `500` obligaría al cliente a adivinar
-si el problema es la API o la base; un `ok: false` lo dice.
+The property tested here is a single one, and it is the interesting one: **a downed dependency does
+not produce a `500`**. It produces a `200` with `ok: false` and a reason. A `500` would force the
+client to guess whether the problem is the API or the database; an `ok: false` says which.
 
-## Los tres endpoints
+## The three endpoints
 
 ```
-   /dashboard/status  --- cada 5 s --->  GET /health          (PUBLICO)
-        (React Query)                    GET /status/db       (protegido)
-                                         GET /status/redis    (protegido)
+   /dashboard/status  --- every 5 s --->  GET /health          (PUBLIC)
+        (React Query)                     GET /status/db       (protected)
+                                          GET /status/redis    (protected)
 
-   GET /status/redis                     GET /status/db
-   -------------------                   ------------------
-   INCR status:visits                    SELECT NOW(), current_database(), version()
-   SET  status:last_check                SELECT COUNT(*) FROM products
+   GET /status/redis                      GET /status/db
+   -------------------                    ------------------
+   INCR status:visits                     SELECT NOW(), current_database(), version()
+   SET  status:last_check                 SELECT COUNT(*) FROM products
    PING
-   INFO server                           ok:true  --> { now, database, version, productCount }
-                                         ok:false --> { error }
+   INFO server                            ok:true  --> { now, database, version, productCount }
+                                          ok:false --> { error }
    ok:true  --> { visits, pong, version, lastCheck }
    ok:false --> { error }
 
-                   En ambos: siempre HTTP 200. Nunca 500.
+                   Both: always HTTP 200. Never 500.
 ```
 
-`INCR` es lo que hace este endpoint honesto: no responde "Redis está bien", **escribe y lee un dato
-real** y te devuelve el contador. Si el número no sube entre dos llamadas, no estás hablando con
-Redis.
+`INCR` is what makes this endpoint honest: it does not answer "Redis is fine", it **writes and
+reads a real value** and hands you the counter. If the number does not rise between two calls, you
+are not talking to Redis.
 
-## Precondiciones
+## Preconditions
 
 ```bash
 docker compose up -d --build
@@ -51,16 +51,16 @@ TOKEN=$(curl -s -X POST "$API/auth/sign-in" -H 'Content-Type: application/json' 
 
 ---
 
-## 1 · Redis responde y el contador avanza
+## 1 · Redis answers and the counter advances
 
-### Pasos
+### Steps
 
 ```bash
 curl -s "$API/status/redis" -H "Authorization: Bearer $TOKEN"
 curl -s "$API/status/redis" -H "Authorization: Bearer $TOKEN"
 ```
 
-### Resultado esperado
+### Expected result
 
 ```json
 { "source": "redis", "ok": true, "latencyMs": 2,
@@ -68,31 +68,31 @@ curl -s "$API/status/redis" -H "Authorization: Bearer $TOKEN"
             "lastCheck": "2026-08-31T10:00:00.000Z" } }
 ```
 
-- [ ] `ok: true` y `pong: "PONG"`.
-- [ ] **`visits` es mayor en la segunda llamada que en la primera.** Esa es la prueba de escritura
-      real; sin ella el endpoint solo diría que existe.
-- [ ] `lastCheck` cambia entre llamadas.
-- [ ] `latencyMs` es un número pequeño (típicamente 0–5 en local).
-- [ ] Confirma el dato desde el propio Redis:
+- [ ] `ok: true` and `pong: "PONG"`.
+- [ ] **`visits` is higher on the second call than on the first.** That is the proof of a real
+      write; without it the endpoint would only be saying it exists.
+- [ ] `lastCheck` changes between calls.
+- [ ] `latencyMs` is a small number (typically 0–5 locally).
+- [ ] Confirm the value from Redis itself:
 
 ```bash
 docker exec ecommerce-redis redis-cli GET status:visits
 docker exec ecommerce-redis redis-cli GET status:last_check
 ```
 
-El valor debe coincidir con lo que devolvió la API.
+The value must match what the API returned.
 
 ---
 
-## 2 · Postgres responde y cuenta productos de verdad
+## 2 · Postgres answers and counts real products
 
-### Pasos
+### Steps
 
 ```bash
 curl -s "$API/status/db" -H "Authorization: Bearer $TOKEN"
 ```
 
-### Resultado esperado
+### Expected result
 
 ```json
 { "source": "postgres", "ok": true, "latencyMs": 4,
@@ -100,30 +100,30 @@ curl -s "$API/status/db" -H "Authorization: Bearer $TOKEN"
             "version": "PostgreSQL 16.x", "productCount": 85 } }
 ```
 
-- [ ] `database` es `ecommerce`.
-- [ ] **`productCount` coincide con el catálogo real:**
+- [ ] `database` is `ecommerce`.
+- [ ] **`productCount` matches the real catalog:**
 
 ```bash
 docker exec ecommerce-db psql -U postgres -d ecommerce -t -A -c "SELECT count(*) FROM products;"
 ```
 
-- [ ] Importa un CSV y vuelve a llamar: el número **cambia**. No es un valor cacheado ni fijo.
-- [ ] `version` viene recortada antes del `on` — muestra el motor, no la cadena completa de compilación.
+- [ ] Import a CSV and call again: the number **changes**. It is not cached and not fixed.
+- [ ] `version` is trimmed before the `on` — it shows the engine, not the whole build string.
 
 ---
 
-## 3 · Redis caído devuelve `ok:false`, no `500`
+## 3 · Redis down returns `ok:false`, not `500`
 
-**El caso central de este documento.**
+**The central case of this document.**
 
-### Pasos
+### Steps
 
 ```bash
 docker stop ecommerce-redis
 curl -s -w "\nHTTP %{http_code}\n" "$API/status/redis" -H "Authorization: Bearer $TOKEN"
 ```
 
-### Resultado esperado
+### Expected result
 
 ```json
 { "source": "redis", "ok": false, "latencyMs": 120, "error": "connect ECONNREFUSED ..." }
@@ -133,33 +133,35 @@ curl -s -w "\nHTTP %{http_code}\n" "$API/status/redis" -H "Authorization: Bearer
   HTTP 200
 ```
 
-- [ ] **`HTTP 200`, no `500`.** Este es el punto entero del caso.
-- [ ] `ok: false` y un `error` que dice qué pasó.
-- [ ] `latencyMs` refleja el tiempo que tardó en fallar.
-- [ ] **`GET /status/db` sigue devolviendo `ok: true`.** Una dependencia caída no arrastra a la otra.
-- [ ] Y lo que más importa: **la aplicación sigue vendiendo**. Con Redis caído, `GET /products`
-      responde `200` (sin caché) y `POST /orders` completa una compra — ver
-      [TC-06 · R9](TC-06-concurrency-and-races.md#r9--redis-caído-no-cancela-una-venta).
+- [ ] **`HTTP 200`, not `500`.** This is the entire point of the case.
+- [ ] `ok: false` and an `error` saying what happened.
+- [ ] `latencyMs` reflects how long it took to fail.
+- [ ] **`GET /status/db` still returns `ok: true`.** One downed dependency does not drag the other
+      with it.
+- [ ] And what matters most: **the application keeps selling**. With Redis down, `GET /products`
+      answers `200` (uncached) and `POST /orders` completes a purchase — see
+      [TC-06 · R9](TC-06-concurrency-and-races.md#r9--redis-being-down-does-not-cancel-a-sale).
 
 ```bash
-curl -s -o /dev/null -w "GET /products sin Redis: %{http_code}\n" "$API/products"
+curl -s -o /dev/null -w "GET /products without Redis: %{http_code}\n" "$API/products"
 ```
 
-Levántalo de nuevo:
+Bring it back up:
 
 ```bash
 docker start ecommerce-redis
 ```
 
-- [ ] Tras unos segundos, `/status/redis` vuelve a `ok: true`.
-- [ ] **`visits` conserva su valor anterior** — Redis persiste, no arranca de cero. (Si tu compose
-      no monta volumen para Redis, sí arrancará en 1: compruébalo antes de reportarlo como fallo.)
+- [ ] After a few seconds, `/status/redis` returns to `ok: true`.
+- [ ] **`visits` keeps its previous value.** A `stop` followed by a `start` is the same container,
+      so its data survives. A `docker compose down` destroys it and the counter restarts at 1 —
+      this compose mounts no volume for Redis, deliberately: nothing in it is worth persisting.
 
 ---
 
-## 4 · Postgres caído devuelve `ok:false`, no `500`
+## 4 · Postgres down returns `ok:false`, not `500`
 
-### Pasos
+### Steps
 
 ```bash
 docker stop ecommerce-db
@@ -168,82 +170,82 @@ curl -s -o /dev/null -w "GET /health: %{http_code}\n" "$API/health"
 docker start ecommerce-db
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] `/status/db` responde **`200`** con `ok: false` y su `error`.
-- [ ] `/health` responde **`200`** con `postgres.pgHealth` reportando el fallo — el bloque `app` y
-      el bloque `resources` siguen ahí.
-- [ ] `/status/redis` sigue en `ok: true`.
-- [ ] `GET /products` **sí** falla: el catálogo no puede servirse sin base de datos. Eso es
-      correcto — la degradación elegante cubre el *diagnóstico*, no inventa datos.
-- [ ] Tras `docker start`, todo vuelve a la normalidad sin reiniciar la API.
+- [ ] `/status/db` answers **`200`** with `ok: false` and its `error`.
+- [ ] `/health` answers **`200`** with `postgres.pgHealth` reporting the failure — the `app` block
+      and the `resources` block are still there.
+- [ ] `/status/redis` stays at `ok: true`.
+- [ ] `GET /products` **does** fail: the catalog cannot be served without a database. That is
+      correct — graceful degradation covers *diagnosis*, it does not invent data.
+- [ ] After `docker start`, everything returns to normal without restarting the API.
 
-> Una advertencia práctica: tras devolver Postgres, dale unos segundos al pool de conexiones. La
-> primera petición puede fallar mientras reconecta.
+> A practical warning: after bringing Postgres back, give the connection pool a few seconds. The
+> first request can fail while it reconnects.
 
 ---
 
-## 5 · `/health` es público y no exige token
+## 5 · `/health` is public and requires no token
 
-Es el endpoint que consumiría un orquestador, que nunca tiene credenciales.
+It is the endpoint an orchestrator would consume, and an orchestrator never has credentials.
 
-### Pasos
+### Steps
 
 ```bash
-curl -s -o /dev/null -w "health sin token: %{http_code}\n" "$API/health"
+curl -s -o /dev/null -w "health without token: %{http_code}\n" "$API/health"
 curl -s "$API/health" | head -c 400; echo
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] **`200` sin token.**
-- [ ] El cuerpo trae tres bloques: `app`, `resources` y `postgres`.
-- [ ] `app` incluye `name`, `version`, `env`, `uptimeMs` y `node`.
-- [ ] `resources` incluye memoria (`rss`, `heapUsed`, `heapTotal`), CPU y `eventLoopDelayMs`.
-- [ ] `uptimeMs` **crece** entre dos llamadas separadas por unos segundos.
-- [ ] `loadAvg` puede ser `[0,0,0]` si el host es Windows. No es un fallo.
-- [ ] Y por contraste, `/status/db` y `/status/redis` **sin token dan `401`** — ver
+- [ ] **`200` without a token.**
+- [ ] The body carries three blocks: `app`, `resources` and `postgres`.
+- [ ] `app` includes `name`, `version`, `env`, `uptimeMs` and `node`.
+- [ ] `resources` includes memory (`rss`, `heapUsed`, `heapTotal`), CPU and `eventLoopDelayMs`.
+- [ ] `uptimeMs` **grows** between two calls a few seconds apart.
+- [ ] `loadAvg` may be `[0,0,0]` when the host is Windows. That is not a failure.
+- [ ] And by contrast, `/status/db` and `/status/redis` **without a token return `401`** — see
       [TC-07](TC-07-login-and-permissions.md) check 3.
 
 ---
 
-## 6 · La pantalla de status refleja todo lo anterior
+## 6 · The status screen reflects all of the above
 
-### Pasos
+### Steps
 
-1. Abre `/dashboard/status` con sesión iniciada.
-2. Déjala abierta y observa unos 15 segundos.
-3. En otra terminal: `docker stop ecommerce-redis`.
-4. Espera unos segundos sin tocar la pantalla.
+1. Open `/dashboard/status` while signed in.
+2. Leave it open and watch for about 15 seconds.
+3. In another terminal: `docker stop ecommerce-redis`.
+4. Wait a few seconds without touching the screen.
 5. `docker start ecommerce-redis`.
 
-### Resultado esperado
+### Expected result
 
-- [ ] Las tres tarjetas (API / Postgres / Redis) se pintan en verde.
-- [ ] **Los datos se refrescan solos cada 5 segundos** — el contador de visitas de Redis sube sin
-      que recargues.
-- [ ] Al parar Redis, esa tarjeta pasa a estado de error **sin recargar la página**, y las otras dos
-      **siguen en verde**.
-- [ ] La pantalla no muestra una pantalla de error global ni se queda en blanco: solo esa tarjeta
-      cambia de estado.
-- [ ] Al levantar Redis, la tarjeta vuelve a verde sola, en el siguiente ciclo de 5 s.
+- [ ] All three cards (API / Postgres / Redis) render green.
+- [ ] **The data refreshes on its own every 5 seconds** — the Redis visit counter rises without you
+      reloading.
+- [ ] Stopping Redis moves that card into an error state **without reloading the page**, and the
+      other two **stay green**.
+- [ ] The screen does not show a global error page and does not go blank: only that card changes
+      state.
+- [ ] Bringing Redis back turns the card green again on its own, on the next 5 s cycle.
 
-### El detalle del límite de tasa
+### The rate-limit detail
 
-Tres endpoints cada 5 segundos son 36 peticiones por minuto por pestaña abierta. El techo global es
-de **300/min**, así que:
+Three endpoints every 5 seconds is 36 requests per minute per open tab. The global ceiling is
+**300/min**, so:
 
-- [ ] Deja la pantalla abierta 3 minutos: **no aparece ningún `429`**.
-- [ ] Con ~8 pestañas abiertas a la vez sí empezarías a rozar el techo. Es el motivo por el que el
-      límite global es alto y los endpoints sensibles (`sign-in`, `import`) declaran el suyo propio.
+- [ ] Leave the screen open for 3 minutes: **no `429` appears**.
+- [ ] With ~8 tabs open at once you would start brushing the ceiling. That is why the global limit
+      is high and the sensitive endpoints (`sign-in`, `import`) declare their own.
 
 ---
 
-## 7 · Los tiempos de respuesta son razonables
+## 7 · Response times are reasonable
 
-No es un test de rendimiento, es una comprobación de cordura.
+This is not a performance test, it is a sanity check.
 
-### Pasos
+### Steps
 
 ```bash
 for i in $(seq 1 5); do
@@ -252,26 +254,26 @@ for i in $(seq 1 5); do
 done
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] En local, ambos por debajo de **100 ms**.
-- [ ] `latencyMs` en el cuerpo es siempre **menor** que el `time_total` de curl — mide solo la
-      consulta, no el viaje HTTP. Si fuera al revés, algo está mal medido.
-- [ ] `eventLoopDelayMs` en `/health` se mantiene bajo (típicamente < 5 ms). Un valor alto sostenido
-      indicaría trabajo síncrono bloqueando el proceso.
+- [ ] Locally, both under **100 ms**.
+- [ ] `latencyMs` in the body is always **lower** than curl's `time_total` — it measures only the
+      query, not the HTTP round trip. The other way round would mean something is mismeasured.
+- [ ] `eventLoopDelayMs` in `/health` stays low (typically < 5 ms). A sustained high value would
+      indicate synchronous work blocking the process.
 
 ---
 
-## Resultado
+## Result
 
-| # | Caso | Resultado |
+| # | Case | Result |
 |---|---|---|
-| 1 | Redis responde y `visits` avanza | |
-| 2 | Postgres responde y `productCount` es real | |
-| 3 | Redis caído → `200` con `ok:false`, la app sigue vendiendo | |
-| 4 | Postgres caído → `200` con `ok:false` | |
-| 5 | `/health` público, sin token | |
-| 6 | La pantalla refresca sola y degrada por tarjeta | |
-| 7 | Tiempos razonables y `latencyMs` coherente | |
+| 1 | Redis answers and `visits` advances | |
+| 2 | Postgres answers and `productCount` is real | |
+| 3 | Redis down → `200` with `ok:false`, the app keeps selling | |
+| 4 | Postgres down → `200` with `ok:false` | |
+| 5 | `/health` public, no token | |
+| 6 | The screen refreshes itself and degrades per card | |
+| 7 | Reasonable times and coherent `latencyMs` | |
 
-**Notas:**
+**Notes:**

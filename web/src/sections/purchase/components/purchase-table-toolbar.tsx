@@ -23,7 +23,6 @@ type Props = {
 };
 
 export function PurchaseTableToolbar({ state, totalResults, onApply, onReset }: Props) {
-  // Kept local while typing, so every keystroke does not become a history entry.
   const [term, setTerm] = useState(state.q);
 
   useEffect(() => setTerm(state.q), [state.q]);
