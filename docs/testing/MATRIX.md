@@ -1,292 +1,292 @@
-# Matriz de pruebas
+# Test matrix
 
-Cada caso de uso del sistema, una fila por caso: qué demuestra, cómo ejercitarlo, qué debería
-ocurrir, y dónde está ya cubierto.
+Every use case in the system, one row each: what it demonstrates, how to exercise it, what should
+happen, and where it is already covered.
 
-Escrita para quien revisa este proyecto y quiere comprobar un comportamiento sin leer antes el
-código. Elige un proceso, elige un caso, sigue los pasos.
+Written for someone reviewing this project who wants to check a behaviour without reading the code
+first. Pick a process, pick a case, follow the steps.
 
-## Cómo leerla
+## How to read it
 
-| Columna | Significado |
+| Column | Meaning |
 |---|---|
-| **ID** | Referencia estable, p. ej. `P-04.3` |
-| **Propósito** | Qué demuestra el caso. No qué hace — *por qué importa* |
-| **Pasos** | Lo suficiente para reproducirlo, por UI o `curl` |
-| **Esperado** | El único resultado observable que decide si pasa o falla |
-| **Cubierto por** | El test automático que lo protege, o `manual` |
+| **ID** | Stable reference, e.g. `P-04.3` |
+| **Purpose** | What the case demonstrates. Not what it does — *why it matters* |
+| **Steps** | Enough to reproduce it, through the UI or `curl` |
+| **Expected** | The one observable result that decides pass or fail |
+| **Covered by** | The automated test that protects it, or `manual` |
 
-`✅` caso con cobertura automática · `🔶` verificado a mano, sin guarda automática.
+`✅` case with automated coverage · `🔶` verified by hand, with no automated guard.
 
-**Antes de empezar:**
+**Before you start:**
 
 ```bash
-docker compose up -d --build          # app en :3000, API en :4000
+docker compose up -d --build          # app on :3000, API on :4000
 ```
 
-Inicia sesión con `demo@demo.com` / `demo`. Reinicia el catálogo entre ejecuciones con:
+Sign in with `demo@demo.com` / `demo`. Reset the catalog between runs with:
 
 ```bash
 docker exec ecommerce-db psql -U postgres -d ecommerce \
   -c "TRUNCATE TABLE order_items, orders, products, import_batches RESTART IDENTITY CASCADE;"
 ```
 
-> `order_items` y `orders` van primero a propósito: una línea de pedido referencia al producto con
-> `RESTRICT`, así que truncar `products` a solas es rechazado. Esa negativa es en sí misma el
-> comportamiento correcto — ver `P-02.8`.
+> `order_items` and `orders` come first on purpose: an order line references its product with
+> `RESTRICT`, so truncating `products` on its own is refused. That refusal is itself the correct
+> behaviour — see `P-02.8`.
 
 ---
 
-## P-01 · Importación CSV
+## P-01 · CSV import
 
-Proceso completo: [P-01](../processes/P-01-csv-import.md) · Ejecuciones manuales: [TC-01](TC-01-initial-import.md), [TC-02](TC-02-upsert-existing-product.md), [TC-03](TC-03-unchanged-does-not-write.md)
+Full process: [P-01](../processes/P-01-csv-import.md) · Manual runs: [TC-01](TC-01-initial-import.md), [TC-02](TC-02-upsert-existing-product.md), [TC-03](TC-03-unchanged-does-not-write.md)
 
-| ID | Propósito | Pasos | Esperado | Cubierto por |
+| ID | Purpose | Steps | Expected | Covered by |
 |---|---|---|---|---|
-| P-01.1 | Un archivo válido carga el catálogo y cada fila queda contabilizada | **Product → Import CSV**, sube `docs/csv/LoanPro Code Challenge E-Commerce.csv` | 97 totales = 85 creadas + 0 actualizadas + 0 sin cambios + 10 rechazadas + 2 omitidas. Las cubetas siempre suman | ✅ `import.integration.spec.ts` · e2e `product-import.spec.ts` |
-| P-01.2 | Una fila mala nunca aborta el lote — la regla central de este proceso | La misma importación; mira el reporte | Existen 85 productos **a pesar** de las 10 filas rechazadas. Una importación parcial es el comportamiento buscado, no un fallo | ✅ `import.service.spec.ts` |
-| P-01.3 | Un archivo malformado se rechaza entero, antes de guardar nada | Sube un CSV al que le faltan columnas: `printf 'name,sku\nx,y\n' > /tmp/bad.csv` | `400` listando las columnas ausentes. Catálogo intacto | ✅ `import.hardening.spec.ts` · e2e `product-import.spec.ts` |
-| P-01.4 | Las columnas de más se rechazan en vez de ignorarse | Añade una columna que el esquema no define | `400` nombrando la columna inesperada. Descartar datos en silencio sería peor que rechazarlos | ✅ `import.hardening.spec.ts` |
-| P-01.5 | Una segunda importación del mismo archivo no cambia nada | Importa el mismo archivo dos veces, revisa `updatedAt` | 85 sin cambios, 0 actualizadas. `Unchanged` **no escribe** | ✅ `import.service.spec.ts` · [TC-03](TC-03-unchanged-does-not-write.md) |
-| P-01.6 | Una fila editada se actualiza y luego es localizable | Importa `...-T1.csv` (la línea 55 difiere), ordena por **Updated at** | 1 actualizada, 84 sin cambios. `RS-050` sube al principio | ✅ [TC-02](TC-02-upsert-existing-product.md) · e2e `product-filters.spec.ts` |
-| P-01.7 | Un SKU repetido en un archivo es ambiguo, así que se rechazan todas sus apariciones | Importa la muestra; filtra el reporte por `Rejected` | Líneas 2, 11, 36, 56 y 89 rechazadas, con un mensaje que nombra las líneas implicadas | ✅ `import.integration.spec.ts` |
-| P-01.8 | Una fila en blanco es ruido, no un error | La misma importación; mira `Skipped empty` | 2 omitidas, **con sus números de línea registrados** — no solo contadas | ✅ `import.service.spec.ts` |
-| P-01.9 | Los símbolos de moneda y los espacios son formato, no datos | Filas con `$29.99` y `"  19.99  "` | Aceptadas como `29.99` y `19.99` | ✅ `import.service.spec.ts` |
-| P-01.10 | Cada fila rechazada se puede identificar | Filtra el reporte por `Rejected` | Las líneas 2/11/36/56/89 muestran su nombre real; las 25/41 muestran una raya porque el archivo no traía ninguno. **La raya significa una sola cosa** | ✅ `import.integration.spec.ts` |
-| P-01.11 | Una subida demasiado grande se rechaza | Sube un archivo de más de 5 MB | `413` | 🔶 manual |
-| P-01.12 | La importación se acredita a quien la ejecutó | Importa con sesión, abre el historial | El lote muestra **Imported by** con el email del token | ✅ `import.attribution.spec.ts` · [TC-07](TC-07-login-and-permissions.md) check 10 |
+| P-01.1 | A valid file loads the catalog and every row is accounted for | **Product → Import CSV**, upload `docs/csv/LoanPro Code Challenge E-Commerce.csv` | 97 total = 85 created + 0 updated + 0 unchanged + 10 rejected + 2 skipped. The buckets always add up | ✅ `import.integration.spec.ts` · e2e `product-import.spec.ts` |
+| P-01.2 | One bad row never aborts the batch — the central rule of this process | The same import; read the report | 85 products exist **despite** the 10 rejected rows. A partial import is the intended behaviour, not a failure | ✅ `import.service.spec.ts` |
+| P-01.3 | A malformed file is rejected whole, before anything is saved | Upload a CSV missing columns: `printf 'name,sku\nx,y\n' > /tmp/bad.csv` | `400` listing the absent columns. Catalog untouched | ✅ `import.hardening.spec.ts` · e2e `product-import.spec.ts` |
+| P-01.4 | Extra columns are rejected rather than ignored | Add a column the schema does not define | `400` naming the unexpected column. Silently discarding data would be worse than refusing it | ✅ `import.hardening.spec.ts` |
+| P-01.5 | A second import of the same file changes nothing | Import the same file twice, check `updatedAt` | 85 unchanged, 0 updated. `Unchanged` **does not write** | ✅ `import.service.spec.ts` · [TC-03](TC-03-unchanged-does-not-write.md) |
+| P-01.6 | An edited row is updated and then findable | Import `...-T1.csv` (line 55 differs), sort by **Updated at** | 1 updated, 84 unchanged. `RS-050` rises to the top | ✅ [TC-02](TC-02-upsert-existing-product.md) · e2e `product-filters.spec.ts` |
+| P-01.7 | A SKU repeated in one file is ambiguous, so every occurrence is rejected | Import the sample; filter the report by `Rejected` | Lines 2, 11, 36, 56 and 89 rejected, with a message naming the lines involved | ✅ `import.integration.spec.ts` |
+| P-01.8 | A blank row is noise, not an error | The same import; look at `Skipped empty` | 2 skipped, **with their line numbers recorded** — not merely counted | ✅ `import.service.spec.ts` |
+| P-01.9 | Currency symbols and whitespace are formatting, not data | Rows with `$29.99` and `"  19.99  "` | Accepted as `29.99` and `19.99` | ✅ `import.service.spec.ts` |
+| P-01.10 | Every rejected row can be identified | Filter the report by `Rejected` | Lines 2/11/36/56/89 show their real name; 25/41 show a dash because the file carried none. **The dash means exactly one thing** | ✅ `import.integration.spec.ts` |
+| P-01.11 | An oversized upload is refused | Upload a file larger than 5 MB | `413` | 🔶 manual |
+| P-01.12 | The import is credited to whoever ran it | Import while signed in, open the history | The batch shows **Imported by** with the token's email | ✅ `import.attribution.spec.ts` · [TC-07](TC-07-login-and-permissions.md) check 10 |
 
 ---
 
-## P-02 · CRUD de productos
+## P-02 · Product CRUD
 
-Proceso completo: [P-02](../processes/P-02-product-crud.md)
+Full process: [P-02](../processes/P-02-product-crud.md)
 
-| ID | Propósito | Pasos | Esperado | Cubierto por |
+| ID | Purpose | Steps | Expected | Covered by |
 |---|---|---|---|---|
-| P-02.1 | Un producto se puede crear desde la UI | **Product → New product**, rellena y guarda | La fila aparece en el listado | ✅ e2e `products-crud.spec.ts` |
-| P-02.2 | Los campos obligatorios se exigen antes de que salga ninguna petición | Envía el formulario vacío | Errores en línea, sin navegación, **sin petición enviada** | ✅ e2e `products-crud.spec.ts` |
-| P-02.3 | Un producto se puede renombrar y el cambio persiste | Edita desde el menú de acciones de la fila | Nombre nuevo en el listado tras guardar | ✅ e2e `products-crud.spec.ts` |
-| P-02.4 | El borrado se confirma, no es accidental | Borra vía el diálogo de confirmación | La fila desaparece tras confirmar | ✅ e2e `products-crud.spec.ts` |
-| P-02.5 | El HTML se **rechaza**, no se limpia — limpiarlo esconde la intención | Crea con nombre `<script>alert(1)</script>` | `400 VALIDATION_ERROR`, "HTML markup is not allowed". La misma regla que aplica la importación por fila | ✅ `create-product.dto.spec.ts` · e2e `product-csv-cases.spec.ts` |
-| P-02.6 | Una carga de inyección SQL es dato, nunca código | Crea con el sku de la línea 29 del CSV | Rechazado en línea; la tabla sobrevive | ✅ e2e `product-csv-cases.spec.ts` |
-| P-02.7 | La unicidad del SKU la garantiza la base de datos, no una comprobación previa | `POST /products` dos veces con el mismo sku | `201` y luego `409 DUPLICATE_RESOURCE` | ✅ `products.service.spec.ts` · e2e `product-csv-cases.spec.ts` |
-| P-02.8 | Un pedido es un registro histórico: un producto vendido no se puede borrar | Compra un producto y luego intenta borrarlo | `409 RESOURCE_IN_USE`. La clave foránea `RESTRICT` se niega | ✅ `orders.concurrency.spec.ts` *(base de datos real)* · [TC-06 · R8](TC-06-concurrency-and-races.md) |
-| P-02.9 | Los campos desconocidos se rechazan, que es lo que impide que un cliente dicte un precio | `POST /products` con `{"nope": true}` | `400` | ✅ `create-product.dto.spec.ts` |
-| P-02.10 | Escribir exige sesión; leer no | `POST /products` sin token | `401`. `GET /products` sigue dando `200` | ✅ `route-protection.spec.ts` · e2e `auth-session.spec.ts` |
-| P-02.11 | Un producto gratis es válido — precio 0 es dato, no error | Crea con precio `0` (línea 47 del CSV) | Creado y listado | ✅ e2e `product-csv-cases.spec.ts` |
+| P-02.1 | A product can be created from the UI | **Product → New product**, fill in and save | The row appears in the listing | ✅ e2e `products-crud.spec.ts` |
+| P-02.2 | Required fields are enforced before any request leaves | Submit the empty form | Inline errors, no navigation, **no request sent** | ✅ e2e `products-crud.spec.ts` |
+| P-02.3 | A product can be renamed and the change persists | Edit from the row actions menu | New name in the listing after saving | ✅ e2e `products-crud.spec.ts` |
+| P-02.4 | Deleting is confirmed, not accidental | Delete through the confirm dialog | The row disappears after confirming | ✅ e2e `products-crud.spec.ts` |
+| P-02.5 | HTML is **rejected**, not stripped — stripping hides the intent | Create with the name `<script>alert(1)</script>` | `400 VALIDATION_ERROR`, "HTML markup is not allowed". The same rule the import applies per row | ✅ `create-product.dto.spec.ts` · e2e `product-csv-cases.spec.ts` |
+| P-02.6 | A SQL-injection payload is data, never code | Create with the sku from line 29 of the CSV | Rejected inline; the table survives | ✅ e2e `product-csv-cases.spec.ts` |
+| P-02.7 | SKU uniqueness is guaranteed by the database, not by a prior check | `POST /products` twice with the same sku | `201` then `409 DUPLICATE_RESOURCE` | ✅ `products.service.spec.ts` · e2e `product-csv-cases.spec.ts` |
+| P-02.8 | An order is a historical record: a sold product cannot be deleted | Buy a product and then try to delete it | `409 RESOURCE_IN_USE`. The `RESTRICT` foreign key refuses | ✅ `orders.concurrency.spec.ts` *(real database)* · [TC-06 · R8](TC-06-concurrency-and-races.md) |
+| P-02.9 | Unknown fields are rejected, which is what stops a client dictating a price | `POST /products` with `{"nope": true}` | `400` | ✅ `create-product.dto.spec.ts` |
+| P-02.10 | Writing requires a session; reading does not | `POST /products` without a token | `401`. `GET /products` still gives `200` | ✅ `route-protection.spec.ts` · e2e `auth-session.spec.ts` |
+| P-02.11 | A free product is valid — price 0 is data, not an error | Create with price `0` (line 47 of the CSV) | Created and listed | ✅ e2e `product-csv-cases.spec.ts` |
 
 ---
 
-## P-03 · Búsqueda y filtros
+## P-03 · Search and filters
 
-Proceso completo: [P-03](../processes/P-03-product-search.md)
+Full process: [P-03](../processes/P-03-product-search.md)
 
-| ID | Propósito | Pasos | Esperado | Cubierto por |
+| ID | Purpose | Steps | Expected | Covered by |
 |---|---|---|---|---|
-| P-03.1 | La búsqueda alcanza todo el catálogo, no la página visible | Busca un producto que no esté en la página 1 | Se encuentra. La consulta corre en el servidor | ✅ e2e `product-search.spec.ts` |
-| P-03.2 | Varios términos son una **unión** — el caso de uso es "muéstrame estos", no "filas que cumplan todos" | `?q=camping&q=speaker` | Productos que coincidan con *cualquiera* de los términos | ✅ `products.service.spec.ts` · e2e `product-filters.spec.ts` |
-| P-03.3 | El orden abarca el catálogo, no la página | Ordena por precio ascendente con 85 productos y página de 20 | El producto más barato **del catálogo** va primero | ✅ e2e `product-filters.spec.ts` |
-| P-03.4 | Un rango de precios imposible se detecta antes de consultar | `?minPrice=50&maxPrice=10` | `400`, sin consulta emitida | ✅ `product-filters.dto.spec.ts` · e2e `product-filters.spec.ts` |
-| P-03.5 | Solo los campos de orden conocidos llegan al SQL | `?sortBy=password` | `400`. Ninguna cadena del usuario se convierte en nombre de columna | ✅ `product-filters.dto.spec.ts` |
-| P-03.6 | Los comodines de `LIKE` son caracteres literales | Busca `50%` | Busca el texto `50%`, no "cualquier cosa después de 50" | ✅ `products.service.spec.ts` |
-| P-03.7 | Los filtros se combinan y son reversibles | Aplica categoría + rango de precio | Ambos aplicados, cada uno como un chip que se puede quitar | ✅ e2e `product-filters.spec.ts` |
-| P-03.8 | La vista sobrevive a la navegación — la URL *es* el estado | Filtra, recarga, pulsa atrás | La misma vista en ambos casos | ✅ `product-list-params.test.ts` · e2e `product-filters.spec.ts` |
-| P-03.9 | La disponibilidad es un filtro, y "agotado" es un valor real | Filtra por agotados | Solo productos con stock 0 | ✅ e2e `product-filters.spec.ts` |
-| P-03.10 | Sin resultados es un desenlace, no un error | Busca algo que no exista | `200` con un estado vacío explícito; limpiar restaura el listado | ✅ e2e `product-search.spec.ts` |
-| P-03.11 | El layout de columnas es una preferencia por usuario y se recuerda | Redimensiona una columna, sal y vuelve | Ancho conservado | ✅ e2e `product-filters.spec.ts` |
+| P-03.1 | Search reaches the whole catalog, not the visible page | Search for a product that is not on page 1 | It is found. The query runs on the server | ✅ e2e `product-search.spec.ts` |
+| P-03.2 | Several terms are a **union** — the use case is "show me these", not "rows matching all" | `?q=camping&q=speaker` | Products matching *any* of the terms | ✅ `products.service.spec.ts` · e2e `product-filters.spec.ts` |
+| P-03.3 | Sorting spans the catalog, not the page | Sort by price ascending with 85 products and a page of 20 | The cheapest product **in the catalog** comes first | ✅ e2e `product-filters.spec.ts` |
+| P-03.4 | An impossible price range is caught before querying | `?minPrice=50&maxPrice=10` | `400`, no query issued | ✅ `product-filters.dto.spec.ts` · e2e `product-filters.spec.ts` |
+| P-03.5 | Only known sort fields reach the SQL | `?sortBy=password` | `400`. No user string ever becomes a column name | ✅ `product-filters.dto.spec.ts` |
+| P-03.6 | `LIKE` wildcards are literal characters | Search for `50%` | It searches for the text `50%`, not "anything after 50" | ✅ `products.service.spec.ts` |
+| P-03.7 | Filters combine and are reversible | Apply category + price range | Both applied, each as a removable chip | ✅ e2e `product-filters.spec.ts` |
+| P-03.8 | The view survives navigation — the URL *is* the state | Filter, reload, press back | The same view in both cases | ✅ `product-list-params.test.ts` · e2e `product-filters.spec.ts` |
+| P-03.9 | Availability is a filter, and "sold out" is a real value | Filter by sold out | Only products with stock 0 | ✅ e2e `product-filters.spec.ts` |
+| P-03.10 | No results is an outcome, not an error | Search for something that does not exist | `200` with an explicit empty state; clearing restores the listing | ✅ e2e `product-search.spec.ts` |
+| P-03.11 | Column layout is a per-user preference and is remembered | Resize a column, leave and come back | Width preserved | ✅ e2e `product-filters.spec.ts` |
 
 ---
 
-## P-04 · Creación de pedidos
+## P-04 · Order placement
 
-Proceso completo: [P-04](../processes/P-04-order-placement.md) · Ejecuciones manuales: [TC-05](TC-05-purchase-flow.md), [TC-06](TC-06-concurrency-and-races.md)
+Full process: [P-04](../processes/P-04-order-placement.md) · Manual runs: [TC-05](TC-05-purchase-flow.md), [TC-06](TC-06-concurrency-and-races.md)
 
-**Este es el proceso donde coinciden dinero, estado compartido y concurrencia.** Los casos 3 a 6 y
-14 a 17 son los que vale la pena ejecutar despacio.
+**This is the process where money, shared state and concurrency meet.** Cases 3 to 6 and 14 to 17
+are the ones worth running slowly.
 
-| ID | Propósito | Pasos | Esperado | Cubierto por |
+| ID | Purpose | Steps | Expected | Covered by |
 |---|---|---|---|---|
-| P-04.1 | Una compra se completa y mueve stock real | Agregar al carrito → checkout → **Complete order** | Confirmación con id, líneas y total. El stock baja lo comprado | ✅ `orders.concurrency.spec.ts` *(base real)* · [TC-05](TC-05-purchase-flow.md) |
-| P-04.2 | El **servidor** es dueño del importe — un carrito donde el cliente fija el precio no es un sistema de pagos | `POST /orders` con `"total":"0.01"` en el cuerpo | `400`. Cualquier importe enviado se rechaza de plano | ✅ `orders.service.spec.ts` · [TC-05](TC-05-purchase-flow.md) check 3 |
-| P-04.3 | **Dos compradores no pueden llevarse la misma última unidad** | Fija el stock en 1, dispara dos compras simultáneas | Un `201`, un `409`. Stock final `0`, jamás `-1` | ✅ `orders.concurrency.spec.ts` *(base real)* · [TC-06 · R1](TC-06-concurrency-and-races.md) |
-| P-04.4 | Los pedidos multilínea no pueden bloquearse entre sí | Dos pedidos de los mismos dos productos, listados en orden inverso | Ambos resuelven. Las filas se bloquean ordenadas por `id` | ✅ `orders.concurrency.spec.ts` *(base real)* · [TC-06 · R5](TC-06-concurrency-and-races.md) |
-| P-04.5 | Un doble clic compra una sola vez | Envía la misma petición dos veces con la misma clave de idempotencia | `201` y luego `200`. Un pedido, un movimiento de stock | ✅ `orders.service.spec.ts` · `orders.concurrency.spec.ts` |
-| P-04.6 | El dinero es exacto — `0.1 + 0.2` no puede decidir un total | Compra líneas cuyos precios se rompen en coma flotante binaria | Total exacto al céntimo. Se suma en céntimos enteros | ✅ `orders.service.spec.ts` |
-| P-04.7 | Una transacción pasada nunca muta | Compra un producto y luego cambia su precio de catálogo | `unit_price_snapshot` y el total del pedido intactos | ✅ `orders.concurrency.spec.ts` *(base real)* · [TC-05](TC-05-purchase-flow.md) check 2 |
-| P-04.8 | El stock insuficiente se comunica de forma útil, porque reintentar sin cambios no puede funcionar | Agrega 5 de un producto con stock 2 y completa | `409` nombrando SKU, pedido y disponible, con vuelta al carrito | ✅ `orders.service.spec.ts` |
-| P-04.9 | Comprar es público; administrar no | `POST /orders` sin token, luego `GET /orders` sin token | `201` y `401`. Un cliente compra sin cuenta | ✅ `orders.service.spec.ts` · `route-protection.spec.ts` |
-| P-04.10 | Toda la compra es atómica | Fuerza un rechazo (ver `P-05.2`) | Sin pedido pagado, sin movimiento de stock, nada a medias | ✅ `orders.concurrency.spec.ts` *(base real)* |
-| P-04.11 | El flujo de compra funciona de punta a punta en un navegador | Checkout completo por la UI | Pedido confirmado en pantalla, con líneas y total | ✅ e2e `purchase.spec.ts` |
-| P-04.12 | Un doble clic no puede comprar dos veces | Pulsa **Complete order** y vuelve a pulsarlo en vuelo | El botón queda deshabilitado hasta que la petición resuelve | ✅ e2e `purchase.spec.ts` · [TC-06 · R10](TC-06-concurrency-and-races.md) |
-| P-04.13 | Un visitante anónimo puede completar una compra en un navegador | Checkout completo sin sesión | Pedido confirmado | ✅ e2e `purchase.spec.ts` |
-| P-04.14 | Con stock para todos, **nadie** es rechazado por el candado | 10 compradores simultáneos, stock 10 | Cero `409`. `stock_final + pedidos PAID = 10` | 🔶 [TC-06 · R2](TC-06-concurrency-and-races.md) |
-| P-04.15 | Una fila `PENDING` nunca sobrevive a la transacción | Tras cualquier tanda concurrente: `SELECT count(*) FROM orders WHERE status='PENDING'` | `0`. `PENDING` solo existe dentro de la transacción | 🔶 [TC-06 · R2](TC-06-concurrency-and-races.md) |
-| P-04.16 | La misma clave **en paralelo** la decide el índice único, no una lectura previa | Dispara la misma clave dos veces a la vez | Un `201`, un `200`, una sola fila. Nunca un `500` por `23505` | 🔶 [TC-06 · R4](TC-06-concurrency-and-races.md) |
-| P-04.17 | El mismo producto repetido en un payload es **una** validación | Dos líneas de 3 unidades contra un stock de 5 | `409` con `requested: 6`. Con 2 y 2: `201` y **una** línea de cantidad 4 | ✅ `orders.service.spec.ts` · 🔶 [TC-06 · R6](TC-06-concurrency-and-races.md) |
-| P-04.18 | La clave de idempotencia debe ser imposible de adivinar | `POST /orders` con `"idempotencyKey":"pedido-42"` | `400`. Reproducir una clave devuelve la dirección de envío, así que una clave adivinable es una fuga de datos ajenos | ✅ `create-order.dto.spec.ts` |
-| P-04.19 | La dirección de envío es obligatoria y no admite HTML | Pedido sin `shippingAddress`, y luego con `<script>` en `name` | `400` en ambos. Registrar un pedido que nadie puede entregar es peor que rechazarlo | ✅ `create-order.dto.spec.ts` |
-| P-04.20 | Un rango de fechas invertido se rechaza en vez de devolver vacío | `GET /orders?dateFrom=2026-08-31&dateTo=2026-08-01` | `400`. Una lista vacía sería indistinguible de "no hay pedidos en ese rango" | ✅ `orders.service.spec.ts` · [TC-05](TC-05-purchase-flow.md) check 8 |
-| P-04.21 | Un pedido se busca por lo que contiene, no solo por su id | `GET /orders?q=RS-050` con token | Devuelve los pedidos cuyas **líneas** llevan ese SKU. Un pedido no tiene cliente, así que eso es lo que lo identifica | ✅ `orders.service.spec.ts` |
-| P-04.22 | El correo de contacto es obligatorio y debe ser un correo | Pedido sin `shippingAddress.email`, y luego con `"email":"ada"` | `400` en ambos. Un contacto inválido es indistinguible de no tener contacto el día que hace falta usarlo | ✅ `create-order.dto.spec.ts` |
-| P-04.23 | Un pedido se busca por sus datos de entrega | `GET /orders?q=hermosillo` y `?q=example.org` con token | Devuelve los pedidos que se entregan en esa ciudad y los de ese dominio de correo. Un fragmento basta | ✅ `orders.filters.spec.ts` |
-| P-04.27 | La orden registra cómo se pagó | `POST /orders` con `"paymentMethod":"paypal"`, y luego con `"cash"` | El primero `201` y el detalle y el recibo dicen PayPal; el segundo `400` nombrando los métodos válidos | ✅ `create-order.dto.spec.ts` |
-| P-04.24 | El carrito no muestra un total distinto del que se cobrará | Agregar al carrito, cambiar el precio en el catálogo y volver al carrito | Se adopta el precio vigente, se señala el anterior, y el total del checkout es el que registra el pedido | ✅ `cart-reconcile.test.ts` · 🔶 [TC-05](TC-05-purchase-flow.md) check 10 |
-| P-04.25 | Una línea que la compra rechazaría se identifica antes de confirmar | Borrar del catálogo un producto que está en el carrito, y volver al carrito | La línea se marca no disponible y el checkout queda bloqueado hasta quitarla, en vez de fallar al confirmar sin decir cuál sobra | ✅ `cart-reconcile.test.ts` · 🔶 [TC-05](TC-05-purchase-flow.md) check 10 |
-| P-04.26 | Un fallo de red no se confunde con un producto retirado | Abrir el carrito con el API caído | Se dice que no se pudo verificar el carrito; no se vacía ni se marca nada como no disponible | ✅ `cart-reconcile.test.ts` |
+| P-04.1 | A purchase completes and moves real stock | Add to cart → checkout → **Complete order** | Confirmation with id, lines and total. Stock drops by what was bought | ✅ `orders.concurrency.spec.ts` *(real database)* · [TC-05](TC-05-purchase-flow.md) |
+| P-04.2 | The **server** owns the amount — a cart where the client sets the price is not a payment system | `POST /orders` with `"total":"0.01"` in the body | `400`. Any amount sent is refused outright | ✅ `orders.service.spec.ts` · [TC-05](TC-05-purchase-flow.md) check 3 |
+| P-04.3 | **Two buyers cannot both take the last unit** | Set stock to 1, fire two simultaneous purchases | One `201`, one `409`. Final stock `0`, never `-1` | ✅ `orders.concurrency.spec.ts` *(real database)* · [TC-06 · R1](TC-06-concurrency-and-races.md) |
+| P-04.4 | Multi-line orders cannot block each other | Two orders for the same two products, listed in opposite order | Both resolve. Rows are locked ordered by `id` | ✅ `orders.concurrency.spec.ts` *(real database)* · [TC-06 · R5](TC-06-concurrency-and-races.md) |
+| P-04.5 | A double click buys once | Send the same request twice with the same idempotency key | `201` then `200`. One order, one stock movement | ✅ `orders.service.spec.ts` · `orders.concurrency.spec.ts` |
+| P-04.6 | Money is exact — `0.1 + 0.2` cannot decide a total | Buy lines whose prices break in binary floating point | Total exact to the cent. Summed in integer cents | ✅ `orders.service.spec.ts` |
+| P-04.7 | A past transaction never mutates | Buy a product and then change its catalog price | `unit_price_snapshot` and the order total untouched | ✅ `orders.concurrency.spec.ts` *(real database)* · [TC-05](TC-05-purchase-flow.md) check 2 |
+| P-04.8 | Insufficient stock is communicated usefully, because retrying unchanged cannot work | Add 5 of a product with stock 2 and complete | `409` naming SKU, requested and available, with a way back to the cart | ✅ `orders.service.spec.ts` |
+| P-04.9 | Buying is public; administering is not | `POST /orders` without a token, then `GET /orders` without a token | `201` and `401`. A customer buys with no account | ✅ `orders.service.spec.ts` · `route-protection.spec.ts` |
+| P-04.10 | The whole purchase is atomic | Force a decline (see `P-05.2`) | No paid order, no stock movement, nothing half-done | ✅ `orders.concurrency.spec.ts` *(real database)* |
+| P-04.11 | The purchase flow works end to end in a browser | Full checkout through the UI | Order confirmed on screen, with lines and total | ✅ e2e `purchase.spec.ts` |
+| P-04.12 | A double click cannot buy twice | Press **Complete order** and press it again in flight | The button stays disabled until the request resolves | ✅ e2e `purchase.spec.ts` · [TC-06 · R10](TC-06-concurrency-and-races.md) |
+| P-04.13 | An anonymous visitor can complete a purchase in a browser | Full checkout with no session | Order confirmed | ✅ e2e `purchase.spec.ts` |
+| P-04.14 | With stock for everyone, **nobody** is refused by the lock | 10 simultaneous buyers, stock 10 | Zero `409`s. `final_stock + PAID orders = 10` | 🔶 [TC-06 · R2](TC-06-concurrency-and-races.md) |
+| P-04.15 | A `PENDING` row never survives the transaction | After any concurrent batch: `SELECT count(*) FROM orders WHERE status='PENDING'` | `0`. `PENDING` exists only inside the transaction | 🔶 [TC-06 · R2](TC-06-concurrency-and-races.md) |
+| P-04.16 | The same key **in parallel** is decided by the unique index, not by a prior read | Fire the same key twice at once | One `201`, one `200`, one single row. Never a `500` from `23505` | 🔶 [TC-06 · R4](TC-06-concurrency-and-races.md) |
+| P-04.17 | The same product repeated in a payload is **one** validation | Two lines of 3 units against a stock of 5 | `409` with `requested: 6`. With 2 and 2: `201` and **one** line of quantity 4 | ✅ `orders.service.spec.ts` · 🔶 [TC-06 · R6](TC-06-concurrency-and-races.md) |
+| P-04.18 | The idempotency key must be impossible to guess | `POST /orders` with `"idempotencyKey":"order-42"` | `400`. Replaying a key returns the shipping address, so a guessable key is a leak of somebody else's data | ✅ `create-order.dto.spec.ts` |
+| P-04.19 | The shipping address is required and admits no HTML | Order without `shippingAddress`, then with `<script>` in `name` | `400` for both. Recording an order nobody can deliver is worse than refusing it | ✅ `create-order.dto.spec.ts` |
+| P-04.20 | An inverted date range is rejected rather than returning empty | `GET /orders?dateFrom=2026-08-31&dateTo=2026-08-01` | `400`. An empty list would be indistinguishable from "no orders in that range" | ✅ `orders.service.spec.ts` · [TC-05](TC-05-purchase-flow.md) check 8 |
+| P-04.21 | An order is searched by what it contains, not only by its id | `GET /orders?q=RS-050` with a token | Returns the orders whose **lines** carry that SKU. An order has no customer, so that is what identifies it | ✅ `orders.service.spec.ts` |
+| P-04.22 | The contact email is required and must be an email | Order without `shippingAddress.email`, then with `"email":"ada"` | `400` for both. An invalid contact is indistinguishable from no contact on the day it is needed | ✅ `create-order.dto.spec.ts` |
+| P-04.23 | An order is searched by its delivery details | `GET /orders?q=hermosillo` and `?q=example.org` with a token | Returns orders delivered to that city and those on that email domain. A fragment is enough | ✅ `orders.filters.spec.ts` |
+| P-04.24 | The cart never shows a total different from the one that will be charged | Add to cart, change the price in the catalog, return to the cart | The current price is adopted, the previous one flagged, and the checkout total is the one the order records | ✅ `cart-reconcile.test.ts` · 🔶 [TC-05](TC-05-purchase-flow.md) check 10 |
+| P-04.25 | A line the purchase would reject is identified before confirming | Delete from the catalog a product that is in the cart, then return to the cart | The line is marked unavailable and checkout is blocked until it is removed, instead of failing on confirm without saying which one is at fault | ✅ `cart-reconcile.test.ts` · 🔶 [TC-05](TC-05-purchase-flow.md) check 10 |
+| P-04.26 | A network failure is not mistaken for a withdrawn product | Open the cart with the API down | It says the cart could not be verified; it does not empty it or mark anything unavailable | ✅ `cart-reconcile.test.ts` |
+| P-04.27 | The order records how it was paid | `POST /orders` with `"paymentMethod":"paypal"`, then with `"cash"` | The first `201`, and the detail and receipt say PayPal; the second `400` naming the valid methods | ✅ `create-order.dto.spec.ts` |
 
 ---
 
-## P-05 · Procesamiento de pagos
+## P-05 · Payment processing
 
-Proceso completo: [P-05](../processes/P-05-payment-processing.md) · Ejecuciones manuales: [TC-05](TC-05-purchase-flow.md) check 6, [TC-06](TC-06-concurrency-and-races.md)
+Full process: [P-05](../processes/P-05-payment-processing.md) · Manual runs: [TC-05](TC-05-purchase-flow.md) check 6, [TC-06](TC-06-concurrency-and-races.md)
 
-| ID | Propósito | Pasos | Esperado | Cubierto por |
+| ID | Purpose | Steps | Expected | Covered by |
 |---|---|---|---|---|
-| P-05.1 | El proveedor es intercambiable — fingir un pago no puede dejar deuda técnica | Lee el constructor de `orders.service.ts` | Depende del token `PAYMENT_PROVIDER`, nunca de `FakePaymentProvider` | ✅ `fake-payment.provider.spec.ts` |
-| P-05.2 | Un rechazo revierte todo | Compra repetidamente hasta que uno sea rechazado (~1 de cada 10) | `402 PAYMENT_DECLINED`. Stock exactamente como antes | ✅ `orders.concurrency.spec.ts` *(base real)* |
-| P-05.3 | La tasa de rechazo es real, así que el rollback es observable usando la app | 40 compras seguidas | Alrededor de 4 rechazos. Una tanda del 2026-08-29 dio exactamente 36/4 | 🔶 manual — [TC-05](TC-05-purchase-flow.md), [TC-06 · R7](TC-06-concurrency-and-races.md) |
-| P-05.4 | Los tests nunca dependen de la suerte | Inyecta una fuente aleatoria fija | El cobro aprueba o rechaza de forma determinista | ✅ `fake-payment.provider.spec.ts` |
-| P-05.5 | Un intento rechazado deja rastro de auditoría | Consulta `orders` tras un rechazo | Un pedido `FAILED` con su motivo y **sin movimiento de stock** | ✅ `orders.service.spec.ts` |
-| P-05.6 | Una clave, un desenlace — reproducir una clave rechazada no puede cobrar dos veces | Reintenta con la misma clave de idempotencia | Vuelve a rechazar. Reintentar significa un intento **nuevo** con clave nueva | ✅ `orders.service.spec.ts` · 🔶 [TC-06 · R7](TC-06-concurrency-and-races.md) |
-| P-05.7 | Un rechazo es un desenlace legítimo, no un fallo del sistema | Lee el mensaje en la UI | "Payment declined", presentado como reintentable y visiblemente distinto de un conflicto de stock | ✅ `purchase.mapper.test.ts` · e2e `purchase.spec.ts` |
-| P-05.8 | El registro del intento rechazado sobrevive al rollback que lo generó | Rechazo, luego `SELECT * FROM orders WHERE status='FAILED'` | La fila existe. Se escribe en una **transacción aparte**, porque la original fue revertida | ✅ `orders.service.spec.ts` |
-| P-05.9 | Redis caído no cancela una venta ya cobrada | `docker stop ecommerce-redis`, luego compra | `201`. En el log un warning, no un error. El caché se invalida **después** del commit | 🔶 [TC-06 · R9](TC-06-concurrency-and-races.md) |
+| P-05.1 | The provider is swappable — faking a payment cannot leave technical debt | Read the constructor of `orders.service.ts` | It depends on the `PAYMENT_PROVIDER` token, never on `FakePaymentProvider` | ✅ `fake-payment.provider.spec.ts` |
+| P-05.2 | A decline reverts everything | Buy repeatedly until one is declined (~1 in 10) | `402 PAYMENT_DECLINED`. Stock exactly as before | ✅ `orders.concurrency.spec.ts` *(real database)* |
+| P-05.3 | The decline rate is real, so the rollback is observable by using the app | 40 purchases in a row | Around 4 declines. A run on 2026-08-29 gave exactly 36/4 | 🔶 manual — [TC-05](TC-05-purchase-flow.md), [TC-06 · R7](TC-06-concurrency-and-races.md) |
+| P-05.4 | Tests never depend on luck | Inject a fixed random source | The charge approves or declines deterministically | ✅ `fake-payment.provider.spec.ts` |
+| P-05.5 | A declined attempt leaves an audit trail | Query `orders` after a decline | A `FAILED` order with its reason and **no stock movement** | ✅ `orders.service.spec.ts` |
+| P-05.6 | One key, one outcome — replaying a declined key cannot charge twice | Retry with the same idempotency key | It declines again. Retrying means a **new** attempt with a new key | ✅ `orders.service.spec.ts` · 🔶 [TC-06 · R7](TC-06-concurrency-and-races.md) |
+| P-05.7 | A decline is a legitimate outcome, not a system failure | Read the message in the UI | "Payment declined", presented as retryable and visibly different from a stock conflict | ✅ `purchase.mapper.test.ts` · e2e `purchase.spec.ts` |
+| P-05.8 | The record of the declined attempt survives the rollback that produced it | Decline, then `SELECT * FROM orders WHERE status='FAILED'` | The row exists. It is written in a **separate transaction**, because the original was rolled back | ✅ `orders.service.spec.ts` |
+| P-05.9 | Redis being down does not cancel a sale already charged | `docker stop ecommerce-redis`, then buy | `201`. A warning in the log, not an error. The cache is invalidated **after** the commit | 🔶 [TC-06 · R9](TC-06-concurrency-and-races.md) |
 
 ---
 
-## P-06 · Autenticación
+## P-06 · Authentication
 
-Proceso completo: [P-06](../processes/P-06-authentication.md) · Ejecución manual: [TC-07](TC-07-login-and-permissions.md)
+Full process: [P-06](../processes/P-06-authentication.md) · Manual run: [TC-07](TC-07-login-and-permissions.md)
 
-| ID | Propósito | Pasos | Esperado | Cubierto por |
+| ID | Purpose | Steps | Expected | Covered by |
 |---|---|---|---|---|
-| P-06.1 | Una pantalla protegida no se alcanza sin sesión | Abre `/dashboard/product` sin sesión | Redirige a login; la pantalla nunca se renderiza | ✅ e2e `auth-session.spec.ts` |
-| P-06.2 | Iniciar sesión te devuelve a donde ibas | Pide una ruta protegida y luego autentícate | Aterriza en la ruta pedida originalmente | ✅ e2e `auth-session.spec.ts` |
-| P-06.3 | Las credenciales incorrectas fallan de forma visible y segura | Inicia sesión con contraseña errónea | Error en línea, se queda en la pantalla de login | ✅ e2e `auth-session.spec.ts` |
-| P-06.4 | Una sesión sobrevive a una recarga; el logout la termina de verdad | Inicia sesión, recarga, cierra sesión | Sesión restaurada, luego vuelta al estado no autenticado | ✅ `auth-token.test.ts` · e2e `auth-session.spec.ts` |
-| P-06.5 | La tienda sigue siendo pública — cerrar el checkout resolvería un problema que no existe | Navega el catálogo y un detalle sin sesión | Se renderiza, sin redirección. `GET /products` responde `200` sin token | ✅ e2e `auth-session.spec.ts` |
-| P-06.6 | El guard falla **cerrado**: un endpoint nuevo nace protegido | Llama a cualquier ruta protegida sin token | `401`. Olvidar la anotación produce un error visible, nunca un agujero silencioso | ✅ `jwt-auth.guard.spec.ts` · `route-protection.spec.ts` |
-| P-06.7 | Las contraseñas nunca salen del servicio | Inicia sesión e inspecciona la respuesta | Ningún campo `password` por ningún lado | 🔶 [TC-07](TC-07-login-and-permissions.md) check 1 |
-| P-06.8 | Una importación registra quién la ejecutó | Importa con sesión, abre el historial | El lote muestra **Imported by** | ✅ `import.attribution.spec.ts` · e2e `product-import-batches.spec.ts` |
-| P-06.9 | El historial de importación se busca por nombre de archivo | Busca un fragmento del nombre en el historial | Lotes coincidentes, sin distinguir mayúsculas; estado vacío propio cuando no hay nada | ✅ e2e `import-batch-search.spec.ts` |
-| P-06.10 | El alta de usuarios **no** es pública | `POST /auth/sign-up` sin token | `401`. Una cuenta solo otorga administración del catálogo, así que un alta abierta la regalaría | ✅ `route-protection.spec.ts` · 🔶 [TC-07](TC-07-login-and-permissions.md) check 6 |
-| P-06.11 | Un token alterado o caducado se rechaza sin romper nada | Llama con la firma modificada, con `a.b.c`, y sin el prefijo `Bearer` | `401` en los tres casos. Nunca `500` | 🔶 [TC-07](TC-07-login-and-permissions.md) check 8 |
-| P-06.12 | El login está limitado por tasa | 35 intentos de login seguidos | ~30 `401` y luego `429`. El techo global de 300/min no sirve para un endpoint de credenciales | ✅ `security.spec.ts` (config) · 🔶 [TC-07](TC-07-login-and-permissions.md) check 9 |
-| P-06.13 | No se emite refresh token | Inspecciona la respuesta de `sign-in` | Sin `refreshToken`. El que se emitía era, de hecho, un token de acceso de siete días sin rotación ni revocación | ✅ `auth.service.spec.ts` |
+| P-06.1 | A protected screen is not reachable without a session | Open `/dashboard/product` with no session | Redirects to login; the screen never renders | ✅ e2e `auth-session.spec.ts` |
+| P-06.2 | Signing in returns you to where you were going | Request a protected route and then authenticate | Lands on the originally requested route | ✅ e2e `auth-session.spec.ts` |
+| P-06.3 | Wrong credentials fail visibly and safely | Sign in with the wrong password | Inline error, stays on the login screen | ✅ e2e `auth-session.spec.ts` |
+| P-06.4 | A session survives a reload; logout really ends it | Sign in, reload, sign out | Session restored, then back to the unauthenticated state | ✅ `auth-token.test.ts` · e2e `auth-session.spec.ts` |
+| P-06.5 | The shop stays public — closing the checkout would solve a problem that does not exist | Browse the catalog and a detail with no session | It renders, with no redirect. `GET /products` answers `200` without a token | ✅ e2e `auth-session.spec.ts` |
+| P-06.6 | The guard fails **closed**: a new endpoint is born protected | Call any protected route without a token | `401`. Forgetting the annotation produces a visible error, never a silent hole | ✅ `jwt-auth.guard.spec.ts` · `route-protection.spec.ts` |
+| P-06.7 | Passwords never leave the service | Sign in and inspect the response | No `password` field anywhere | 🔶 [TC-07](TC-07-login-and-permissions.md) check 1 |
+| P-06.8 | An import records who ran it | Import while signed in, open the history | The batch shows **Imported by** | ✅ `import.attribution.spec.ts` · e2e `product-import-batches.spec.ts` |
+| P-06.9 | Import history is searchable by filename | Search a fragment of the name in the history | Matching batches, case-insensitively; a distinct empty state when nothing matches | ✅ e2e `import-batch-search.spec.ts` |
+| P-06.10 | User registration is **not** public | `POST /auth/sign-up` without a token | `401`. An account only grants catalog administration, so open registration would give it away | ✅ `route-protection.spec.ts` · 🔶 [TC-07](TC-07-login-and-permissions.md) check 6 |
+| P-06.11 | A tampered or expired token is refused without breaking anything | Call with a modified signature, with `a.b.c`, and without the `Bearer` prefix | `401` in all three cases. Never `500` | 🔶 [TC-07](TC-07-login-and-permissions.md) check 8 |
+| P-06.12 | Login is rate limited | 35 login attempts in a row | ~30 `401`s and then `429`. The global 300/min ceiling is useless for a credential endpoint | ✅ `security.spec.ts` (config) · 🔶 [TC-07](TC-07-login-and-permissions.md) check 9 |
+| P-06.13 | No refresh token is issued | Inspect the `sign-in` response | No `refreshToken`. The one that used to be issued was, in effect, a seven-day access token with no rotation and no revocation | ✅ `auth.service.spec.ts` |
 
 ---
 
-## P-07 · Contrato de errores
+## P-07 · Error contract
 
-Proceso completo: [P-07](../processes/P-07-error-contract.md)
+Full process: [P-07](../processes/P-07-error-contract.md)
 
-| ID | Propósito | Pasos | Esperado | Cubierto por |
+| ID | Purpose | Steps | Expected | Covered by |
 |---|---|---|---|---|
-| P-07.1 | Todo error responde con la misma forma, falle la capa que falle | Provoca un `404`, `400`, `401`, `409` | Los cinco campos presentes: `statusCode`, `error`, `message`, `path`, `timestamp` | ✅ `http-exception.filter.spec.ts` |
-| P-07.2 | `error` es un código sobre el que ramificar, no el estado en prosa | Mira cualquier cuerpo de error | `NOT_FOUND`, nunca `"Not Found"` | ✅ `http-exception.filter.spec.ts` |
-| P-07.3 | Normalizar el sobre no puede destruir el detalle | Provoca un conflicto de stock | `sku`, `requested` y `available` siguen en el primer nivel | ✅ `http-exception.filter.spec.ts` |
-| P-07.4 | Varios fallos de validación se reportan juntos | Envía dos parámetros inválidos a la vez | `message` es la lista de ambos | ✅ `http-exception.filter.spec.ts` |
-| P-07.5 | El mismo fallo de base de datos significa lo mismo en todas partes | Duplica un sku de producto, luego un email de usuario | Ambos `409 DUPLICATE_RESOURCE`. Antes eran `409` y `400` | ✅ `database-error.translator.spec.ts` |
-| P-07.6 | Una negativa de una clave foránea es un conflicto, no un crash | Borra un producto vendido | `409 RESOURCE_IN_USE`. Esto solía ser un `500` | ✅ `orders.concurrency.spec.ts` *(base real)* |
-| P-07.7 | Un fallo interno nunca filtra internos | Fuerza un error inesperado | Mensaje genérico al cliente, detalle completo solo en el log | ✅ `database-error.translator.spec.ts` |
-| P-07.8 | Una petición limitada por tasa no es un error interno | Supera el límite de importación | `429 TOO_MANY_REQUESTS` | ✅ `http-exception.filter.spec.ts` |
+| P-07.1 | Every error answers with the same shape, whichever layer fails | Provoke a `404`, `400`, `401`, `409` | All five fields present: `statusCode`, `error`, `message`, `path`, `timestamp` | ✅ `http-exception.filter.spec.ts` |
+| P-07.2 | `error` is a code to branch on, not the status in prose | Look at any error body | `NOT_FOUND`, never `"Not Found"` | ✅ `http-exception.filter.spec.ts` |
+| P-07.3 | Normalising the envelope cannot destroy the detail | Provoke a stock conflict | `sku`, `requested` and `available` are still at the top level | ✅ `http-exception.filter.spec.ts` |
+| P-07.4 | Several validation failures are reported together | Send two invalid parameters at once | `message` is the list of both | ✅ `http-exception.filter.spec.ts` |
+| P-07.5 | The same database failure means the same thing everywhere | Duplicate a product sku, then a user email | Both `409 DUPLICATE_RESOURCE`. They used to be `409` and `400` | ✅ `database-error.translator.spec.ts` |
+| P-07.6 | A foreign key refusal is a conflict, not a crash | Delete a sold product | `409 RESOURCE_IN_USE`. This used to be a `500` | ✅ `orders.concurrency.spec.ts` *(real database)* |
+| P-07.7 | An internal failure never leaks internals | Force an unexpected error | Generic message to the client, full detail only in the log | ✅ `database-error.translator.spec.ts` |
+| P-07.8 | A rate-limited request is not an internal error | Exceed the import limit | `429 TOO_MANY_REQUESTS` | ✅ `http-exception.filter.spec.ts` |
 
 ---
 
-## P-08 · Endurecimiento de seguridad
+## P-08 · Security hardening
 
-Proceso completo: [P-08](../processes/P-08-security-hardening.md)
+Full process: [P-08](../processes/P-08-security-hardening.md)
 
-| ID | Propósito | Pasos | Esperado | Cubierto por |
+| ID | Purpose | Steps | Expected | Covered by |
 |---|---|---|---|---|
-| P-08.1 | CORS nombra su origen — `*` no es de grado empresarial | `curl -H "Origin: https://evil.test" .../products -D -` | Ninguna cabecera `Access-Control-Allow-Origin` | ✅ `security.spec.ts` |
-| P-08.2 | El origen permitido sigue funcionando | Lo mismo con `Origin: http://localhost:3000` | La cabecera devuelve ese origen | ✅ `security.spec.ts` |
-| P-08.3 | Las cabeceras de seguridad estándar están presentes | `curl -D - .../health` | HSTS, `nosniff`, `SAMEORIGIN`, `no-referrer`; sin `X-Powered-By` | 🔶 manual |
-| P-08.4 | La operación más cara está medida | 7 importaciones seguidas | `201` ×5, luego `429` ×2 | ✅ `security.spec.ts` (config) · 🔶 manual (comportamiento) |
-| P-08.5 | El límite no estrangula el uso normal | 12 peticiones al catálogo seguidas | Todas `200`. Un límite que rompe la app lo borra el siguiente desarrollador | ✅ `security.spec.ts` |
-| P-08.6 | El XSS se rechaza en el borde, no se deja a React | Importa una fila con marcado en el nombre | Fila rechazada, con la carga reportada literalmente como motivo | ✅ `import.service.spec.ts` · e2e `product-csv-cases.spec.ts` |
+| P-08.1 | CORS names its origin — `*` is not enterprise grade | `curl -H "Origin: https://evil.test" .../products -D -` | No `Access-Control-Allow-Origin` header | ✅ `security.spec.ts` |
+| P-08.2 | The allowed origin still works | The same with `Origin: http://localhost:3000` | The header returns that origin | ✅ `security.spec.ts` |
+| P-08.3 | The standard security headers are present | `curl -D - .../health` | HSTS, `nosniff`, `SAMEORIGIN`, `no-referrer`; no `X-Powered-By` | 🔶 manual |
+| P-08.4 | The most expensive operation is metered | 7 imports in a row | `201` ×5, then `429` ×2 | ✅ `security.spec.ts` (config) · 🔶 manual (behaviour) |
+| P-08.5 | The limit does not strangle normal use | 12 catalog requests in a row | All `200`. A limit that breaks the app is deleted by the next developer | ✅ `security.spec.ts` |
+| P-08.6 | XSS is rejected at the edge, not left to React | Import a row with markup in the name | Row rejected, with the payload reported verbatim as the reason | ✅ `import.service.spec.ts` · e2e `product-csv-cases.spec.ts` |
 
 ---
 
-## P-09 · Status y observabilidad
+## P-09 · Status and observability
 
-Ejecución manual: [TC-08](TC-08-status-and-degradation.md)
+Manual run: [TC-08](TC-08-status-and-degradation.md)
 
-| ID | Propósito | Pasos | Esperado | Cubierto por |
+| ID | Purpose | Steps | Expected | Covered by |
 |---|---|---|---|---|
-| P-09.1 | La conexión a Redis es real, no declarada | `GET /status/redis` dos veces | `visits` **aumenta** entre llamadas. El endpoint hace `INCR`, escribe y lee un dato real | 🔶 [TC-08](TC-08-status-and-degradation.md) check 1 |
-| P-09.2 | La conexión a Postgres es real y el conteo es del catálogo vivo | `GET /status/db`, importa un CSV, repite | `productCount` cambia. No es un valor cacheado | 🔶 [TC-08](TC-08-status-and-degradation.md) check 2 |
-| P-09.3 | **Una dependencia caída da `200` con `ok:false`, no un `500`** | `docker stop ecommerce-redis`, luego `GET /status/redis` | `HTTP 200`, `ok:false` y un `error` que dice qué pasó | 🔶 [TC-08](TC-08-status-and-degradation.md) check 3 |
-| P-09.4 | Una dependencia caída no arrastra a la otra | Con Redis parado, `GET /status/db` | Sigue en `ok:true` | 🔶 [TC-08](TC-08-status-and-degradation.md) check 3 |
-| P-09.5 | `/health` es público, porque un orquestador no tiene credenciales | `GET /health` sin token | `200` con `app`, `resources` y `postgres`. `uptimeMs` crece entre llamadas | 🔶 [TC-08](TC-08-status-and-degradation.md) check 5 |
-| P-09.6 | Los endpoints de status **sí** exigen sesión | `GET /status/db` y `/status/redis` sin token | `401` en ambos | ✅ `route-protection.spec.ts` |
-| P-09.7 | La pantalla se refresca sola y degrada por tarjeta | Abre `/dashboard/status`, para Redis, espera | Solo esa tarjeta cambia de estado, sin recargar. Las otras siguen en verde | 🔶 [TC-08](TC-08-status-and-degradation.md) check 6 |
-| P-09.8 | El sondeo de la pantalla no dispara el límite de tasa | Deja `/dashboard/status` abierta 3 minutos | Ningún `429`. Son 36 req/min por pestaña contra un techo de 300 | 🔶 [TC-08](TC-08-status-and-degradation.md) check 6 |
+| P-09.1 | The Redis connection is real, not declared | `GET /status/redis` twice | `visits` **rises** between calls. The endpoint runs `INCR`, writing and reading a real value | 🔶 [TC-08](TC-08-status-and-degradation.md) check 1 |
+| P-09.2 | The Postgres connection is real and the count is of the live catalog | `GET /status/db`, import a CSV, repeat | `productCount` changes. It is not a cached value | 🔶 [TC-08](TC-08-status-and-degradation.md) check 2 |
+| P-09.3 | **A downed dependency gives `200` with `ok:false`, not a `500`** | `docker stop ecommerce-redis`, then `GET /status/redis` | `HTTP 200`, `ok:false` and an `error` saying what happened | 🔶 [TC-08](TC-08-status-and-degradation.md) check 3 |
+| P-09.4 | One downed dependency does not drag the other with it | With Redis stopped, `GET /status/db` | Still `ok:true` | 🔶 [TC-08](TC-08-status-and-degradation.md) check 3 |
+| P-09.5 | `/health` is public, because an orchestrator has no credentials | `GET /health` without a token | `200` with `app`, `resources` and `postgres`. `uptimeMs` grows between calls | 🔶 [TC-08](TC-08-status-and-degradation.md) check 5 |
+| P-09.6 | The status endpoints **do** require a session | `GET /status/db` and `/status/redis` without a token | `401` for both | ✅ `route-protection.spec.ts` |
+| P-09.7 | The screen refreshes itself and degrades per card | Open `/dashboard/status`, stop Redis, wait | Only that card changes state, without reloading. The others stay green | 🔶 [TC-08](TC-08-status-and-degradation.md) check 6 |
+| P-09.8 | The screen's polling does not trip the rate limit | Leave `/dashboard/status` open for 3 minutes | No `429`. It is 36 req/min per tab against a ceiling of 300 | 🔶 [TC-08](TC-08-status-and-degradation.md) check 6 |
 
 ---
 
-## P-10 · Búsqueda de páginas del dashboard
+## P-10 · Dashboard page search
 
-Todo automático: el buscador no toca el API ni la base, así que no hay nada que mirar a mano.
+All automated: the search touches neither the API nor the database, so there is nothing to look at
+by hand.
 
-| ID | Propósito | Pasos | Esperado | Cubierto por |
+| ID | Purpose | Steps | Expected | Covered by |
 |---|---|---|---|---|
-| P-10.1 | El atajo abre el buscador, también fuera de macOS | En cualquier página del dashboard, `Ctrl+K` | Se abre el diálogo con el campo enfocado. El componente original solo miraba `metaKey`, así que en Windows no abría | ✅ e2e `dashboard-page-search.spec.ts` |
-| P-10.2 | El control del header es descubrible y anuncia el atajo | Mira el header y pulsa el control | Muestra `Ctrl K` (o `⌘K` en macOS) y abre el mismo diálogo | ✅ e2e `dashboard-page-search.spec.ts` |
-| P-10.3 | La lista sale del nav real, no de una lista fija | Abre el buscador y escribe `import` | Aparecen `Import CSV` e `Import history`, que son entradas vivas del nav | ✅ `searchbar/utils.test.ts` + e2e |
-| P-10.4 | Se encuentra una página por su ruta, no solo por su título | Escribe `dashboard/status` | Aparece la página Status | ✅ `searchbar/utils.test.ts` + e2e |
-| P-10.5 | La coincidencia se resalta dentro del resultado | Escribe `stat` | El fragmento `stat` sale resaltado, y el texto completo se conserva sin caracteres añadidos | ✅ `searchbar/utils.test.ts` + e2e |
-| P-10.6 | Sin coincidencias lo dice, en vez de una lista vacía | Escribe algo que no existe | Mensaje de "no encontrado" con lo buscado | ✅ e2e `dashboard-page-search.spec.ts` |
-| P-10.7 | Elegir un resultado navega y cierra | Escribe `import csv` y elige el resultado | La URL pasa a `/dashboard/product/import` y el diálogo se cierra | ✅ e2e `dashboard-page-search.spec.ts` |
-| P-10.8 | `Esc` cierra sin navegar y sin dejar residuo | Abre, escribe, `Esc`, vuelve a abrir | La URL no cambia y el campo aparece vacío | ✅ e2e `dashboard-page-search.spec.ts` |
-| P-10.9 | **El atajo no secuestra la escritura** | Con el foco en el filtro de la tabla, escribe `k` | La letra se escribe en el campo y el diálogo no se abre | ✅ e2e `dashboard-page-search.spec.ts` |
-| P-10.10 | El buscador es del dashboard, no de la tienda | Abre `/` | El control no existe en la tienda pública | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.1 | The shortcut opens the search, off macOS too | On any dashboard page, `Ctrl+K` | The dialog opens with the field focused. The original component only looked at `metaKey`, so it did not open on Windows | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.2 | The header control is discoverable and announces the shortcut | Look at the header and press the control | It shows `Ctrl K` (or `⌘K` on macOS) and opens the same dialog | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.3 | The list comes from the real nav, not a fixed array | Open the search and type `import` | `Import CSV` and `Import history` appear, which are live nav entries | ✅ `searchbar/utils.test.ts` + e2e |
+| P-10.4 | A page is found by its path, not only its title | Type `dashboard/status` | The Status page appears | ✅ `searchbar/utils.test.ts` + e2e |
+| P-10.5 | The match is highlighted inside the result | Type `stat` | The `stat` fragment is highlighted, and the full text is preserved with no added characters | ✅ `searchbar/utils.test.ts` + e2e |
+| P-10.6 | No matches says so, instead of an empty list | Type something that does not exist | A "not found" message quoting what was searched | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.7 | Choosing a result navigates and closes | Type `import csv` and choose the result | The URL becomes `/dashboard/product/import` and the dialog closes | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.8 | `Esc` closes without navigating and leaves no residue | Open, type, `Esc`, open again | The URL does not change and the field comes back empty | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.9 | **The shortcut does not hijack typing** | With focus in the table filter, type `k` | The letter is typed into the field and the dialog does not open | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.10 | The search belongs to the dashboard, not the shop | Open `/` | The control does not exist on the public storefront | ✅ e2e `dashboard-page-search.spec.ts` |
 
 ---
 
-## Resumen de cobertura
+## Coverage summary
 
-| Proceso | Casos | Automatizados | Solo manual |
+| Process | Cases | Automated | Manual only |
 |---|---|---|---|
-| P-01 Importación CSV | 12 | 11 | 1 |
-| P-02 CRUD de productos | 11 | 11 | 0 |
-| P-03 Búsqueda y filtros | 11 | 11 | 0 |
-| P-04 Creación de pedidos | 27 | 24 | 3 |
-| P-05 Procesamiento de pagos | 9 | 7 | 2 |
-| P-06 Autenticación | 13 | 11 | 2 |
-| P-07 Contrato de errores | 8 | 8 | 0 |
-| P-08 Endurecimiento de seguridad | 6 | 5 | 1 |
-| P-09 Status y observabilidad | 8 | 1 | 7 |
-| P-10 Búsqueda de páginas | 10 | 10 | 0 |
+| P-01 CSV import | 12 | 11 | 1 |
+| P-02 Product CRUD | 11 | 11 | 0 |
+| P-03 Search and filters | 11 | 11 | 0 |
+| P-04 Order placement | 27 | 24 | 3 |
+| P-05 Payment processing | 9 | 7 | 2 |
+| P-06 Authentication | 13 | 11 | 2 |
+| P-07 Error contract | 8 | 8 | 0 |
+| P-08 Security hardening | 6 | 5 | 1 |
+| P-09 Status and observability | 8 | 1 | 7 |
+| P-10 Page search | 10 | 10 | 0 |
 | **Total** | **115** | **99** | **16** |
 
-## Lo que sigue siendo solo manual
+## What stays manual only
 
-Cada uno por un motivo declarado, no por omisión.
+Each for a stated reason, not by omission.
 
-| Caso | Por qué se queda manual |
+| Case | Why it stays manual |
 |---|---|
-| P-01.11 subida sobredimensionada | Requeriría un archivo de más de 5 MB en el repositorio |
-| P-04.14–P-04.17 concurrencia observable | La versión automatizada existe en `orders.concurrency.spec.ts`; lo manual es **verlo** contra el stack completo, que es lo que convence a un revisor |
-| P-05.3 la tasa de ~10% de rechazo | El spec de navegador fuerza un rechazo de forma determinista; la *tasa* se afirma en `fake-payment.provider.spec.ts` sobre un barrido uniforme, y observarla en la app en marcha es la parte manual |
-| P-05.9 Redis caído durante una venta | Requiere parar un contenedor a mitad de operación |
-| P-06.7, P-06.11, P-06.12 | Inspección de respuesta y manipulación de tokens: rápidas a mano, frágiles automatizadas |
-| P-08.3 cabeceras de seguridad | Afirmar que helmet pone sus propias cabeceras es testear la librería |
-| P-08.4 comportamiento del límite de tasa | La configuración se afirma; disparar cientos de peticiones en una suite es lento y demuestra poco |
-| P-09 casi entero | El módulo existe **para** ser mirado. Automatizar "la tarjeta se pone roja sola" cuesta más de lo que aporta frente a abrir la pantalla y parar un contenedor |
+| P-01.11 oversized upload | Would require a file larger than 5 MB in the repository |
+| P-04.14–P-04.17 observable concurrency | The automated version exists in `orders.concurrency.spec.ts`; the manual part is **seeing** it against the full stack, which is what convinces a reviewer |
+| P-05.3 the ~10% decline rate | The browser spec forces a decline deterministically; the *rate* is asserted in `fake-payment.provider.spec.ts` over a uniform sweep, and observing it in the running app is the manual part |
+| P-05.9 Redis down during a sale | Requires stopping a container mid-operation |
+| P-06.7, P-06.11, P-06.12 | Response inspection and token tampering: quick by hand, brittle automated |
+| P-08.3 security headers | Asserting that helmet sets its own headers is testing the library |
+| P-08.4 rate limit behaviour | The configuration is asserted; firing hundreds of requests in a suite is slow and proves little |
+| P-09 almost entirely | The module exists **to** be looked at. Automating "the card turns red on its own" costs more than it gives, against opening the screen and stopping a container |
 
-## Ejecutar todo
+## Running everything
 
 ```bash
-cd api && npm test              # unitarios + fixture + tests contra base real
-cd api && npm run test:e2e      # a traves del stack HTTP real
-cd web && npm test              # unitarios de frontend
-cd web && npm run test:e2e      # Playwright, requiere el stack levantado
+cd api && npm test              # unit + fixture + real-database tests
+cd api && npm run test:e2e      # through the real HTTP stack
+cd web && npm test              # frontend unit
+cd web && npm run test:e2e      # Playwright, needs the stack up
 ```
 
-`purchase.spec.ts` está nombrado para ordenarse al final a propósito: comprar deja residuo
-permanente, ya que un producto que aparece en un pedido no se puede borrar, así que los specs que
-cuentan el catálogo corren primero.
+`purchase.spec.ts` is named to sort last on purpose: buying leaves permanent residue, since a
+product that appears in an order cannot be deleted, so the specs that count the catalog run first.
 
-Ver [STRATEGY.md](STRATEGY.md) para qué cubre cada nivel y qué se deja fuera deliberadamente.
+See [STRATEGY.md](STRATEGY.md) for what each level covers and what is deliberately left out.
