@@ -44,11 +44,22 @@ document that explains how.
 
 ### Verifying it in five minutes
 
-The fastest way to exercise every requirement, in order:
+Start the stack, open http://localhost:3000, and sign in with `demo@demo.com` / `demo`. **The
+catalog is empty on purpose** — step 1 fills it.
+
+The file to upload is the one the challenge provided, committed so the run is reproducible:
+
+```
+docs/csv/LoanPro Code Challenge E-Commerce.csv
+```
+
+97 rows, and deliberately hostile in places: a `<script>` payload, an injection SKU, a duplicate
+SKU, `"free"` where a price should be, a negative stock, and two blank lines. All of that is the
+point — watch where each row lands.
 
 | # | Do this | What it proves |
 |---|---|---|
-| 1 | Sign in, then *Dashboard → Product → Import CSV* with the sample file | CSV import, per-row validation, partial import with a report |
+| 1 | Sign in, then *Dashboard → Product → Import CSV* and upload the file above | CSV import, per-row validation, partial import with a report. **85 created, 10 rejected, 2 skipped** — and the report names every rejection with its line number and reason |
 | 2 | Open the shop at `/` and search or filter by category | Server-side search and filtering over the imported catalog |
 | 3 | Add products to the cart and complete the checkout | Purchase with a simulated payment, stock decremented in the same transaction |
 | 4 | Go to *Dashboard → Orders* and open the order you just placed | The order is read back from the database, not from sample data |
@@ -77,6 +88,15 @@ five places that judgement is visible, each with something you can run:
 
 ## How to run
 
+### Before you start
+
+| | |
+|---|---|
+| **Docker** | Docker Desktop, or Docker Engine 20.10+ with the Compose v2 plugin (`docker compose`, not `docker-compose`). Nothing else is required for the Docker path — no Node, no Postgres, no Redis on your machine |
+| **Node 20+** | Only for the manual path below and for running the test suites from your host |
+| **Free ports** | `3000`, `4000`, `5432`, `6379`. **5432 is the one that usually collides**, since a locally installed Postgres holds it — see [If something does not start](#if-something-does-not-start) |
+| **Disk and time** | ~1.5 GB of images. The first `--build` takes 2–4 minutes; later starts are seconds |
+
 ### With Docker (full stack)
 
 ```bash
@@ -89,6 +109,16 @@ docker compose up --build
 | API | http://localhost:4000/api/v1 |
 | Swagger | http://localhost:4000/api/v1/docs |
 | PostgreSQL | localhost:5432 (user `postgres`, password `changeme`, db `ecommerce`) |
+
+Wait for `ecommerce-api  Healthy` in the output — the web container waits for it, so when the page
+loads the API is already answering.
+
+```bash
+docker compose ps          # what is up, and whether it is healthy
+docker compose logs -f api # follow the API log
+docker compose down        # stop everything, keep the data
+docker compose down -v     # stop everything and wipe the database, for a clean run
+```
 
 No `.env` required (everything has defaults); to override values, copy `.env.example` to `.env`.
 
@@ -124,8 +154,8 @@ closed: a new endpoint is protected unless someone deliberately opens it.
 ### Local development (manual)
 
 ```bash
-# 1. Database (Postgres container only)
-docker compose up -d db
+# 1. Database and cache (containers only)
+docker compose up -d db redis
 
 # 2. API — http://localhost:8080/api/v1
 cd api && cp .env.example .env && npm install && npm run dev
@@ -133,6 +163,49 @@ cd api && cp .env.example .env && npm install && npm run dev
 # 3. Front — http://localhost:3000 (Vite dev server)
 cd web && cp .env.example .env && npm install && npm run dev
 ```
+
+Note the port: under Docker the API is published on **4000**, running it directly it listens on
+**8080**. `web/.env.example` already points at 8080, so the two files match their own path.
+
+### Configuration
+
+**Every variable has a default and the stack starts without a `.env`.** These are the knobs, not a
+setup checklist — reach for them only if a port collides or you want sessions to survive a restart.
+
+Three files, three scopes:
+
+| File | Read by | Purpose |
+|---|---|---|
+| [`.env.example`](.env.example) | `docker-compose.yml` | The handful of values Compose interpolates into the containers |
+| [`api/.env.example`](api/.env.example) | the API when run directly (`npm run dev`) | Every API variable, each documented inline |
+| [`web/.env.example`](web/.env.example) | Vite at build time | Where the browser should call the API |
+
+The ones worth knowing:
+
+| Variable | Default | What it does |
+|---|---|---|
+| `JWT_SECRET` | *(empty)* | **Deliberately unset.** Empty generates a random key per boot; a value of 16+ characters keeps sessions across restarts. A known placeholder like `changeme` stops the boot on purpose |
+| `DB_USER` · `DB_PASSWORD` · `DB_NAME` | `postgres` · `changeme` · `ecommerce` | Applied to both the database container and the API, so they cannot drift apart |
+| `VITE_SERVER_URL` | `http://localhost:4000` | Where the browser calls the API. Baked in at **build** time, so changing it needs `docker compose up --build` |
+| `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated allow-list. Never `*` |
+| `THROTTLE_LIMIT` | `300` / min | Global ceiling. Loose because the status page polls |
+| `ORDER_RATE_LIMIT` | `20` / min | `POST /orders` — the only public route that writes and charges |
+| `IMPORT_RATE_LIMIT` | `20` / min | CSV import, the most expensive operation exposed |
+| `AUTH_RATE_LIMIT` | `30` / min | Sign-in attempts per address |
+| `TRUST_PROXY_HOPS` | `0` | How many reverse proxies sit in front. Rate limits count by client IP, and behind a proxy every request carries the proxy's address unless this says how far down `X-Forwarded-For` to trust |
+| `DB_SYNC` | `false` | Never turn this on. The schema belongs to the migrations |
+| `DB_PORT_HOST` · `API_PORT_HOST` · `WEB_PORT_HOST` · `REDIS_PORT_HOST` | `5432` · `4000` · `3000` · `6379` | Only the **host** side of each mapping, for when a port is taken. The containers always reach each other on their internal ports, so moving these changes nothing inside the stack |
+
+### If something does not start
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `port is already allocated` on **5432** | A Postgres already installed on your machine holds it | `DB_PORT_HOST=5433 docker compose up --build`. Nothing inside the stack changes — the containers still talk to each other on 5432 |
+| Same on **3000**, **4000** or **6379** | Another dev server or a local Redis | `WEB_PORT_HOST=3001 API_PORT_HOST=4001 REDIS_PORT_HOST=6380 docker compose up --build`. If you move the API port, also set `VITE_SERVER_URL=http://localhost:4001` so the browser follows it |
+| The shop loads but shows no products | Expected: **the catalog starts empty on purpose** | Sign in and import the CSV — see step 1 of [Verifying it in five minutes](#verifying-it-in-five-minutes) |
+| Sign-in fails right after a rebuild | `JWT_SECRET` is unset, so the key is regenerated each boot and old tokens stop working | Sign in again, or set `JWT_SECRET` to keep sessions |
+| `database "ecommerce" does not exist` | A half-initialised volume from an interrupted first run | `docker compose down -v && docker compose up --build` |
+| The browser suite fails | The stack is not up, or Chromium is missing | `docker compose up -d --build`, then `npx playwright install chromium` |
 
 ### Inspecting the data stores (optional)
 
