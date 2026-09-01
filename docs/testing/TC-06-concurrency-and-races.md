@@ -1,43 +1,42 @@
-# TC-06 · Concurrencia, bloqueos y condiciones de carrera
+# TC-06 · Concurrency, locking and race conditions
 
 | | |
 |---|---|
-| **Estado** | ⬜ **Por ejecutar** |
-| **Fecha** | — |
+| **Status** | ⬜ **To run** |
+| **Date** | — |
 | **Tickets** | TK-010, TK-022 |
-| **Procesos** | [P-04](../processes/P-04-order-placement.md), [P-05](../processes/P-05-payment-processing.md) |
+| **Processes** | [P-04](../processes/P-04-order-placement.md), [P-05](../processes/P-05-payment-processing.md) |
 
-## Objetivo
+## Goal
 
-[TC-05](TC-05-purchase-flow.md) recorre la compra como la vive un cliente. Este caso ataca la misma
-compra **desde varios lados a la vez**, que es donde un e-commerce se rompe de verdad: dos personas
-peleando por la última unidad, un doble clic que llega dos veces, dos pedidos que se bloquean
-mutuamente, un cobro que declina a mitad de la transacción.
+[TC-05](TC-05-purchase-flow.md) walks the purchase as a customer lives it. This case attacks the
+same purchase **from several sides at once**, which is where an e-commerce actually breaks: two
+people fighting over the last unit, a double click arriving twice, two orders blocking each other,
+a charge declining halfway through the transaction.
 
-Nada de lo que se comprueba aquí es visible con una sola petición secuencial. Por eso vive en su
-propio caso.
+Nothing checked here is visible with a single sequential request. That is why it has its own case.
 
-## El diseño que se está probando
+## The design under test
 
 ```
-   POST /orders  (PUBLICO, sin sesion)
+   POST /orders  (PUBLIC, no session)
         |
         v
-   findByIdempotencyKey(key) ---- existe ----> replay
+   findByIdempotencyKey(key) ---- exists ----> replay
         |                                       |
-        | no existe                    PAID   -> 200  (la misma orden, sin cobrar otra vez)
-        v                              FAILED -> 402  (vuelve a declinar, sin cobrar otra vez)
+        | absent                       PAID   -> 200  (the same order, not charged again)
+        v                              FAILED -> 402  (declines again, not charged again)
    +==========================================================+
-   |  UNA SOLA TRANSACCION                                    |
+   |  ONE SINGLE TRANSACTION                                  |
    |                                                          |
    |  1. SELECT id, sku, name, price, stock                   |
    |       FROM products WHERE id = ANY($1) ORDER BY id       |
-   |       FOR UPDATE                     <-- el candado      |
+   |       FOR UPDATE                     <-- the lock        |
    |                                                          |
-   |  2. assertStockAvailable()           --> 409 y ROLLBACK  |
+   |  2. assertStockAvailable()           --> 409 and ROLLBACK|
    |  3. INSERT orders (PENDING) + order_items                |
    |  4. paymentProvider.charge()                             |
-   |       declined (~10%)                --> 402 y ROLLBACK  |
+   |       declined (~10%)                --> 402 and ROLLBACK|
    |  5. UPDATE products SET stock = stock - qty              |
    |  6. UPDATE orders SET status = PAID                      |
    +==========================================================+
@@ -45,25 +44,25 @@ propio caso.
      COMMIT                               ROLLBACK
         |                                    |
    invalidateCache()               recordDeclinedAttempt()
-   (si Redis falla: solo warn)     (transaccion aparte, stock intacto)
+   (if Redis fails: warn only)     (separate transaction, stock intact)
         |                                    |
        201                                  402
 ```
 
-Cuatro decisiones concretas del código se validan abajo:
+Four concrete decisions in the code are validated below:
 
-| Decisión | Por qué existe | Caso |
+| Decision | Why it exists | Case |
 |---|---|---|
-| `FOR UPDATE` sobre las filas de producto | Serializa a los compradores del mismo producto | R1, R2, R3 |
-| `ORDER BY "id"` dentro de ese `SELECT` | Evita el interbloqueo entre pedidos multilínea | R5 |
-| Índice único en `idempotency_key` | Decide el ganador cuando el `SELECT` previo no alcanza | R4 |
-| `mergeQuantitiesByProduct()` | Un producto repetido en el payload es **una** validación, no dos | R6 |
+| `FOR UPDATE` on the product rows | Serialises buyers of the same product | R1, R2, R3 |
+| `ORDER BY "id"` inside that `SELECT` | Prevents deadlock between multi-line orders | R5 |
+| Unique index on `idempotency_key` | Decides the winner when the prior `SELECT` is not enough | R4 |
+| `mergeQuantitiesByProduct()` | A product repeated in the payload is **one** validation, not two | R6 |
 
 ---
 
-## Precondiciones
+## Preconditions
 
-Levanta el stack y deja la base limpia:
+Bring the stack up and leave the database clean:
 
 ```bash
 docker compose up -d --build
@@ -73,21 +72,20 @@ docker compose up -d --build
 docker exec ecommerce-db psql -U postgres -d ecommerce -c "TRUNCATE TABLE order_items, orders, products, import_batches RESTART IDENTITY CASCADE;"
 ```
 
-> `order_items` y `orders` van primero a propósito: una línea de pedido referencia al producto con
-> `RESTRICT`, así que truncar `products` a solas es rechazado. Esa negativa es en sí misma el
-> comportamiento correcto — ver **R8**.
+> `order_items` and `orders` come first on purpose: an order line references its product with
+> `RESTRICT`, so truncating `products` on its own is refused. That refusal is itself the correct
+> behaviour — see **R8**.
 
-Luego importa `docs/csv/LoanPro Code Challenge E-Commerce.csv` desde **Product → Import CSV** para
-tener 85 productos.
+Then import `docs/csv/LoanPro Code Challenge E-Commerce.csv` from **Product → Import CSV** to get
+85 products.
 
-### El helper que usan todos los casos
+### The helper every case uses
 
-**El payload de `POST /orders` cambió: los ejemplos antiguos ya no sirven.** Hoy el DTO exige que
-`idempotencyKey` sea un **UUID** y que venga una `shippingAddress` completa. Una clave como
-`race-buyer-a` devuelve `400`, no `409` — eso sería la validación haciendo su trabajo, no la
-carrera fallando.
+**The `POST /orders` payload changed: older examples no longer work.** The DTO now requires
+`idempotencyKey` to be a **UUID** and a complete `shippingAddress`. A key like `race-buyer-a`
+returns `400`, not `409` — that would be validation doing its job, not the race failing.
 
-Pega esto una sola vez en tu terminal:
+Paste this once into your terminal:
 
 ```bash
 API=http://localhost:4000/api/v1
@@ -104,22 +102,22 @@ order() {
 buy() { curl -s -o "/tmp/$1.json" -w "$1: %{http_code}\n" -X POST "$API/orders" -H 'Content-Type: application/json' -d "$2"; }
 ```
 
-> Si tu shell no trae `uuidgen`, sustituye esa función por
+> If your shell has no `uuidgen`, replace that function with
 > `uuid() { python -c "import uuid;print(uuid.uuid4())"; }`.
 
-Y esta consulta, que vas a repetir mucho:
+And this query, which you will repeat often:
 
 ```bash
-estado() { $DB -c "SELECT o.status, o.total_amount, o.decline_reason, i.sku, i.quantity FROM orders o JOIN order_items i ON i.order_id = o.id ORDER BY o.\"createdAt\" DESC LIMIT 10;"; }
+state() { $DB -c "SELECT o.status, o.total_amount, o.decline_reason, i.sku, i.quantity FROM orders o JOIN order_items i ON i.order_id = o.id ORDER BY o.\"createdAt\" DESC LIMIT 10;"; }
 ```
 
 ---
 
-## R1 · Dos compradores, una sola unidad
+## R1 · Two buyers, one single unit
 
-**El caso por el que existe todo el diseño de bloqueo.**
+**The case the whole locking design exists for.**
 
-### Pasos
+### Steps
 
 ```bash
 setstock RS-050 1
@@ -127,15 +125,15 @@ ID=$(pid RS-050)
 buy A "$(order "$ID" 1)" & buy B "$(order "$ID" 1)" & wait
 ```
 
-### Resultado esperado
+### Expected result
 
 ```
-  A: 201        (o al reves — cual gana es indiferente)
+  A: 201        (or the other way round — which one wins does not matter)
   B: 409
 ```
 
-- [ ] Exactamente **un `201` y un `409`**. Nunca dos `201`.
-- [ ] El cuerpo del `409` nombra el SKU y reporta `available: 0` (`cat /tmp/B.json`):
+- [ ] Exactly **one `201` and one `409`**. Never two `201`s.
+- [ ] The `409` body names the SKU and reports `available: 0` (`cat /tmp/B.json`):
 
 ```json
 { "statusCode": 409, "error": "INSUFFICIENT_STOCK",
@@ -143,24 +141,24 @@ buy A "$(order "$ID" 1)" & buy B "$(order "$ID" 1)" & wait
   "sku": "RS-050", "requested": 1, "available": 0 }
 ```
 
-- [ ] El stock final es **0**, jamás `-1`:
+- [ ] Final stock is **0**, never `-1`:
 
 ```bash
 $DB -c "SELECT sku, stock FROM products WHERE sku = 'RS-050';"
 ```
 
-- [ ] Existe **una sola** orden `PAID`, con una sola línea.
+- [ ] There is **exactly one** `PAID` order, with a single line.
 
-> Si ambas hubieran devuelto `201`, el catálogo habría vendido una unidad que no tenía. Perder el
-> sorteo con un `409` es correcto; dos `201` es un pasivo contable.
+> If both had returned `201`, the catalog would have sold a unit it did not have. Losing the draw
+> with a `409` is correct; two `201`s is an accounting liability.
 
 ---
 
-## R2 · Diez compradores, diez unidades
+## R2 · Ten buyers, ten units
 
-Que el candado funcione no puede significar que sobre-rechace. Si hay stock para todos, todos pasan.
+A lock that works must not over-reject. If there is stock for everyone, everyone gets through.
 
-### Pasos
+### Steps
 
 ```bash
 setstock RS-050 10
@@ -168,40 +166,40 @@ ID=$(pid RS-050)
 for i in $(seq 1 10); do buy "n$i" "$(order "$ID" 1)" & done; wait
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] **Cero `409`**. El `FOR UPDATE` serializa, no descarta.
-- [ ] Es esperable ver **uno o dos `402`**: el pagador falso declina ~1 de cada 10. Eso también es
-      correcto. Lo que debe cuadrar siempre es la suma:
+- [ ] **Zero `409`s.** `FOR UPDATE` serialises, it does not discard.
+- [ ] Seeing **one or two `402`s** is expected: the fake payer declines ~1 in 10. That is correct
+      too. What must always add up is:
 
 ```
-  stock_final + ordenes_PAID = 10        <-- siempre
-  las ordenes FAILED no mueven stock     <-- nunca
+  final_stock + PAID_orders = 10        <-- always
+  FAILED orders move no stock           <-- never
 ```
 
-- [ ] **Ninguna orden queda en `PENDING`.** Esta es la comprobación silenciosa más valiosa del caso:
+- [ ] **No order is left in `PENDING`.** This is the most valuable quiet check in the case:
 
 ```bash
-$DB -c "SELECT count(*) AS pendientes FROM orders WHERE status = 'PENDING';"
+$DB -c "SELECT count(*) AS pending FROM orders WHERE status = 'PENDING';"
 ```
 
 ```
-  pendientes
- ------------
-           0
+  pending
+ ---------
+        0
 ```
 
-> `PENDING` solo existe *dentro* de la transacción: se inserta y se promueve a `PAID` antes del
-> commit, y si el cobro declina el rollback se la lleva. Una fila `PENDING` sobreviviente
-> significaría una transacción muerta a medias, que es justo lo que este diseño impide.
+> `PENDING` exists only *inside* the transaction: it is inserted and promoted to `PAID` before the
+> commit, and if the charge declines the rollback takes it away. A surviving `PENDING` row would
+> mean a half-dead transaction, which is exactly what this design prevents.
 
 ---
 
-## R3 · Diez compradores, tres unidades
+## R3 · Ten buyers, three units
 
-El reparto bajo escasez.
+Rationing under scarcity.
 
-### Pasos
+### Steps
 
 ```bash
 setstock RS-050 3
@@ -209,13 +207,13 @@ ID=$(pid RS-050)
 for i in $(seq 1 10); do buy "s$i" "$(order "$ID" 1)" & done; wait
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] **Como máximo tres `201`**; el resto `409` (menos los `402` que caigan por azar).
-- [ ] Stock final ≥ 0, y siempre igual a `3 - (número de 201)`.
-- [ ] **Ningún `500`.** Un `500` aquí sería un interbloqueo o un timeout escapándose sin traducir.
+- [ ] **At most three `201`s**; the rest `409` (minus any `402`s that fall by chance).
+- [ ] Final stock ≥ 0, and always equal to `3 - (number of 201s)`.
+- [ ] **No `500`.** A `500` here would be a deadlock or a timeout escaping untranslated.
 
-Cuenta los desenlaces de un vistazo:
+Count the outcomes at a glance:
 
 ```bash
 grep -ho '"statusCode":[0-9]*' /tmp/s*.json | sort | uniq -c
@@ -223,13 +221,13 @@ grep -ho '"statusCode":[0-9]*' /tmp/s*.json | sort | uniq -c
 
 ---
 
-## R4 · La misma clave de idempotencia, en paralelo
+## R4 · The same idempotency key, in parallel
 
-Enviarla dos veces **en serie** es fácil: el `SELECT` previo encuentra la orden. Enviarla dos veces
-**a la vez** es otra cosa: los dos `SELECT` fallan y ambas transacciones intentan insertar. Quien
-decide entonces es el índice único, no el código.
+Sending it twice **in sequence** is easy: the prior `SELECT` finds the order. Sending it twice **at
+once** is another matter: both `SELECT`s miss and both transactions try to insert. What decides
+then is the unique index, not the code.
 
-### Pasos
+### Steps
 
 ```bash
 setstock RS-050 20
@@ -238,24 +236,25 @@ KEY=$(uuid)
 buy K1 "$(order "$ID" 2 "$KEY")" & buy K2 "$(order "$ID" 2 "$KEY")" & wait
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] Un `201` y un `200`. **El `200` no es un error**: es la orden que ya existía, devuelta tal cual.
-- [ ] Nunca dos `201`, y nunca un `500` por violación de unicidad sin traducir.
-- [ ] Existe **una sola** fila para esa clave:
+- [ ] One `201` and one `200`. **The `200` is not an error**: it is the order that already existed,
+      returned as it is.
+- [ ] Never two `201`s, and never a `500` from an untranslated unique violation.
+- [ ] There is **exactly one** row for that key:
 
 ```bash
 $DB -c "SELECT count(*) FROM orders WHERE idempotency_key = '$KEY';"
 ```
 
-- [ ] El stock bajó **2**, no 4.
-- [ ] Los dos cuerpos traen **el mismo `id` de orden**:
+- [ ] Stock dropped by **2**, not 4.
+- [ ] Both bodies carry **the same order `id`**:
 
 ```bash
 grep -o '"id":"[^"]*"' /tmp/K1.json /tmp/K2.json | head -2
 ```
 
-### La versión en serie, como contraste
+### The sequential version, for contrast
 
 ```bash
 KEY2=$(uuid)
@@ -263,40 +262,40 @@ buy S1 "$(order "$ID" 2 "$KEY2")"
 buy S2 "$(order "$ID" 2 "$KEY2")"
 ```
 
-- [ ] `201` y luego `200`, la misma orden. Llega por el camino del `SELECT` en vez de por el índice
-      único, pero el resultado observable es idéntico — que es exactamente lo que se busca.
+- [ ] `201` and then `200`, the same order. It arrives via the `SELECT` path rather than the unique
+      index, but the observable result is identical — which is exactly the point.
 
 ---
 
-## R5 · Dos pedidos multilínea en orden inverso
+## R5 · Two multi-line orders in opposite order
 
-El interbloqueo clásico: A toma el candado de P1 y pide P2; B toma el de P2 y pide P1. Sin un orden
-común, ambos esperan para siempre y Postgres mata a uno con un error de deadlock.
+The classic deadlock: A takes the lock on P1 and asks for P2; B takes P2 and asks for P1. Without a
+common ordering, both wait forever and Postgres kills one with a deadlock error.
 
-### Pasos
+### Steps
 
 ```bash
 setstock RS-050 50
 setstock WM-042 50
 P1=$(pid RS-050); P2=$(pid WM-042)
 
-dos() {
+two() {
   printf '{"items":[{"productId":"%s","quantity":1},{"productId":"%s","quantity":1}],"idempotencyKey":"%s","paymentMethod":"card","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$1" "$2" "$(uuid)"
 }
 
 for i in $(seq 1 8); do
-  buy "ab$i" "$(dos "$P1" "$P2")" &
-  buy "ba$i" "$(dos "$P2" "$P1")" &
+  buy "ab$i" "$(two "$P1" "$P2")" &
+  buy "ba$i" "$(two "$P2" "$P1")" &
 done; wait
 ```
 
-> Si `WM-042` no está en tu catálogo, usa cualquier otro SKU con stock.
+> If `WM-042` is not in your catalog, use any other SKU with stock.
 
-### Resultado esperado
+### Expected result
 
-- [ ] **Ningún `500`.** Un deadlock de Postgres (`40P01`) llegaría como error interno.
-- [ ] Todas resuelven, con `201` o con `402` si el pagador declinó.
-- [ ] Cero deadlocks registrados por el motor:
+- [ ] **No `500`.** A Postgres deadlock (`40P01`) would arrive as an internal error.
+- [ ] All resolve, with `201` or with `402` if the payer declined.
+- [ ] Zero deadlocks recorded by the engine:
 
 ```bash
 $DB -c "SELECT deadlocks FROM pg_stat_database WHERE datname = 'ecommerce';"
@@ -308,23 +307,23 @@ $DB -c "SELECT deadlocks FROM pg_stat_database WHERE datname = 'ecommerce';"
           0
 ```
 
-- [ ] Ni una traza en el log de la API:
+- [ ] Not a single trace in the API log:
 
 ```bash
 docker logs ecommerce-api 2>&1 | grep -i deadlock | tail
 ```
 
-> El `ORDER BY "id"` en el `SELECT ... FOR UPDATE` es toda la defensa. Las dos transacciones piden
-> las mismas filas en la misma secuencia, así que una espera a la otra en vez de cruzarse con ella.
+> The `ORDER BY "id"` in the `SELECT ... FOR UPDATE` is the entire defence. Both transactions ask
+> for the same rows in the same sequence, so one waits for the other instead of crossing it.
 
 ---
 
-## R6 · El mismo producto dos veces en un payload
+## R6 · The same product twice in one payload
 
-Si cada línea se validara por separado, dos líneas de 3 unidades pasarían el chequeo contra un stock
-de 5, y el descuento dejaría el stock en `-1`.
+If each line were validated separately, two lines of 3 units would pass the check against a stock
+of 5, and the discount would leave stock at `-1`.
 
-### Pasos
+### Steps
 
 ```bash
 setstock RS-050 5
@@ -334,27 +333,28 @@ curl -s -w "\nHTTP %{http_code}\n" -X POST "$API/orders" -H 'Content-Type: appli
  -d "$(printf '{"items":[{"productId":"%s","quantity":3},{"productId":"%s","quantity":3}],"idempotencyKey":"%s","paymentMethod":"card","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$ID" "$ID" "$(uuid)")"
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] **`409`**, con `requested: 6` y `available: 5`. Las cantidades se suman **antes** de validar.
-- [ ] Stock intacto en **5**.
-- [ ] Repitiendo con `2` y `2` (total 4 ≤ 5) devuelve `201`, y la orden tiene **una sola línea** de
-      cantidad **4**, no dos líneas de 2:
+- [ ] **`409`**, with `requested: 6` and `available: 5`. Quantities are summed **before**
+      validating.
+- [ ] Stock untouched at **5**.
+- [ ] Repeating with `2` and `2` (total 4 ≤ 5) returns `201`, and the order has **one single line**
+      of quantity **4**, not two lines of 2:
 
 ```bash
-$DB -c "SELECT o.id, count(i.*) AS lineas, sum(i.quantity) AS unidades FROM orders o JOIN order_items i ON i.order_id = o.id GROUP BY o.id ORDER BY 1 DESC LIMIT 1;"
+$DB -c "SELECT o.id, count(i.*) AS lines, sum(i.quantity) AS units FROM orders o JOIN order_items i ON i.order_id = o.id GROUP BY o.id ORDER BY 1 DESC LIMIT 1;"
 ```
 
 ---
 
-## R7 · Reintentar una clave que ya declinó
+## R7 · Retrying a key that already declined
 
-Una clave tiene **un solo desenlace**. Si su cobro declinó, reproducirla vuelve a declinar; no se
-cobra por segunda vez. Reintentar de verdad significa **una clave nueva**.
+A key has **one single outcome**. If its charge declined, replaying it declines again; it is not
+charged a second time. Retrying for real means **a new key**.
 
-### Pasos
+### Steps
 
-El pagador falso rechaza ~1 de cada 10, así que dispara en bucle guardando las claves:
+The fake payer declines ~1 in 10, so fire in a loop keeping the keys:
 
 ```bash
 setstock RS-050 60
@@ -365,31 +365,31 @@ for i in $(seq 1 25); do
   CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API/orders" \
     -H 'Content-Type: application/json' -d "$(order "$ID" 1 "$K")")
   echo "$CODE $K"
-done | tee /tmp/tanda.txt
+done | tee /tmp/batch.txt
 ```
 
-Toma la clave de la primera línea `402` y reprodúcela:
+Take the key from the first `402` line and replay it:
 
 ```bash
-KFAIL=$(grep '^402' /tmp/tanda.txt | head -1 | cut -d' ' -f2)
+KFAIL=$(grep '^402' /tmp/batch.txt | head -1 | cut -d' ' -f2)
 buy REPLAY "$(order "$ID" 1 "$KFAIL")"
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] La reproducción devuelve **`402` otra vez**, nunca `201` ni `200`:
+- [ ] The replay returns **`402` again**, never `201` or `200`:
 
 ```json
 { "statusCode": 402, "error": "PAYMENT_DECLINED",
   "message": "Payment was declined: card declined by the issuer" }
 ```
 
-- [ ] Sigue existiendo **una sola** orden para esa clave, en `FAILED`, con su `decline_reason` y
-      **sin movimiento de stock**.
-- [ ] En toda la tanda se cumple:
+- [ ] There is still **exactly one** order for that key, in `FAILED`, with its `decline_reason` and
+      **no stock movement**.
+- [ ] Across the whole batch this holds:
 
 ```
-  stock_inicial - stock_final  ==  numero de 201       <-- los 402 no restan
+  initial_stock - final_stock  ==  number of 201s       <-- 402s subtract nothing
 ```
 
 ```bash
@@ -397,18 +397,18 @@ $DB -c "SELECT status, count(*) FROM orders GROUP BY status;"
 $DB -c "SELECT sku, stock FROM products WHERE sku = 'RS-050';"
 ```
 
-- [ ] La proporción ronda **1 de cada 10**. Con 25 intentos, entre 1 y 5 declives es normal; cero en
-      tres tandas seguidas sí merece una mirada.
+- [ ] The proportion is around **1 in 10**. With 25 attempts, between 1 and 5 declines is normal;
+      zero across three consecutive batches does deserve a look.
 
-> La orden `FAILED` se escribe en una **transacción aparte**, porque la que llevaba la orden fue
-> revertida y se habría llevado la evidencia con ella. Que exista el rastro sin que exista el
-> movimiento de stock es la propiedad que se comprueba aquí.
+> The `FAILED` order is written in a **separate transaction**, because the one holding the order
+> was rolled back and would have taken the evidence with it. That the trail exists while the stock
+> movement does not is the property checked here.
 
 ---
 
-## R8 · Borrar un producto mientras se está vendiendo
+## R8 · Deleting a product while it is being sold
 
-### Pasos
+### Steps
 
 ```bash
 TOKEN=$(curl -s -X POST "$API/auth/sign-in" -H 'Content-Type: application/json' \
@@ -418,37 +418,37 @@ curl -s -o /dev/null -w "DELETE: %{http_code}\n" -X DELETE "$API/products/$(pid 
   -H "Authorization: Bearer $TOKEN"
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] **`409 RESOURCE_IN_USE`** — no `500`, no `204`.
-- [ ] El producto sigue en el catálogo y la línea de pedido intacta.
-- [ ] Desde la UI (**Product → Product catalog → borrar**) el mensaje es el mismo conflicto, no una
-      pantalla de error.
+- [ ] **`409 RESOURCE_IN_USE`** — not `500`, not `204`.
+- [ ] The product is still in the catalog and the order line intact.
+- [ ] From the UI (**Product → Product catalog → delete**) the message is the same conflict, not an
+      error screen.
 
-> La clave foránea es `RESTRICT` a propósito: un pedido es un registro histórico. Cascar el borrado
-> reescribiría el pasado para ordenar el presente.
+> The foreign key is `RESTRICT` on purpose: an order is a historical record. Cascading the delete
+> would rewrite the past to tidy the present.
 
 ---
 
-## R9 · Redis caído no cancela una venta
+## R9 · Redis being down does not cancel a sale
 
-El caché del catálogo se invalida **después** del commit, y si esa invalidación falla se registra un
-warning y nada más. Una venta ya cobrada no puede deshacerse porque Redis no responda.
+The catalog cache is invalidated **after** the commit, and if that invalidation fails a warning is
+logged and nothing more. A sale already charged cannot be undone because Redis does not answer.
 
-### Pasos
+### Steps
 
 ```bash
 setstock RS-050 5
 docker stop ecommerce-redis
-buy SINREDIS "$(order "$(pid RS-050)" 1)"
+buy NOREDIS "$(order "$(pid RS-050)" 1)"
 docker start ecommerce-redis
 ```
 
-### Resultado esperado
+### Expected result
 
-- [ ] La compra devuelve **`201`** igualmente.
-- [ ] El stock bajó a 4.
-- [ ] En el log aparece el warning, no un error:
+- [ ] The purchase returns **`201`** all the same.
+- [ ] Stock dropped to 4.
+- [ ] The log shows the warning, not an error:
 
 ```bash
 docker logs ecommerce-api 2>&1 | grep -i "catalog cache" | tail -3
@@ -458,45 +458,45 @@ docker logs ecommerce-api 2>&1 | grep -i "catalog cache" | tail -3
   stock changed but the catalog cache was not cleared: ...
 ```
 
-- [ ] Con Redis de vuelta, el listado del catálogo muestra el stock correcto. El TTL del caché es de
-      **300 s**, así que en el peor caso una lista servida desde caché puede quedar hasta cinco
-      minutos desactualizada. Es deliberado: el stock que manda es el que lee la transacción con
-      `FOR UPDATE`, nunca el que muestra la lista.
+- [ ] With Redis back, the catalog listing shows the correct stock. The cache TTL is **300 s**, so
+      in the worst case a list served from cache can be up to five minutes stale. That is
+      deliberate: the stock that decides is the one the transaction reads with `FOR UPDATE`, never
+      the one the list shows.
 
 ---
 
-## R10 · Doble clic en la interfaz
+## R10 · Double click in the interface
 
-La versión de **R4** que vive donde el usuario la encuentra.
+The version of **R4** that lives where a user meets it.
 
-### Pasos
+### Steps
 
-1. Abre la tienda en `/`, agrega un producto y ve a **Cart → Billing → Payment**.
-2. Pulsa **Complete order** y, sin esperar, vuelve a pulsarlo.
+1. Open the shop at `/`, add a product and go to **Cart → Billing → Payment**.
+2. Press **Complete order** and, without waiting, press it again.
 
-### Resultado esperado
+### Expected result
 
-- [ ] El botón queda **deshabilitado** mientras la petición está en vuelo.
-- [ ] Se crea **una sola** orden: la clave se acuña al abrir el checkout, no al pulsar, así que
-      ambos clics llevan la misma.
-- [ ] El stock baja una sola vez.
-- [ ] Recargar la pantalla de confirmación no genera otro pedido.
+- [ ] The button is **disabled** while the request is in flight.
+- [ ] **One single** order is created: the key is minted when the checkout opens, not when the
+      button is pressed, so both clicks carry the same one.
+- [ ] Stock drops only once.
+- [ ] Reloading the confirmation screen does not produce another order.
 
 ---
 
-## Resultado
+## Result
 
-| # | Caso | Resultado |
+| # | Case | Result |
 |---|---|---|
-| R1 | Dos compradores, una unidad | |
-| R2 | Diez compradores, diez unidades · sin `PENDING` residual | |
-| R3 | Diez compradores, tres unidades | |
-| R4 | Misma clave en paralelo | |
-| R5 | Multilínea en orden inverso · sin deadlocks | |
-| R6 | Producto repetido en un payload | |
-| R7 | Reintento de una clave declinada | |
-| R8 | Borrar un producto vendido | |
-| R9 | Redis caído no cancela la venta | |
-| R10 | Doble clic en la interfaz | |
+| R1 | Two buyers, one unit | |
+| R2 | Ten buyers, ten units · no residual `PENDING` | |
+| R3 | Ten buyers, three units | |
+| R4 | Same key in parallel | |
+| R5 | Multi-line in opposite order · no deadlocks | |
+| R6 | Repeated product in one payload | |
+| R7 | Retrying a declined key | |
+| R8 | Deleting a sold product | |
+| R9 | Redis down does not cancel the sale | |
+| R10 | Double click in the interface | |
 
-**Notas:**
+**Notes:**
