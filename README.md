@@ -12,8 +12,77 @@ repository at [alejandrogalaz21/e-commerce](https://github.com/alejandrogalaz21/
 - Stack: NestJS 10 + TypeORM + PostgreSQL 16 + Redis · React 18 + Vite + MUI · Docker Compose
 - **596 automated tests** across four levels, plus eight manual cases with their evidence
 
-**Start here:** `docker compose up --build`, then http://localhost:3000. The shop is the front
-door and needs no account; sign in with `demo@demo.com` / `demo` to manage the catalog.
+## Run it
+
+Docker is the only requirement — no Node, no PostgreSQL and no Redis on your machine. Four steps,
+about five minutes on the first build.
+
+**1. Create the `.env`.** The stack starts without one, but then the API generates a new signing key
+at every boot and you are signed out after each rebuild:
+
+```bash
+cp .env.example .env
+```
+
+Every value below already works as it is. The one worth filling in is `JWT_SECRET`:
+
+```ini
+DB_USER=postgres
+DB_PASSWORD=changeme
+DB_NAME=ecommerce
+JWT_SECRET=            # paste 16+ characters here to keep sessions across restarts
+VITE_SERVER_URL=http://localhost:4000
+```
+
+Generate one with either of these:
+
+```bash
+openssl rand -base64 36
+node -e "console.log(require('crypto').randomBytes(36).toString('base64url'))"
+```
+
+No key is written here on purpose. A signing key committed to a public repository is a key anyone
+can use to mint an administrator token, so `.env` is git-ignored and the value stays on your
+machine. Leaving it empty is safe too — it only costs you the session on each restart.
+
+**2. Start the stack.**
+
+```bash
+docker compose up --build -d
+```
+
+Wait for the line that says the API is ready. The front waits for it as well, so the page is never
+up before the API answers:
+
+```
+Container ecommerce-api  Healthy
+```
+
+**3. Open http://localhost:3000 and sign in.** The shop itself needs no account; the dashboard does.
+
+| | |
+|---|---|
+| Email | `demo@demo.com` |
+| Password | `demo` |
+
+That login is the **only** thing the migrations seed.
+
+**4. Fill the catalog — it starts empty on purpose.** Go to *Dashboard → Product → Import CSV* and
+upload the file the challenge provided, committed here so the run is reproducible:
+
+```
+docs/csv/LoanPro Code Challenge E-Commerce.csv
+```
+
+Expect **85 created, 10 rejected, 2 skipped**. The rejections are the interesting part: the file is
+hostile on purpose and the report names every one with its line number and reason.
+
+From here, [Verifying it in five minutes](#verifying-it-in-five-minutes) walks through what to click
+to see the rest, [How to run](#how-to-run) covers the manual path and every variable, and [If
+something does not start](#if-something-does-not-start) lists what usually goes wrong — a port
+already taken being the common one.
+
+## The challenge
 
 ### What was asked, and where it is
 
@@ -33,7 +102,7 @@ document that explains how.
 | 9 | Runnable as a Docker container | [`docker-compose.yml`](docker-compose.yml) · [`api/Dockerfile`](api/Dockerfile) · [`web/Dockerfile`](web/Dockerfile) | One command, no `.env` needed — [How to run](#how-to-run) |
 | 10 | README: decisions, approach, alternatives | this file | [Key decisions](#key-decisions-summary) · [Alternatives considered](#alternatives-considered) · [What is not built](#what-is-not-built-and-why) |
 | 11 | Date the sample CSV was downloaded | top of this file: **2026-08-26** | — |
-| 12 | Instructions to run it locally | [Quick start](#quick-start) — one command, or the same four steps by hand | Docker and manual paths, both verified |
+| 12 | Instructions to run it locally | [Run it](#run-it), at the top of this file | Four steps; the manual path is in [How to run](#how-to-run) |
 | 13 | AI allowed, comments removed from the code | the source carries no comments; only lint and compiler directives remain | [How AI was used](#how-ai-was-used-and-where-the-reasoning-lives) |
 | 14 | Public GitHub repository | [alejandrogalaz21/e-commerce](https://github.com/alejandrogalaz21/e-commerce) | — |
 
@@ -44,18 +113,12 @@ document that explains how.
 
 ### Verifying it in five minutes
 
-Start the stack, open http://localhost:3000, and sign in with `demo@demo.com` / `demo`. **The
-catalog is empty on purpose** — step 1 fills it.
+With the stack running and the catalog imported — [Run it](#run-it) — these seven steps show the
+parts worth judging. Step 1 repeats the import so the sequence stands on its own.
 
-The file to upload is the one the challenge provided, committed so the run is reproducible:
-
-```
-docs/csv/LoanPro Code Challenge E-Commerce.csv
-```
-
-97 rows, and deliberately hostile in places: a `<script>` payload, an injection SKU, a duplicate
-SKU, `"free"` where a price should be, a negative stock, and two blank lines. All of that is the
-point — watch where each row lands.
+The provided file is 97 rows and deliberately hostile in places: a `<script>` payload, an injection
+SKU, a duplicate SKU, `"free"` where a price should be, a negative stock, and two blank lines. All
+of that is the point — watch where each row lands.
 
 | # | Do this | What it proves |
 |---|---|---|
@@ -88,69 +151,9 @@ five places that judgement is visible, each with something you can run:
 
 ## How to run
 
-### Quick start
-
-Docker only. No Node, no Postgres and no `.env` on your machine.
-
-```bash
-git clone https://github.com/alejandrogalaz21/e-commerce.git
-cd e-commerce
-./start.sh
-```
-
-[`start.sh`](start.sh) is a convenience, not a dependency: it writes a `.env` with a generated
-signing key the first time (so you are not signed out after each rebuild), builds, waits until the
-API reports healthy, and prints where to go. It never overwrites a `.env` you already have. On
-Windows run it from Git Bash, or follow the four steps below, which are exactly what it does.
-
-<details>
-<summary><b>The same thing by hand</b></summary>
-
-**1.** Start the stack:
-
-```bash
-docker compose up --build -d
-```
-
-**2.** Wait for the line that says the API is ready — the front waits for it too, so the page is
-never up before the API answers:
-
-```
-Container ecommerce-api  Healthy
-```
-
-**3.** Open **http://localhost:3000** and sign in with the account the migrations seed:
-
-| | |
-|---|---|
-| Email | `demo@demo.com` |
-| Password | `demo` |
-
-**4.** **The catalog is empty on purpose** — nothing is pre-seeded except that login. Fill it from
-*Dashboard → Product → Import CSV* with the file the challenge provided, committed here so the run
-is reproducible:
-
-```
-docs/csv/LoanPro Code Challenge E-Commerce.csv
-```
-
-Expect **85 created, 10 rejected, 2 skipped**: the file is hostile on purpose and the report names
-every rejection with its line and reason.
-
-</details>
-
-Either way you land on the same place: **sign in with `demo@demo.com` / `demo`, then fill the empty
-catalog** from *Dashboard → Product → Import CSV* with the file the challenge provided, committed
-here so the run is reproducible:
-
-```
-docs/csv/LoanPro Code Challenge E-Commerce.csv
-```
-
-From here, [Verifying it in five minutes](#verifying-it-in-five-minutes) walks through what to
-click to see the rest. If the stack does not come up, [If something does not
-start](#if-something-does-not-start) lists the four things that usually cause it — a taken port
-being the common one.
+This section is the reference behind [Run it](#run-it) at the top: what you need installed, the
+manual path without Docker, every configuration variable, and what to do when something refuses to
+start.
 
 ### Before you start
 
@@ -163,21 +166,9 @@ being the common one.
 
 ### With Docker (full stack)
 
-```bash
-docker compose up --build -d
-```
-
-`-d` returns the terminal to you once the stack is up, which is what you want next — the test
-suites run from the same shell. Drop it if you would rather watch the logs stream, but then
-`Ctrl+C` stops the whole stack.
-
-Either way the last lines name the four services, and the one to wait for is:
-
-```
-Container ecommerce-api  Healthy
-```
-
-The web container waits for that itself, so by the time the page loads the API is answering.
+The command is in [Run it](#run-it). `-d` returns the terminal to you once the stack is up, which is
+what you want next — the test suites run from the same shell. Drop it if you would rather watch the
+logs stream, but then `Ctrl+C` stops the whole stack.
 
 | Service | URL |
 |---|---|
@@ -197,18 +188,13 @@ docker compose down -v     # stop everything and wipe the database, for a clean 
 the project but sit behind a Compose profile so they stay out of a normal run — see
 [Inspecting the data stores](#inspecting-the-data-stores-optional).
 
-No `.env` required (everything has defaults); to override values, copy `.env.example` to `.env`.
+**Nothing is pre-seeded except the demo login.** The catalog starts empty on purpose — you create
+everything through the UI, by product CRUD or by the CSV import. Migrations run automatically at
+boot and are what create that account.
 
-One default is deliberately absent: **`JWT_SECRET` ships empty**, so the API generates a random
-signing key at boot and says so in its log. Sessions therefore end when the container restarts —
-which is loud and harmless. A placeholder committed here would be the opposite: a published signing
-key anyone could use to mint an administrator token. Set `JWT_SECRET` (16+ characters) to keep
-sessions across restarts; a known placeholder like `changeme` stops the boot on purpose.
-
-The application starts with an **empty catalog** on purpose — you create everything through the
-UI (product CRUD, or CSV import at *Dashboard → Product → Import CSV* using the challenge sample
-file). Migrations run automatically at boot and seed a single **demo login**, `demo@demo.com` /
-`demo` — the same one the [Quick start](#quick-start) uses.
+`JWT_SECRET` is the one default deliberately absent, for the reason given in [Run
+it](#run-it): a placeholder committed to this repository would be a published signing key. The
+[Configuration](#configuration) table below lists every other variable.
 
 ### What needs a session
 
