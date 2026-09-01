@@ -299,8 +299,7 @@ Two documents make this navigable rather than a wall of names:
 | [docs/testing/MATRIX.md](docs/testing/MATRIX.md) | **115 use cases**, each with its purpose, steps, expected result and the test that guards it |
 | [docs/testing/STRATEGY.md](docs/testing/STRATEGY.md) | What is tested at which level, and — more usefully — what is deliberately **not**, with the reasoning |
 
-The manual cases are written in Spanish, like the rest of `docs/`. [TC-06](docs/testing/TC-06-concurrency-and-races.md)
-is the one to read if you only read one: ten reproducible race conditions against the running stack —
+[TC-06](docs/testing/TC-06-concurrency-and-races.md) is the one to read if you only read one: ten reproducible race conditions against the running stack —
 two buyers and one unit, multi-line deadlocks, the same idempotency key fired in parallel, a declined
 charge rolling back, Redis down mid-sale.
 
@@ -558,8 +557,9 @@ lock by `id` prevents.
 | [docs/backlog.md](docs/backlog.md) | Every ticket (TK-###), its reasoning and its outcome |
 | [openspec/](openspec/) | The spec-driven workflow ([OpenSpec](https://openspec.dev/)): 23 archived changes, each proposed, designed and specified before it was built |
 
-The documents under `docs/` and `openspec/` are written in Spanish; the code, its strings and this
-readme are in English.
+Everything under `docs/` is in English, along with the code, its strings and this readme. The
+`openspec/` changes stay in Spanish: they are dated records of what was decided on the day it was
+decided, and translating a record edits it.
 
 ## Key decisions (summary)
 
