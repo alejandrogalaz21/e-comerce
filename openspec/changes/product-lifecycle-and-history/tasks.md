@@ -39,14 +39,37 @@
 
 ## 6. Tests de backend
 
-- [ ] 6.1 `products.service.spec`: filtro de estado en `findAll`, `findOne` de un retirado lanza 404, `findCategories` no cuenta retirados
+Diez aserciones existentes de `products.service.spec.ts` rompen con el filtro por defecto, y hay
+que distinguir dos tipos porque se arreglan distinto:
+
+| Líneas | Aserción | Cómo rompe |
+|---|---|---|
+| 149, 206, 238 | `expect(andWhere).not.toHaveBeenCalled()` | Falla en rojo: ahora sí se llama |
+| 200, 262, 293, 305 | `toHaveBeenCalledTimes(N)` | Falla en rojo: ahora es `N+1` |
+| **169, 186, 212** | **`andWhere.mock.calls[0]`** | **No falla por el filtro: `calls[0]` pasa a ser el estado en vez de la búsqueda, así que la aserción empieza a comprobar otra cosa** |
+
+- [ ] 6.0 Helper `whereCall(sql)` en el spec que **busca** la llamada a `andWhere` por su SQL en vez de indexarla por posición, y migrar las tres aserciones de `calls[0]`. Reindexar a mano las dejaría igual de frágiles ante el siguiente filtro
+- [ ] 6.1 `products.service.spec`: filtro de estado en `findAll` (los tres valores), `findOne` de un retirado lanza 404, `findCategories` no cuenta retirados ni devuelve categorías que se quedan en cero
 - [ ] 6.2 `products.service.spec`: `discontinue` y `restore` son idempotentes y no pierden la fecha original
-- [ ] 6.3 `products.cache.spec`: retirar y restaurar invalidan el prefijo de la caché
-- [ ] 6.4 `import.service.spec`: reimportar un SKU retirado lo reactiva y lo reporta como `updated`, no `unchanged`
-- [ ] 6.5 Nuevo `product-history.spec` **contra Postgres real**: el trigger registra alta, cambio y borrado; un `UPDATE` por SQL directo también queda registrado; un `UPDATE` que no cambia nada no escribe entrada
-- [ ] 6.6 `product-history.spec`: el historial sobrevive al borrado del producto, con la entrada del borrado como la más reciente
-- [ ] 6.7 `orders.concurrency.spec`: el caso existente de borrado con 409 sigue pasando sin tocarlo, y se añade que retirar el mismo producto **sí** funciona
-- [ ] 6.8 `route-protection.spec`: las tres rutas nuevas quedan clasificadas como protegidas
+- [ ] 6.3 `products.cache.spec`: retirar y restaurar invalidan el prefijo de la caché. El resto del archivo no se toca: afirma llamadas a la base, nunca la clave ni el SQL
+- [ ] 6.4 `import.service.spec`: reimportar un SKU retirado lo reactiva y lo reporta como `updated`, no `unchanged`. El caso existente de `unchanged` se conserva — sigue siendo cierto para un producto a la venta
+- [ ] 6.5 `orders.concurrency.spec`: el caso de borrado con `409` **no se toca**. Es la evidencia de que `DELETE` no cambió de significado; si hiciera falta tocarlo, sería la señal de que algo se rompió. Se añade aparte que retirar ese mismo producto **sí** funciona
+- [ ] 6.6 `route-protection.spec`: las tres rutas nuevas quedan clasificadas como protegidas, y su caso "no deja ningún handler sin clasificar" sigue pasando
+
+## 6b. Historial — contra Postgres real, porque un trigger no se puede mockear
+
+Un `jest.fn()` no ejecuta un `AFTER UPDATE` de Postgres. Probar el trigger con mocks solo
+demostraría que el mock devuelve lo que se le puso. Este archivo va al mismo grupo que
+`orders.concurrency.spec`: base real, se omite con un mensaje si no hay Postgres.
+
+- [ ] 6b.1 Nuevo `product-history.spec.ts`: alta, modificación y borrado producen cada uno su entrada, con la operación correcta y los campos cambiados
+- [ ] 6b.2 **Un `UPDATE` por SQL directo, sin pasar por la API, también queda registrado** — es el argumento entero de haberlo puesto en la base
+- [ ] 6b.3 **Un `UPDATE` que no cambia nada no escribe entrada** — sin el `OLD IS DISTINCT FROM NEW`, cada reimport del catálogo escribiría 85 entradas vacías
+- [ ] 6b.4 **El historial sobrevive al borrado del producto**, con la entrada del borrado como la más reciente — con una FK en `CASCADE` este caso falla, que es justo lo que debe vigilar
+- [ ] 6b.5 Un cambio llegado por el import CSV produce entrada igual que uno del CRUD
+
+> 6b.2 y 6b.4 son los guardianes de la decisión de diseño, no de la implementación: si alguien
+> mueve el historial al servicio "porque es más fácil de testear", ambos fallan.
 
 ## 7. Frontend — contratos y datos
 
