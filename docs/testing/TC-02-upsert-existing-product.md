@@ -1,87 +1,86 @@
-# TC-02 · Re-import with one modified product
+# TC-02 · Reimportación con un producto modificado
 
 | | |
 |---|---|
-| **Status** | ✅ **Passed** |
-| **Date** | 2026-08-28 |
+| **Estado** | ✅ **Aprobado** |
+| **Fecha** | 2026-08-28 |
 | **Tickets** | TK-009, TK-036, TK-039, TK-042 |
-| **File** | `LoanPro Code Challenge E-Commerce-T1.csv` — the same 97 rows, one of them edited |
+| **Archivo** | `LoanPro Code Challenge E-Commerce-T1.csv` — las mismas 97 filas, una de ellas editada |
 
-## Objective
+## Objetivo
 
-Verify the upsert path: re-importing a catalog that already exists must update only what
-actually changed, leave everything else untouched, and — crucially — make that single change
-**findable** in the interface.
+Verificar el camino del upsert: reimportar un catálogo que ya existe debe actualizar solo lo que
+realmente cambió, dejar todo lo demás intacto y — esto es lo crucial — hacer que ese único cambio
+sea **localizable** en la interfaz.
 
-This is the case that justifies the `Updated at` column. An import that updates does not
-change the catalog size, so without a way to sort by update time the change is invisible
-among 85 rows.
+Es el caso que justifica la columna `Updated at`. Una importación que actualiza no cambia el tamaño
+del catálogo, así que sin una forma de ordenar por fecha de actualización el cambio queda invisible
+entre 85 filas.
 
-## Preconditions
+## Precondiciones
 
-TC-01 completed, so the catalog holds the 85 products from the original file.
+TC-01 completado, de modo que el catálogo tiene los 85 productos del archivo original.
 
 ```
   products         85
-  RS-050 stored as:
+  RS-050 almacenado como:
     description   Budget running shoes for beginners
     price         49.99
     stock         200
-    createdAt  =  updatedAt        (never modified)
+    createdAt  =  updatedAt        (nunca modificado)
 ```
 
-## Test data
+## Datos de prueba
 
-Line 55 of the file, and only that line, was changed:
+Se cambió la línea 55 del archivo, y solo esa línea:
 
 ```diff
 - Running Shoes,RS-050,Budget running shoes for beginners,Footwear,49.99,200,0.30
 + Running Shoes,RS-050,UPDATED DESCRIPTION,Footwear,59.99,150,0.30
 ```
 
-Three of the six comparable fields differ: `description`, `price` and `stock`. `weight_kg`
-stays at `0.30`, and `name` and `category` are untouched.
+Tres de los seis campos comparables difieren: `description`, `price` y `stock`. `weight_kg` se
+mantiene en `0.30`, y `name` y `category` quedan intactos.
 
-## Steps
+## Pasos
 
-1. Upload the edited file at **Product → Import CSV**.
-2. Go to **Product → List** and search `RS-050`.
-3. Sort by **Updated at** descending.
-4. Enable **Created at** from the *Columns* menu and sort by it descending.
+1. Sube el archivo editado en **Product → Import CSV**.
+2. Ve a **Product → List** y busca `RS-050`.
+3. Ordena por **Updated at** descendente.
+4. Activa **Created at** desde el menú *Columns* y ordena por él descendente.
 
-## Expected results
+## Resultado esperado
 
-| Metric | Expected | Why |
+| Métrica | Esperado | Por qué |
 |---|---|---|
-| Total rows | 97 | the file did not change size |
-| Created | 0 | every SKU already exists |
-| **Updated** | **1** | RS-050, line 55 |
-| Unchanged | 84 | 85 minus RS-050 |
-| Rejected | 10 | the same ten as TC-01, unaffected by the edit |
-| Skipped empty | 2 | lines 62 and 63 |
+| Filas totales | 97 | el archivo no cambió de tamaño |
+| Creadas | 0 | todos los SKU ya existen |
+| **Actualizadas** | **1** | RS-050, línea 55 |
+| Sin cambios | 84 | 85 menos RS-050 |
+| Rechazadas | 10 | las mismas diez de TC-01, sin verse afectadas por la edición |
+| Vacías omitidas | 2 | líneas 62 y 63 |
 
-The report table grows from 12 rows to **13**, and the new one is amber:
+La tabla del reporte pasa de 12 filas a **13**, y la nueva es ámbar:
 
 ```
   Updated row   55   Running Shoes   RS-050   sku already exists with different data — updated
 ```
 
-The `Created rows` table must **not** render at all: it only appears when something was
-inserted.
+La tabla `Created rows` **no debe renderizarse en absoluto**: solo aparece cuando se insertó algo.
 
-## Acceptance criteria
+## Criterios de aceptación
 
 - [x] `0 + 1 + 84 + 10 + 2 = 97`
-- [x] The catalog still holds 85 products — an update does not change its size
-- [x] `RS-050` stores `59.99`, `150` and `UPDATED DESCRIPTION`
-- [x] `createdAt` is **unchanged** and `updatedAt` moved
-- [x] Sorting by `Updated at` descending puts RS-050 first
-- [x] Sorting by `Created at` descending does **not** put it first
-- [x] The updated row shows its name, unlike the rows rejected as duplicates (TK-047)
+- [x] El catálogo sigue teniendo 85 productos — una actualización no cambia su tamaño
+- [x] `RS-050` almacena `59.99`, `150` y `UPDATED DESCRIPTION`
+- [x] `createdAt` **no cambió** y `updatedAt` avanzó
+- [x] Ordenar por `Updated at` descendente pone a RS-050 primero
+- [x] Ordenar por `Created at` descendente **no** lo pone primero
+- [x] La fila actualizada muestra su nombre, a diferencia de las rechazadas por duplicado (TK-047)
 
-## Actual results
+## Resultado real
 
-Matched the expectation exactly.
+Coincidió exactamente con lo esperado.
 
 ```
   Total rows   97
@@ -95,7 +94,7 @@ Matched the expectation exactly.
   10 rejected and not saved · 1 overwrote an existing SKU · 2 blank and skipped
 ```
 
-Verified in the database:
+Verificado en la base de datos:
 
 ```sql
 select sku, description, price, stock, "createdAt" = "updatedAt" as untouched
@@ -104,23 +103,24 @@ from products where sku = 'RS-050';
  RS-050 | UPDATED DESCRIPTION | 59.99 | 150 | f
 ```
 
-`untouched = f` is the proof: the two timestamps diverged, so the row was written, and
-`createdAt` kept its original value.
+`untouched = f` es la prueba: las dos marcas de tiempo divergieron, así que la fila se escribió, y
+`createdAt` conservó su valor original.
 
-## Why this matters
+## Por qué importa
 
-The import upserts by SKU. A row that already existed is **updated, not created**, so its
-creation date never moves. Ordering the catalog by `Created at` — the only date column the
-dashboard had before TK-036 — cannot surface what an import touched.
+La importación hace upsert por SKU. Una fila que ya existía se **actualiza, no se crea**, así que
+su fecha de creación nunca se mueve. Ordenar el catálogo por `Created at` — la única columna de
+fecha que tenía el dashboard antes de TK-036 — no puede sacar a la superficie lo que tocó una
+importación.
 
 ```
-  order by Created at desc   ->  the same old products, RS-050 buried
-  order by Updated at desc   ->  RS-050 first, alone at the top
+  order by Created at desc   ->  los mismos productos viejos, RS-050 enterrado
+  order by Updated at desc   ->  RS-050 primero, solo, arriba del todo
 ```
 
-That contrast is the reason `updatedAt` was added to the API's sortable whitelist (TK-039)
-and surfaced as a column in the dashboard (TK-036).
+Ese contraste es la razón por la que se añadió `updatedAt` a la lista blanca de campos ordenables de
+la API (TK-039) y se expuso como columna en el dashboard (TK-036).
 
-## Evidence
+## Evidencia
 
-![Summary and the amber updated row](assets/tc-02-updated-row.png)
+![Resumen y la fila ámbar actualizada](assets/tc-02-updated-row.png)

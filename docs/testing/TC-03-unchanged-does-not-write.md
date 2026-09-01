@@ -1,30 +1,30 @@
-# TC-03 · `Unchanged` does not write, `Updated` does
+# TC-03 · `Unchanged` no escribe, `Updated` sí
 
 | | |
 |---|---|
-| **Status** | ✅ **Passed** |
-| **Date** | 2026-08-28 |
+| **Estado** | ✅ **Aprobado** |
+| **Fecha** | 2026-08-28 |
 | **Tickets** | TK-009, TK-036, TK-039 |
-| **Files** | `...-T1.csv` (unchanged re-import) and `...-T3.csv` (one price edited) |
+| **Archivos** | `...-T1.csv` (reimportación sin cambios) y `...-T3.csv` (un precio editado) |
 
-## Objective
+## Objetivo
 
-Prove that `Unchanged` means **the row is not written at all**, not "written with the same
-values", and that a single differing field is enough to flip it to `Updated`.
+Demostrar que `Unchanged` significa **que la fila no se escribe en absoluto**, no "se escribe con
+los mismos valores", y que un solo campo distinto basta para volcarla a `Updated`.
 
-This is a test of an **absence**: it verifies that something does *not* happen. The catalog
-size does not change in either direction, and the counters alone cannot tell the two apart —
-only the timestamp can.
+Es un test de una **ausencia**: verifica que algo *no* ocurre. El tamaño del catálogo no cambia en
+ninguna dirección, y los contadores por sí solos no pueden distinguir los dos casos — solo la marca
+de tiempo puede.
 
-## Why the guarantee is structural
+## Por qué la garantía es estructural
 
-The service's unchanged branch increments the counter and does nothing else. It never calls
-`save()`, so TypeORM's `@UpdateDateColumn` has no opportunity to fire. The timestamp is not
-rewritten with an identical value: it is not written.
+La rama de "sin cambios" del servicio incrementa el contador y no hace nada más. Nunca llama a
+`save()`, así que el `@UpdateDateColumn` de TypeORM no tiene ocasión de dispararse. La marca de
+tiempo no se reescribe con un valor idéntico: no se escribe.
 
-## Preconditions
+## Precondiciones
 
-TC-02 completed. The catalog holds 85 products and RS-050 was updated once.
+TC-02 completado. El catálogo tiene 85 productos y RS-050 fue actualizado una vez.
 
 ```
   RS-050
@@ -32,116 +32,116 @@ TC-02 completed. The catalog holds 85 products and RS-050 was updated once.
     updatedAt   2026-08-29 00:39:46.895597+00   =  X
     price       59.99
 
-  catalog   85 products, 1 with updatedAt moved
+  catalogo   85 productos, 1 con updatedAt movido
 ```
 
-## Step 1 — Re-import the exact same file
+## Paso 1 — Reimportar exactamente el mismo archivo
 
-Upload `...-T1.csv` untouched.
+Sube `...-T1.csv` sin tocarlo.
 
-### Expected
+### Esperado
 
-| Metric | Expected |
+| Métrica | Esperado |
 |---|---|
-| Created | 0 |
-| **Updated** | **0** |
-| Unchanged | 85 |
-| Rejected | 10 |
-| Skipped empty | 2 |
+| Creadas | 0 |
+| **Actualizadas** | **0** |
+| Sin cambios | 85 |
+| Rechazadas | 10 |
+| Vacías omitidas | 2 |
 
-Acceptance criteria:
+Criterios de aceptación:
 
-- [x] `RS-050.updatedAt == X` **to the microsecond**
-- [x] Products with a moved `updatedAt` stays at 1 — no collateral writes
-- [x] `max(updatedAt)` across the catalog is **earlier** than the import that just ran
+- [x] `RS-050.updatedAt == X` **al microsegundo**
+- [x] Los productos con `updatedAt` movido siguen siendo 1 — sin escrituras colaterales
+- [x] `max(updatedAt)` en todo el catálogo es **anterior** a la importación que se acaba de ejecutar
 
-### Actual
+### Real
 
 ```
-  batch 00:52:43   0 created · 0 updated · 85 unchanged · 10 rejected · 2 skipped
+  lote 00:52:43   0 creadas · 0 actualizadas · 85 sin cambios · 10 rechazadas · 2 omitidas
 
-  RS-050.updatedAt      2026-08-29 00:39:46.895597+00   identical to X
-  rows with updatedAt moved   1 of 85
-  max(updatedAt)        2026-08-29 00:39:46.895597+00   <- earlier than the 00:52 batch
+  RS-050.updatedAt      2026-08-29 00:39:46.895597+00   identico a X
+  filas con updatedAt movido   1 de 85
+  max(updatedAt)        2026-08-29 00:39:46.895597+00   <- anterior al lote de las 00:52
 ```
 
-That last line is the strongest evidence: the most recently modified product in the whole
-catalog is still older than the import that had just processed all 85 rows. Nothing was
-written — not only for RS-050.
+Esa última línea es la evidencia más fuerte: el producto modificado más recientemente de todo el
+catálogo sigue siendo más antiguo que la importación que acababa de procesar las 85 filas. No se
+escribió nada — y no solo en el caso de RS-050.
 
-## Step 2 — Change a single field
+## Paso 2 — Cambiar un único campo
 
-`...-T3.csv` differs from `...-T1.csv` in exactly one cell:
+`...-T3.csv` difiere de `...-T1.csv` en exactamente una celda:
 
 ```diff
 - Running Shoes,RS-050,UPDATED DESCRIPTION,Footwear,59.99,150,0.30
 + Running Shoes,RS-050,UPDATED DESCRIPTION,Footwear,64.99,150,0.30
 ```
 
-One of the six comparable fields. The strictest possible test of the comparator.
+Uno de los seis campos comparables. La prueba más estricta posible del comparador.
 
-### Expected
+### Esperado
 
-| Metric | Expected |
+| Métrica | Esperado |
 |---|---|
-| Created | 0 |
-| **Updated** | **1** |
-| Unchanged | 84 |
-| Rejected | 10 |
-| Skipped empty | 2 |
+| Creadas | 0 |
+| **Actualizadas** | **1** |
+| Sin cambios | 84 |
+| Rechazadas | 10 |
+| Vacías omitidas | 2 |
 
-Acceptance criteria:
+Criterios de aceptación:
 
 - [x] `RS-050.price == 64.99`
-- [x] `RS-050.updatedAt == Y` with `Y > X`
-- [x] `RS-050.createdAt` unchanged at `00:15:53.974713`
-- [x] Products with a moved `updatedAt` still 1 — the update touched one row, not many
+- [x] `RS-050.updatedAt == Y` con `Y > X`
+- [x] `RS-050.createdAt` intacto en `00:15:53.974713`
+- [x] Los productos con `updatedAt` movido siguen siendo 1 — la actualización tocó una fila, no muchas
 
-### Actual
+### Real
 
 ```
-  batch 01:01:03   0 created · 1 updated · 84 unchanged · 10 rejected · 2 skipped
+  lote 01:01:03   0 creadas · 1 actualizada · 84 sin cambios · 10 rechazadas · 2 omitidas
 
   price                 59.99  ->  64.99
-  createdAt             2026-08-29 00:15:53.974713+00   untouched
+  createdAt             2026-08-29 00:15:53.974713+00   intacto
   updatedAt             2026-08-29 01:01:03.507044+00   Y > X
-  rows with updatedAt moved   1 of 85
-  max(updatedAt)        2026-08-29 01:01:03.507044+00   <- later than the import
+  filas con updatedAt movido   1 de 85
+  max(updatedAt)        2026-08-29 01:01:03.507044+00   <- posterior a la importacion
 ```
 
-## The full sequence
+## La secuencia completa
 
-The four imports read as one continuous argument:
+Las cuatro importaciones se leen como un solo argumento continuo:
 
 ```
-  00:15:53   85 created                 RS-050.updatedAt = 00:15:53   born
-  00:39:46    1 updated,  84 unchanged  RS-050.updatedAt = 00:39:46   X   moved
-  00:52:43    0 updated,  85 unchanged  RS-050.updatedAt = 00:39:46   X   NOT moved
-  01:01:03    1 updated,  84 unchanged  RS-050.updatedAt = 01:01:03   Y   moved
+  00:15:53   85 creadas                RS-050.updatedAt = 00:15:53   nace
+  00:39:46    1 actualizada, 84 iguales RS-050.updatedAt = 00:39:46   X   se movio
+  00:52:43    0 actualizadas, 85 iguales RS-050.updatedAt = 00:39:46   X   NO se movio
+  01:01:03    1 actualizada, 84 iguales RS-050.updatedAt = 01:01:03   Y   se movio
 ```
 
-The third batch is the heart of the case: 85 rows evaluated, zero writes. The fourth
-provides the contrast — the same file except for one field, and the timestamp advances.
+El tercer lote es el corazón del caso: 85 filas evaluadas, cero escrituras. El cuarto aporta el
+contraste — el mismo archivo salvo por un campo, y la marca de tiempo avanza.
 
-`max(updatedAt)` tells the same story without ambiguity:
+`max(updatedAt)` cuenta la misma historia sin ambigüedad:
 
-| After batch | `max(updatedAt)` | Reading |
+| Tras el lote | `max(updatedAt)` | Lectura |
 |---|---|---|
-| 00:52 (all unchanged) | 00:39:46 | **earlier** than the import — nothing was written |
-| 01:01 (one updated) | 01:01:03 | **later** than the import — exactly one row was written |
+| 00:52 (todas sin cambios) | 00:39:46 | **anterior** a la importación — no se escribió nada |
+| 01:01 (una actualizada) | 01:01:03 | **posterior** a la importación — se escribió exactamente una fila |
 
-## Why this matters
+## Por qué importa
 
-Without this case, `Unchanged` could be silently rewriting every row with identical values
-and the counters would look the same. That would be invisible in the UI, would burn write
-throughput on every re-import, and would destroy the meaning of `updatedAt` — the column
-TK-036 added specifically so an administrator can find what an import touched.
+Sin este caso, `Unchanged` podría estar reescribiendo silenciosamente cada fila con valores
+idénticos y los contadores se verían igual. Eso sería invisible en la UI, quemaría capacidad de
+escritura en cada reimportación y destruiría el significado de `updatedAt` — la columna que TK-036
+añadió precisamente para que un administrador encuentre lo que tocó una importación.
 
-The test also protects a second property: nothing is written *collaterally*. Throughout all
-four imports, exactly one product ever had `createdAt <> updatedAt`.
+El caso protege además una segunda propiedad: que nada se escriba *colateralmente*. A lo largo de
+las cuatro importaciones, exactamente un producto tuvo alguna vez `createdAt <> updatedAt`.
 
-## Evidence
+## Evidencia
 
-![Step 2 summary and the amber updated row](assets/tc-03-updated-again.png)
+![Resumen del paso 2 y la fila ámbar actualizada](assets/tc-03-updated-again.png)
 
-![RS-050 in the product list with both dates](assets/tc-03-product-row.png)
+![RS-050 en el listado de productos con ambas fechas](assets/tc-03-product-row.png)

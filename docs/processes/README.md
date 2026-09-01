@@ -4,8 +4,8 @@ One document per process the challenge asks for. Each traces a single flow end t
 steps, every file it touches, every validation applied and where, and what happens when each one
 fails — so any step can be checked against the code rather than taken on trust.
 
-> Written in English, like the root `README.md` and `docs/testing/`, because it doubles as review
-> material. `docs/initial.md` and `openspec/` stay in Spanish.
+> Written in English, like the root `README.md`, because it doubles as review material.
+> `docs/testing/`, `docs/initial.md` and `openspec/` are in Spanish.
 
 ## The processes
 

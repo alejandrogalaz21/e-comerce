@@ -130,8 +130,13 @@ Two documents make this navigable rather than a wall of names:
 
 | Document | What it gives you |
 |---|---|
-| [docs/testing/MATRIX.md](docs/testing/MATRIX.md) | **76 use cases**, each with its purpose, steps, expected result and the test that guards it |
+| [docs/testing/MATRIX.md](docs/testing/MATRIX.md) | **99 use cases**, each with its purpose, steps, expected result and the test that guards it |
 | [docs/testing/STRATEGY.md](docs/testing/STRATEGY.md) | What is tested at which level, and — more usefully — what is deliberately **not**, with the reasoning |
+
+The manual cases are written in Spanish, like the rest of `docs/`. [TC-06](docs/testing/TC-06-concurrency-and-races.md)
+is the one to read if you only read one: ten reproducible race conditions against the running stack —
+two buyers and one unit, multi-line deadlocks, the same idempotency key fired in parallel, a declined
+charge rolling back, Redis down mid-sale.
 
 **Storybook** — interactive catalog of the reusable components (not a test suite, but useful for
 visual review):
@@ -319,7 +324,7 @@ travels in the `POST` response.
 |---|---|
 | [docs/processes/](docs/processes/) | One document per system process — flow diagram, every file involved, every validation and where it lives, failure modes, and commands to verify each claim |
 | [docs/testing/MATRIX.md](docs/testing/MATRIX.md) | Every use case with purpose, steps and expected result |
-| [docs/testing/](docs/testing/) | Manual test cases run against the stack, with their evidence |
+| [docs/testing/](docs/testing/) | Eight manual test cases run against the stack, with their evidence — import, purchase, concurrency, auth and dependency degradation |
 | [docs/initial.md](docs/initial.md) | Full design spec: row-by-row CSV analysis, architecture, data model, import flow, stock concurrency, security, scope |
 | [docs/02-analisis-base.md](docs/02-analisis-base.md) | Analysis of the base templates (api/web): what was reused, adapted and removed |
 | `openspec/` | Spec-driven workflow ([OpenSpec](https://openspec.dev/)): every feature is proposed, specified and archived as a decision record |
