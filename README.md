@@ -1,4 +1,4 @@
-# LoanPro Code Challenge — E-Commerce
+# Code Challenge — E-Commerce
 
 Enterprise-grade e-commerce: a public storefront, product CRUD, CSV import, search, and a purchase
 flow with a faked payment.
