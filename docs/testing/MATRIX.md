@@ -128,6 +128,8 @@ Proceso completo: [P-04](../processes/P-04-order-placement.md) · Ejecuciones ma
 | P-04.19 | La dirección de envío es obligatoria y no admite HTML | Pedido sin `shippingAddress`, y luego con `<script>` en `name` | `400` en ambos. Registrar un pedido que nadie puede entregar es peor que rechazarlo | ✅ `create-order.dto.spec.ts` |
 | P-04.20 | Un rango de fechas invertido se rechaza en vez de devolver vacío | `GET /orders?dateFrom=2026-08-31&dateTo=2026-08-01` | `400`. Una lista vacía sería indistinguible de "no hay pedidos en ese rango" | ✅ `orders.service.spec.ts` · [TC-05](TC-05-purchase-flow.md) check 8 |
 | P-04.21 | Un pedido se busca por lo que contiene, no solo por su id | `GET /orders?q=RS-050` con token | Devuelve los pedidos cuyas **líneas** llevan ese SKU. Un pedido no tiene cliente, así que eso es lo que lo identifica | ✅ `orders.service.spec.ts` |
+| P-04.22 | El correo de contacto es obligatorio y debe ser un correo | Pedido sin `shippingAddress.email`, y luego con `"email":"ada"` | `400` en ambos. Un contacto inválido es indistinguible de no tener contacto el día que hace falta usarlo | ✅ `create-order.dto.spec.ts` |
+| P-04.23 | Un pedido se busca por sus datos de entrega | `GET /orders?q=hermosillo` y `?q=example.org` con token | Devuelve los pedidos que se entregan en esa ciudad y los de ese dominio de correo. Un fragmento basta | ✅ `orders.filters.spec.ts` |
 
 ---
 

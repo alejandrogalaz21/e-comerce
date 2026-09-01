@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   ArrayNotEmpty,
   IsArray,
+  IsEmail,
   IsInt,
   IsNotEmpty,
   IsObject,
@@ -38,6 +39,16 @@ export class ShippingAddressDto {
   @Length(1, 30)
   @NoHtml()
   phone: string
+
+  // No @NoHtml(): @IsEmail() already rejects anything that is not an address,
+  // markup included.
+  @ApiProperty({ example: 'ada@example.com', maxLength: 255 })
+  @Transform(({ value }) => trimText(value))
+  @IsString()
+  @IsNotEmpty()
+  @Length(1, 255)
+  @IsEmail()
+  email: string
 
   @ApiProperty({ example: '1 Test Street', maxLength: 255 })
   @Transform(({ value }) => trimText(value))

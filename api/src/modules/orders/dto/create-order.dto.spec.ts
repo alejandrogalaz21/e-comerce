@@ -8,6 +8,7 @@ const VALID_KEY = '3f7b1c92-5d2e-4c8a-b1f0-6a9e2d4c8b31'
 const ADDRESS = {
   name: 'Ada Lovelace',
   phone: '+14155552671',
+  email: 'ada@example.com',
   address: '1 Test Street',
   city: 'Springfield',
   state: 'IL',
@@ -82,6 +83,33 @@ describe('CreateOrderDto', () => {
       expect(
         await messagesFor({ shippingAddress: { ...ADDRESS, city: '   ' } })
       ).toContain('city')
+    })
+  })
+
+  describe('contact email', () => {
+    it('refuses a delivery with no email to write to', async () => {
+      const { email, ...withoutEmail } = ADDRESS
+
+      expect(
+        await messagesFor({ shippingAddress: withoutEmail })
+      ).toContain('email')
+    })
+
+    it.each(['ada', 'ada@', '@example.com', 'ada example.com'])(
+      'refuses %s, which nobody can be reached at',
+      async value => {
+        expect(
+          await messagesFor({ shippingAddress: { ...ADDRESS, email: value } })
+        ).toContain('email')
+      }
+    )
+
+    it('trims the address before storing it', () => {
+      const dto = build({
+        shippingAddress: { ...ADDRESS, email: '  ada@example.com  ' }
+      })
+
+      expect(dto.shippingAddress.email).toBe('ada@example.com')
     })
   })
 })

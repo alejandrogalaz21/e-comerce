@@ -35,6 +35,7 @@ function toShippingAddress(purchase: ApiPurchase): IShippingAddress | null {
   return {
     name: purchase.shipName,
     phone: purchase.shipPhone ?? '',
+    email: purchase.shipEmail ?? '',
     address: purchase.shipAddress ?? '',
     city: purchase.shipCity ?? '',
     state: purchase.shipState ?? '',

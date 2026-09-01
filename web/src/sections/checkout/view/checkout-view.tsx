@@ -4,7 +4,8 @@ import Container from '@mui/material/Container';
 import Grid from '@mui/material/Unstable_Grid2';
 import Typography from '@mui/material/Typography';
 
-import { downloadReceipt } from '../receipt';
+import { downloadReceipt } from 'src/sections/purchase/receipt';
+
 import { CheckoutCart } from '../checkout-cart';
 import { useCheckoutContext } from '../context';
 import { CheckoutPayment } from '../checkout-payment';

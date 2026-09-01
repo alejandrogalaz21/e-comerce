@@ -1,6 +1,9 @@
+import { useState, useCallback } from 'react';
+
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Unstable_Grid2';
+import LoadingButton from '@mui/lab/LoadingButton';
 import LinearProgress from '@mui/material/LinearProgress';
 
 import { paths } from 'src/routes/paths';
@@ -8,11 +11,13 @@ import { RouterLink } from 'src/routes/components';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
+import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { shortId } from '../purchase-utils';
+import { downloadReceipt } from '../receipt';
 import { useGetPurchase } from '../hooks/use-purchase';
 import {
   PurchaseDetailsItems,
@@ -27,6 +32,25 @@ type Props = {
 
 export function PurchaseDetailsView({ id }: Props) {
   const { purchase, purchaseLoading, purchaseError } = useGetPurchase(id);
+
+  // The PDF generator is loaded on demand, so between the click and the file
+  // there is a chunk to download and a document to render: without this the
+  // button would look inert for seconds.
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = useCallback(async () => {
+    if (!purchase) return;
+
+    setDownloading(true);
+
+    try {
+      await downloadReceipt(purchase);
+    } catch {
+      toast.error('The receipt could not be generated');
+    } finally {
+      setDownloading(false);
+    }
+  }, [purchase]);
 
   if (purchaseLoading) {
     return (
@@ -69,6 +93,16 @@ export function PurchaseDetailsView({ id }: Props) {
           { name: 'Orders', href: paths.dashboard.order.root },
           { name: shortId(purchase.id) },
         ]}
+        action={
+          <LoadingButton
+            variant="contained"
+            loading={downloading}
+            onClick={handleDownload}
+            startIcon={<Iconify icon="eva:cloud-download-fill" />}
+          >
+            Download PDF
+          </LoadingButton>
+        }
         sx={{ mb: { xs: 3, md: 5 } }}
       />
 

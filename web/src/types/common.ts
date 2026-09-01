@@ -15,6 +15,7 @@ export type IAddressItem = {
   /** One line, for display. The API is given the parts below instead. */
   fullAddress: string;
   phoneNumber?: string;
+  email?: string;
   addressType?: string;
   street?: string;
   city?: string;

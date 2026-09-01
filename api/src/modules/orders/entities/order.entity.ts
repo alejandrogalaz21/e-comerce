@@ -72,6 +72,10 @@ export class Order {
   @Column('varchar', { name: 'ship_phone', length: 30, nullable: true })
   shipPhone: string | null
 
+  @ApiProperty({ example: 'ada@example.com', nullable: true, required: false })
+  @Column('varchar', { name: 'ship_email', length: 255, nullable: true })
+  shipEmail: string | null
+
   @ApiProperty({ example: '1 Test Street', nullable: true, required: false })
   @Column('varchar', { name: 'ship_address', length: 255, nullable: true })
   shipAddress: string | null

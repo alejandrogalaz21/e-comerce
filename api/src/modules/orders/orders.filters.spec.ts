@@ -28,6 +28,7 @@ const PREFIX = 'FILTER-TEST-'
 const SHIPPING = {
   name: 'Ada Lovelace',
   phone: '+14155552671',
+  email: 'ada@example.com',
   address: '1 Test Street',
   city: 'Springfield',
   state: 'IL',
@@ -216,6 +217,58 @@ describe('Filtering orders against a real database', () => {
 
     expect(mine(byName).map(order => order.shipName)).toEqual(['Grace Hopper'])
     expect(mine(byPhone).map(order => order.shipName)).toEqual(['Ada Lovelace'])
+  })
+
+  /**
+   * The delivery details are what a person actually remembers about an order:
+   * an email they were written from, or the city it goes to.
+   */
+  maybe('finds an order by its contact email or its city', async () => {
+    const source = dataSource as DataSource
+    const service = serviceFor(source)
+    const productId = await seedProduct(source, 'CONTACT', 'Contact Product')
+
+    await service.create({
+      items: [{ productId, quantity: 1 }],
+      idempotencyKey: `${PREFIX}springfield`,
+      shippingAddress: SHIPPING
+    })
+    await service.create({
+      items: [{ productId, quantity: 1 }],
+      idempotencyKey: `${PREFIX}hermosillo`,
+      shippingAddress: {
+        ...SHIPPING,
+        name: 'Grace Hopper',
+        email: 'grace@example.org',
+        city: 'Hermosillo'
+      }
+    })
+
+    const byEmail = await service.findAll({
+      page: 1,
+      limit: 20,
+      q: 'grace@example.org'
+    })
+    const byEmailFragment = await service.findAll({
+      page: 1,
+      limit: 20,
+      q: 'example.org'
+    })
+    const byCity = await service.findAll({ page: 1, limit: 20, q: 'hermosillo' })
+    const byNothing = await service.findAll({
+      page: 1,
+      limit: 20,
+      q: 'no order carries this text'
+    })
+
+    expect(mine(byEmail).map(order => order.shipEmail)).toEqual([
+      'grace@example.org'
+    ])
+    expect(mine(byEmailFragment).map(order => order.shipEmail)).toEqual([
+      'grace@example.org'
+    ])
+    expect(mine(byCity).map(order => order.shipCity)).toEqual(['Hermosillo'])
+    expect(mine(byNothing)).toHaveLength(0)
   })
 
   /**

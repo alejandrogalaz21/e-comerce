@@ -1,18 +1,17 @@
-import type { IShippingAddress } from 'src/types/purchase';
-
-import Box from '@mui/material/Box';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 type Props = {
-  address: IShippingAddress | null;
+  value: string;
 };
 
 /**
- * Who the order ships to, which is what a person searching for it actually
- * remembers. Orders placed before deliveries were recorded have no address.
+ * A delivery detail as the order recorded it. Orders placed before deliveries
+ * were recorded have none, and the dash says so rather than leaving a cell that
+ * reads as a failed load.
  */
-export function PurchaseCustomer({ address }: Props) {
-  if (!address) {
+export function PurchaseText({ value }: Props) {
+  if (!value) {
     return (
       <Typography variant="body2" sx={{ color: 'text.disabled' }}>
         —
@@ -21,15 +20,10 @@ export function PurchaseCustomer({ address }: Props) {
   }
 
   return (
-    <Box sx={{ minWidth: 0 }}>
+    <Tooltip title={value}>
       <Typography variant="body2" noWrap>
-        {address.name}
+        {value}
       </Typography>
-      {address.phone && (
-        <Typography variant="caption" noWrap sx={{ display: 'block', color: 'text.secondary' }}>
-          {address.phone}
-        </Typography>
-      )}
-    </Box>
+    </Tooltip>
   );
 }

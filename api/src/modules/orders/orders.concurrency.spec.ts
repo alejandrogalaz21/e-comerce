@@ -12,6 +12,7 @@ import { OrdersService } from './orders.service'
 const SHIPPING = {
   name: 'Ada Lovelace',
   phone: '+14155552671',
+  email: 'ada@example.com',
   address: '1 Test Street',
   city: 'Springfield',
   state: 'IL',

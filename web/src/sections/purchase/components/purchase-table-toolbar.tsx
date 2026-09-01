@@ -45,7 +45,7 @@ export function PurchaseTableToolbar({ state, totalResults, onApply, onReset }: 
           onKeyDown={(event) => {
             if (event.key === 'Enter') onApply({ q: term.trim() });
           }}
-          placeholder="Order id, name, phone, SKU or product, then Enter..."
+          placeholder="Order id, delivery details, SKU or product, then Enter..."
           inputProps={{ 'aria-label': 'Search orders' }}
           sx={{ width: { xs: 1, md: 320 } }}
           InputProps={{

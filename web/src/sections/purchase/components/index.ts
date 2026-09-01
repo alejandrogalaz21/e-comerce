@@ -2,6 +2,10 @@ export * from './purchase-id';
 
 export * from './copyable-value';
 
+export * from './purchase-phone';
+
+export * from './purchase-address';
+
 export * from './purchase-customer';
 
 export * from './purchase-status-label';

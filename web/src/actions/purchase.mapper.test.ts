@@ -23,6 +23,7 @@ const apiPurchase = {
   items: [apiItem],
   shipName: 'Ada Lovelace',
   shipPhone: '+14155552671',
+  shipEmail: 'ada@example.com',
   shipAddress: '1 Test Street',
   shipCity: 'Springfield',
   shipState: 'IL',
@@ -65,6 +66,7 @@ describe('toPurchase', () => {
     expect(toPurchase(apiPurchase).shippingAddress).toEqual({
       name: 'Ada Lovelace',
       phone: '+14155552671',
+      email: 'ada@example.com',
       address: '1 Test Street',
       city: 'Springfield',
       state: 'IL',
@@ -79,6 +81,17 @@ describe('toPurchase', () => {
    */
   it('reports no address for an order placed before they were recorded', () => {
     expect(toPurchase({ ...apiPurchase, shipName: null }).shippingAddress).toBeNull();
+  });
+
+  /**
+   * The email arrived later than the address, so an order can have one and not
+   * the other. Its absence must not take the rest of the delivery down with it.
+   */
+  it('keeps the address of an order placed before the email was asked for', () => {
+    expect(toPurchase({ ...apiPurchase, shipEmail: null }).shippingAddress).toMatchObject({
+      name: 'Ada Lovelace',
+      email: '',
+    });
   });
 });
 

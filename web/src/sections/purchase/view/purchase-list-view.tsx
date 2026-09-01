@@ -31,7 +31,9 @@ import { usePurchaseParams } from '../hooks/use-purchase-params';
 import { toPurchaseQuery, hasInvertedRange, hasPurchaseFilters } from '../purchase-params';
 import {
   PurchaseId,
-  PurchaseCustomer,
+  PurchaseText,
+  PurchasePhone,
+  PurchaseAddress,
   PurchaseStatusLabel,
   PurchaseTableToolbar,
 } from '../components';
@@ -73,10 +75,36 @@ export function PurchaseListView() {
         field: 'customer',
         headerName: 'Customer',
         flex: 1,
-        minWidth: 200,
+        minWidth: 160,
         sortable: false,
         valueGetter: (_value, row) => row.shippingAddress?.name ?? '',
-        renderCell: (params) => <PurchaseCustomer address={params.row.shippingAddress} />,
+        renderCell: (params) => <PurchaseText value={params.row.shippingAddress?.name ?? ''} />,
+      },
+      {
+        field: 'phone',
+        headerName: 'Phone',
+        width: 180,
+        sortable: false,
+        valueGetter: (_value, row) => row.shippingAddress?.phone ?? '',
+        renderCell: (params) => <PurchasePhone phone={params.row.shippingAddress?.phone ?? ''} />,
+      },
+      {
+        field: 'email',
+        headerName: 'Email',
+        flex: 1,
+        minWidth: 180,
+        sortable: false,
+        valueGetter: (_value, row) => row.shippingAddress?.email ?? '',
+        renderCell: (params) => <PurchaseText value={params.row.shippingAddress?.email ?? ''} />,
+      },
+      {
+        field: 'address',
+        headerName: 'Address',
+        flex: 1.4,
+        minWidth: 220,
+        sortable: false,
+        valueGetter: (_value, row) => row.shippingAddress?.address ?? '',
+        renderCell: (params) => <PurchaseAddress address={params.row.shippingAddress} />,
       },
       {
         field: 'createdAt',
@@ -97,7 +125,7 @@ export function PurchaseListView() {
       {
         field: 'total',
         headerName: 'Total',
-        width: 120,
+        width: 110,
         sortable: false,
         align: 'right',
         headerAlign: 'right',

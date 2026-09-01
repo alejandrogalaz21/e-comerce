@@ -25,6 +25,10 @@ export const NewAddressSchema = zod.object({
   address: zod.string().min(1, { message: 'Address is required!' }),
   zipCode: zod.string().min(1, { message: 'Zip code is required!' }),
   phoneNumber: schemaHelper.phoneNumber({ isValidPhoneNumber }),
+  email: zod
+    .string()
+    .min(1, { message: 'Email is required!' })
+    .email({ message: 'Email must be a valid address!' }),
   country: schemaHelper.objectOrNull<string | null>({
     message: { required_error: 'Country is required!' },
   }),
@@ -47,6 +51,7 @@ export function AddressNewForm({ open, onClose, onCreate }: Props) {
     address: '',
     zipCode: '',
     country: '',
+    email: '',
     primary: true,
     phoneNumber: '',
     addressType: 'Home',
@@ -68,6 +73,7 @@ export function AddressNewForm({ open, onClose, onCreate }: Props) {
       onCreate({
         name: data.name,
         phoneNumber: data.phoneNumber,
+        email: data.email,
         fullAddress: `${data.address}, ${data.city}, ${data.state}, ${data.country}, ${data.zipCode}`,
         addressType: data.addressType,
         primary: data.primary,
@@ -110,6 +116,8 @@ export function AddressNewForm({ open, onClose, onCreate }: Props) {
 
               <Field.Phone name="phoneNumber" label="Phone number" />
             </Box>
+
+            <Field.Text name="email" label="Email" />
 
             <Field.Text name="address" label="Address" />
 

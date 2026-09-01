@@ -41,7 +41,8 @@ Los tres campos son **obligatorios**, y dos de ellos suelen sorprender:
 | `items[].productId` | UUID de un producto existente | `400` o `404` |
 | `items[].quantity` | entero ≥ 1 | `400` |
 | `idempotencyKey` | **UUID**, acuñado al abrir el checkout | `400` — una clave como `pedido-42` es adivinable, y reproducirla devuelve la dirección de envío ajena |
-| `shippingAddress` | objeto con los **siete** campos, sin HTML | `400` |
+| `shippingAddress` | objeto con los **ocho** campos (los siete de la dirección más `email`), sin HTML | `400` |
+| `shippingAddress.email` | correo válido: es el único contacto escrito que queda de la compra | `400` — un correo mal formado se rechaza igual que uno ausente |
 
 Un `price` o un `total` en el cuerpo **no son parte del contrato** y la validación los rechaza — ver
 check 3.
@@ -56,7 +57,7 @@ uuid() { uuidgen | tr 'A-Z' 'a-z'; }
 pid() { $DB -t -A -c "SELECT id FROM products WHERE sku = '$1';"; }
 
 order() {
-  printf '{"items":[{"productId":"%s","quantity":%s}],"idempotencyKey":"%s","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$1" "${2:-1}" "${3:-$(uuid)}"
+  printf '{"items":[{"productId":"%s","quantity":%s}],"idempotencyKey":"%s","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$1" "${2:-1}" "${3:-$(uuid)}"
 }
 ```
 
@@ -114,7 +115,7 @@ El navegador nunca fija un precio, y esto lo demuestra.
 ID=$(pid RS-050)
 
 curl -s -w "\nHTTP %{http_code}\n" -X POST "$API/orders" -H 'Content-Type: application/json' \
- -d "$(printf '{"items":[{"productId":"%s","quantity":1,"price":"0.01"}],"total":"0.01","idempotencyKey":"%s","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$ID" "$(uuid)")"
+ -d "$(printf '{"items":[{"productId":"%s","quantity":1,"price":"0.01"}],"total":"0.01","idempotencyKey":"%s","shippingAddress":{"name":"Ada Lovelace","phone":"+14155552671","email":"ada@example.com","address":"1 Test Street","city":"Springfield","state":"IL","zipCode":"62701","country":"United States"}}' "$ID" "$(uuid)")"
 ```
 
 ### Resultado esperado
@@ -285,6 +286,21 @@ Intenta borrar, desde **Product → Product catalog**, un producto que aparece e
 
 > La clave foránea es `RESTRICT` a propósito: un pedido es un registro histórico, y cascar el
 > borrado reescribiría el pasado para ordenar el catálogo.
+
+---
+
+## Resultado esperado
+
+- [ ] El carrito avisa cuántos productos cambiaron desde que se agregaron.
+- [ ] El primero muestra el precio anterior **tachado** junto al vigente, y el subtotal usa el vigente.
+- [ ] El segundo baja su cantidad a lo que queda en stock, diciendo que se ajustó.
+- [ ] El tercero muestra el nombre nuevo y una nota de con qué nombre se agregó, **sin** alarma:
+      no cambia lo que se paga.
+- [ ] El cuarto se marca **no disponible** y "Check out" queda deshabilitado hasta quitarlo.
+- [ ] El total del paso de pago coincide con el `totalAmount` del pedido registrado.
+
+> Renombrar y reprecio a la vez es exactamente lo que hace un import CSV: hace upsert por SKU, así
+> que un archivo nuevo puede mover el catálogo entero bajo carritos ya abiertos.
 
 ---
 

@@ -95,7 +95,8 @@ export class OrdersController {
     name: 'q',
     required: false,
     example: 'PRJ-001',
-    description: 'Order id prefix, or a SKU or product name among its lines'
+    description:
+      'Order id prefix, any delivery detail (recipient name, phone, email, address, city, state, zip code, country), or a SKU or product name among its lines'
   })
   @ApiQuery({
     name: 'status',

@@ -83,6 +83,7 @@ export function CheckoutPayment() {
         shippingAddress: {
           name: billing.name,
           phone: billing.phoneNumber ?? '',
+          email: billing.email ?? '',
           address: billing.street ?? billing.fullAddress,
           city: billing.city ?? '',
           state: billing.state ?? '',

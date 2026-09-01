@@ -203,13 +203,19 @@ export class OrdersService {
       const term = filters.q.trim()
 
       // An order is looked up by whatever the person at the counter has at hand:
-      // its id, who it ships to, or what it contains. EXISTS rather than a join:
-      // joining the lines would multiply the order by them and break the count
-      // that drives pagination.
+      // its id, where it goes, how to reach whoever receives it, or what it
+      // contains. EXISTS rather than a join: joining the lines would multiply
+      // the order by them and break the count that drives pagination.
       query.andWhere(
         `(o.id::text ILIKE :prefix
           OR o.ship_name ILIKE :contains
           OR o.ship_phone ILIKE :contains
+          OR o.ship_email ILIKE :contains
+          OR o.ship_address ILIKE :contains
+          OR o.ship_city ILIKE :contains
+          OR o.ship_state ILIKE :contains
+          OR o.ship_zip_code ILIKE :contains
+          OR o.ship_country ILIKE :contains
           OR EXISTS (
             SELECT 1 FROM order_items i
             WHERE i.order_id = o.id
@@ -374,6 +380,7 @@ function toShippingColumns(address: ShippingAddressDto) {
   return {
     shipName: address.name,
     shipPhone: address.phone,
+    shipEmail: address.email,
     shipAddress: address.address,
     shipCity: address.city,
     shipState: address.state,

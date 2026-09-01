@@ -18,6 +18,8 @@ export type ApiPurchaseItem = {
 export type IShippingAddress = {
   name: string;
   phone: string;
+  /** Empty on orders placed before the checkout asked for it. */
+  email: string;
   address: string;
   city: string;
   state: string;
@@ -36,6 +38,7 @@ export type ApiPurchase = {
   items: ApiPurchaseItem[];
   shipName: string | null;
   shipPhone: string | null;
+  shipEmail: string | null;
   shipAddress: string | null;
   shipCity: string | null;
   shipState: string | null;

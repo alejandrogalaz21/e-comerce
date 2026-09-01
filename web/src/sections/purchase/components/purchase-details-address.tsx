@@ -5,6 +5,8 @@ import Stack from '@mui/material/Stack';
 import CardHeader from '@mui/material/CardHeader';
 import Typography from '@mui/material/Typography';
 
+import { PurchasePhone } from './purchase-phone';
+
 type Props = {
   address: IShippingAddress | null;
 };
@@ -25,11 +27,16 @@ export function PurchaseDetailsAddress({ address }: Props) {
                 .join(', ')}
             </Typography>
 
-            {address.phone && (
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {address.phone}
-              </Typography>
-            )}
+            {address.phone && <PurchasePhone phone={address.phone} />}
+
+            {/* Orders placed before the checkout asked for it have none, and
+                saying so beats a missing line that reads as a layout slip. */}
+            <Typography
+              variant="body2"
+              sx={{ color: address.email ? 'text.secondary' : 'text.disabled' }}
+            >
+              {address.email || 'No contact email was recorded for this order.'}
+            </Typography>
           </>
         ) : (
           // Saying so beats an empty block, which reads as a failed load.
