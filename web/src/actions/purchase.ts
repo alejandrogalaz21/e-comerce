@@ -28,13 +28,23 @@ export class PlacePurchaseError extends Error {
 
   readonly conflict?: IStockConflict;
 
-  constructor(kind: IPurchaseErrorKind, message: string, conflict?: IStockConflict) {
+  readonly missingProductId?: string;
+
+  constructor(
+    kind: IPurchaseErrorKind,
+    message: string,
+    conflict?: IStockConflict,
+    missingProductId?: string
+  ) {
     super(message);
     this.name = 'PlacePurchaseError';
     this.kind = kind;
     this.conflict = conflict;
+    this.missingProductId = missingProductId;
   }
 }
+
+const MISSING_PRODUCT = /Product ([0-9a-f-]{36}) not found/i;
 
 export async function placePurchase(payload: IPlacePurchasePayload): Promise<IPurchase> {
   try {
@@ -86,6 +96,20 @@ export function toPlacePurchaseError(error: unknown): PlacePurchaseError {
         available: body.available as number,
         message: body.message as string,
       }
+    );
+  }
+
+  // A product that vanished between the cart being checked and the order being
+  // sent. The API names it by id; the caller knows that id as a line of the cart,
+  // which is what lets the failure point at a product instead of at the order.
+  if (body.statusCode === 404) {
+    const id = MISSING_PRODUCT.exec(body.message ?? '')?.[1];
+
+    return new PlacePurchaseError(
+      'missing',
+      body.message ?? 'One of the products is no longer available',
+      undefined,
+      id
     );
   }
 

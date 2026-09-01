@@ -19,6 +19,9 @@ import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 
 import { useCheckoutContext } from 'src/sections/checkout/context';
+import { isPurchasable } from 'src/sections/checkout/cart-reconcile';
+import { useCartRevalidation } from 'src/sections/checkout/hooks/use-cart-revalidation';
+import { CartLineChanges, CartChangeNotice } from 'src/sections/checkout/cart-change-notice';
 
 /**
  * Lives in the header rather than inside the shop view, so the cart does not
@@ -30,7 +33,13 @@ export function MiniCart() {
 
   const checkout = useCheckoutContext();
 
+  // Only while the drawer is open: a cart nobody is looking at has no decision
+  // to inform, and polling the catalog behind the header would be noise.
+  const { unverified } = useCartRevalidation(open.value);
+
   const empty = !checkout.items.length;
+
+  const blocked = checkout.items.some((item) => !isPurchasable(item));
 
   return (
     <>
@@ -69,6 +78,8 @@ export function MiniCart() {
           <>
             <Scrollbar sx={{ flexGrow: 1 }}>
               <Stack spacing={2} sx={{ p: 2.5 }}>
+                <CartChangeNotice items={checkout.items} unverified={unverified} />
+
                 {checkout.items.map((item) => (
                   <Stack key={item.id} direction="row" spacing={2} alignItems="flex-start">
                     <Box sx={{ flexGrow: 1, minWidth: 0 }}>
@@ -78,6 +89,8 @@ export function MiniCart() {
                       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                         {`${item.quantity} × ${fCurrency(item.price)}`}
                       </Typography>
+
+                      <CartLineChanges item={item} />
                     </Box>
 
                     <Typography variant="subtitle2">
@@ -102,6 +115,7 @@ export function MiniCart() {
                 variant="contained"
                 component={RouterLink}
                 href={paths.product.checkout}
+                disabled={blocked}
                 onClick={open.onFalse}
               >
                 Check out

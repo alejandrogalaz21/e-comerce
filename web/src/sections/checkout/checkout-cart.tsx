@@ -13,17 +13,33 @@ import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
 
 import { useCheckoutContext } from './context';
+import { isPurchasable } from './cart-reconcile';
 import { CheckoutSummary } from './checkout-summary';
+import { CartChangeNotice } from './cart-change-notice';
+import { useCartRevalidation } from './hooks/use-cart-revalidation';
 import { CheckoutCartProductList } from './checkout-cart-product-list';
 
 export function CheckoutCart() {
   const checkout = useCheckoutContext();
 
+  // The catalog may have moved while the cart waited, and this is the last place
+  // the visitor reads prices before committing to them.
+  const { unverified } = useCartRevalidation();
+
   const empty = !checkout.items.length;
+
+  const blocked = checkout.items.some((item) => !isPurchasable(item));
+
+  const handleContinue = () => {
+    checkout.onClearCartChanges();
+    checkout.onNextStep();
+  };
 
   return (
     <Grid container spacing={3}>
       <Grid xs={12} md={8}>
+        <CartChangeNotice items={checkout.items} unverified={unverified} />
+
         <Card sx={{ mb: 3 }}>
           <CardHeader
             title={
@@ -73,8 +89,8 @@ export function CheckoutCart() {
           size="large"
           type="submit"
           variant="contained"
-          disabled={empty}
-          onClick={checkout.onNextStep}
+          disabled={empty || blocked}
+          onClick={handleContinue}
         >
           Check out
         </Button>

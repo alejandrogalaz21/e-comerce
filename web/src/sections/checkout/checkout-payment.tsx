@@ -18,8 +18,11 @@ import { Iconify } from 'src/components/iconify';
 import { usePlacePurchase } from 'src/sections/purchase/hooks/use-purchase';
 
 import { useCheckoutContext } from './context';
+import { isPurchasable } from './cart-reconcile';
 import { CheckoutSummary } from './checkout-summary';
+import { CartChangeNotice } from './cart-change-notice';
 import { CheckoutBillingInfo } from './checkout-billing-info';
+import { useCartRevalidation } from './hooks/use-cart-revalidation';
 import { CheckoutPaymentMethods } from './checkout-payment-methods';
 
 const PAYMENT_OPTIONS: ICheckoutPaymentOption[] = [
@@ -47,7 +50,13 @@ export function CheckoutPayment() {
 
   const placePurchase = usePlacePurchase();
 
+  // The last moment the visitor can react: whatever moved in the catalog since
+  // the cart step is shown here, before the charge.
+  const { unverified } = useCartRevalidation();
+
   const [failure, setFailure] = useState<PlacePurchaseError | null>(null);
+
+  const blocked = checkout.items.some((item) => !isPurchasable(item));
 
   const defaultValues = { payment: '' };
 
@@ -93,6 +102,7 @@ export function CheckoutPayment() {
       });
 
       checkout.onPurchasePlaced(purchase);
+      checkout.onClearCartChanges();
       checkout.onNextStep();
     } catch (error) {
       const placeError = error as PlacePurchaseError;
@@ -110,8 +120,14 @@ export function CheckoutPayment() {
     <Form methods={methods} onSubmit={onSubmit}>
       <Grid container spacing={3}>
         <Grid xs={12} md={8}>
+          <CartChangeNotice items={checkout.items} unverified={unverified} />
+
           {failure && (
-            <PurchaseFailure failure={failure} onEditCart={() => checkout.onGotoStep(0)} />
+            <PurchaseFailure
+              failure={failure}
+              missingName={nameOf(checkout.items, failure.missingProductId)}
+              onEditCart={() => checkout.onGotoStep(0)}
+            />
           )}
 
           <CheckoutPaymentMethods options={PAYMENT_OPTIONS} sx={{ mb: 3 }} />
@@ -142,7 +158,11 @@ export function CheckoutPayment() {
             variant="contained"
             loading={isSubmitting || placePurchase.isPending}
             disabled={
-              isSubmitting || placePurchase.isPending || !checkout.items.length || !checkout.billing
+              isSubmitting ||
+              placePurchase.isPending ||
+              !checkout.items.length ||
+              !checkout.billing ||
+              blocked
             }
           >
             Complete order
@@ -153,16 +173,42 @@ export function CheckoutPayment() {
   );
 }
 
+/** The API names the product it could not find by id; the cart knows what it was called. */
+function nameOf(items: { id: string; name: string }[], productId?: string): string | undefined {
+  return items.find((item) => item.id === productId)?.name;
+}
+
 type FailureProps = {
   failure: PlacePurchaseError;
+  missingName?: string;
   onEditCart: () => void;
 };
 
 /**
- * Three outcomes that need three answers: fix the cart, try the charge again,
- * or try the request again. A single generic error would hide which one applies.
+ * Four outcomes that need four answers: drop a product that no longer exists, fix
+ * a quantity, try the charge again, or try the request again. A single generic
+ * error would hide which one applies.
  */
-function PurchaseFailure({ failure, onEditCart }: FailureProps) {
+function PurchaseFailure({ failure, missingName, onEditCart }: FailureProps) {
+  if (failure.kind === 'missing') {
+    return (
+      <Alert
+        severity="warning"
+        sx={{ mb: 3 }}
+        action={
+          <Button color="inherit" size="small" onClick={onEditCart}>
+            Edit cart
+          </Button>
+        }
+      >
+        <AlertTitle>A product is no longer available</AlertTitle>
+        {missingName
+          ? `${missingName} was removed from the catalog. Take it out of the cart to continue.`
+          : 'One of the products in your cart was removed from the catalog. Take it out to continue.'}
+      </Alert>
+    );
+  }
+
   if (failure.kind === 'stock') {
     const { conflict } = failure;
 

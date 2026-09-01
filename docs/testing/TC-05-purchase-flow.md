@@ -289,7 +289,22 @@ Intenta borrar, desde **Product → Product catalog**, un producto que aparece e
 
 ---
 
-## Resultado esperado
+## 10 · El carrito se contrasta con el catálogo antes de cobrar
+
+El carrito vive en el navegador y guarda el precio y el stock del momento en que se agregó cada
+producto. Como el importe lo decide el servidor desde el catálogo, un carrito sin revalidar muestra
+un total distinto del que se cobra.
+
+### Pasos
+
+1. Desde la tienda, agrega **tres** productos al carrito.
+2. En **Product → Product catalog**, sobre esos productos: cambia el **precio** del primero, baja el
+   **stock** del segundo por debajo de la cantidad que llevas, y **renombra** el tercero.
+3. Vuelve a la tienda y abre el carrito de la cabecera.
+4. Avanza al checkout y llega al paso de pago.
+5. Borra del catálogo un cuarto producto que también esté en el carrito, y vuelve al carrito.
+
+### Resultado esperado
 
 - [ ] El carrito avisa cuántos productos cambiaron desde que se agregaron.
 - [ ] El primero muestra el precio anterior **tachado** junto al vigente, y el subtotal usa el vigente.
@@ -317,5 +332,6 @@ Intenta borrar, desde **Product → Product catalog**, un producto que aparece e
 | 7 · Stock insuficiente, dicho de forma útil | |
 | 8 · Leer pedidos exige sesión · filtros | |
 | 9 · Un producto vendido no se borra | |
+| 10 · El carrito se contrasta con el catálogo | |
 
 **Notas:**

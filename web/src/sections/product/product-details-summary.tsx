@@ -39,7 +39,7 @@ export function ProductDetailsSummary({
 }: Props) {
   const router = useRouter();
 
-  const { id, name, price, stock, category, description } = product;
+  const { id, sku, name, price, stock, category, description } = product;
 
   const [quantity, setQuantity] = useState(stock < 1 ? 0 : 1);
 
@@ -52,6 +52,7 @@ export function ProductDetailsSummary({
   const buildCartItem = useCallback(
     (): ICheckoutItem => ({
       id,
+      sku,
       name,
       price,
       stock,
@@ -59,7 +60,7 @@ export function ProductDetailsSummary({
       coverUrl: PLACEHOLDER_IMAGE,
       subtotal: price * quantity,
     }),
-    [id, name, price, stock, quantity]
+    [id, sku, name, price, stock, quantity]
   );
 
   const handleAddCart = useCallback(() => {

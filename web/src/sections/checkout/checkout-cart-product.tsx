@@ -12,6 +12,7 @@ import { fCurrency } from 'src/utils/format-number';
 
 import { Iconify } from 'src/components/iconify';
 
+import { CartLineChanges } from './cart-change-notice';
 import { IncrementerButton } from '../product/components/incrementer-button';
 
 type Props = {
@@ -33,9 +34,13 @@ export function CheckoutCartProduct({ row, onDelete, onDecrease, onIncrease }: P
             sx={{ width: 64, height: 64 }}
           />
 
-          <Typography noWrap variant="subtitle2" sx={{ maxWidth: 240 }}>
-            {row.name}
-          </Typography>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography noWrap variant="subtitle2" sx={{ maxWidth: 240 }}>
+              {row.name}
+            </Typography>
+
+            <CartLineChanges item={row} />
+          </Box>
         </Stack>
       </TableCell>
 
@@ -48,7 +53,7 @@ export function CheckoutCartProduct({ row, onDelete, onDecrease, onIncrease }: P
             onDecrease={onDecrease}
             onIncrease={onIncrease}
             disabledDecrease={row.quantity <= 1}
-            disabledIncrease={row.quantity >= row.stock}
+            disabledIncrease={row.unavailable || row.quantity >= row.stock}
           />
 
           <Typography variant="caption" component="div" sx={{ color: 'text.secondary', mt: 1 }}>

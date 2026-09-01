@@ -28,7 +28,7 @@ type Props = {
 export function ProductItem({ product }: Props) {
   const checkout = useCheckoutContext();
 
-  const { id, name, price, stock, category } = product;
+  const { id, sku, name, price, stock, category } = product;
 
   const linkTo = paths.product.details(id);
 
@@ -38,6 +38,7 @@ export function ProductItem({ product }: Props) {
     try {
       checkout.onAddToCart({
         id,
+        sku,
         name,
         price,
         stock,

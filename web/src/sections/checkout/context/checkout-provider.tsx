@@ -15,6 +15,7 @@ import { SplashScreen } from 'src/components/loading-screen';
 
 import { CHECKOUT_STEPS } from '../checkout-steps';
 import { keepOrMintKey, shouldMintKey } from '../idempotency-key';
+import { isPurchasable, hasCartDifference, clearCartDifferences } from '../cart-reconcile';
 
 export const CheckoutContext = createContext<CheckoutContextValue | undefined>(undefined);
 
@@ -59,12 +60,16 @@ function Container({ children }: Props) {
   const completed = activeStep === CHECKOUT_STEPS.length;
 
   const updateTotalField = useCallback(() => {
-    const totalItems: number = state.items.reduce(
+    // A line the catalog no longer has cannot be bought, so counting it would
+    // promise a total the order could never register.
+    const buyable = state.items.filter(isPurchasable);
+
+    const totalItems: number = buyable.reduce(
       (total: number, item: ICheckoutItem) => total + item.quantity,
       0
     );
 
-    const subtotal: number = state.items.reduce(
+    const subtotal: number = buyable.reduce(
       (total: number, item: ICheckoutItem) => total + item.quantity * item.price,
       0
     );
@@ -186,6 +191,13 @@ function Container({ children }: Props) {
     [setField, state.items]
   );
 
+  /** Once the visitor has seen what changed and continues, the marks are done. */
+  const onClearCartChanges = useCallback(() => {
+    if (!state.items.some(hasCartDifference)) return;
+
+    setField('items', clearCartDifferences(state.items));
+  }, [setField, state.items]);
+
   const onCreateBilling = useCallback(
     (address: IAddressItem) => {
       setField('billing', address);
@@ -219,6 +231,7 @@ function Container({ children }: Props) {
       onIncreaseQuantity,
       onDecreaseQuantity,
       //
+      onClearCartChanges,
       onCreateBilling,
       //
       onPurchasePlaced,
@@ -249,6 +262,7 @@ function Container({ children }: Props) {
       onCreateBilling,
       onDecreaseQuantity,
       onIncreaseQuantity,
+      onClearCartChanges,
     ]
   );
 

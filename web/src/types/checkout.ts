@@ -9,6 +9,20 @@ export type ICheckoutItem = {
   stock: number;
   coverUrl?: string;
   subtotal?: number;
+  /**
+   * A line is identified by an id nobody reads and by a name the catalog can
+   * change under it. Optional because carts stored before this existed have none:
+   * the first revalidation fills it in.
+   */
+  sku?: string;
+  /** What the line cost when it was added, kept while the difference is worth showing. */
+  addedPrice?: number;
+  /** What the product was called when it was added. */
+  addedName?: string;
+  /** The quantity the visitor had chosen before the stock forced it down. */
+  adjustedFrom?: number;
+  /** The product is no longer in the catalog, so this line cannot be bought. */
+  unavailable?: boolean;
 };
 
 export type ICheckoutPaymentOption = {
@@ -54,6 +68,9 @@ export type CheckoutContextValue = ICheckoutState & {
   onBackStep: () => void;
   onNextStep: () => void;
   onGotoStep: (step: number) => void;
+  //
+  /** Drops the "this changed" marks once the visitor has seen them and continues. */
+  onClearCartChanges: () => void;
   //
   onCreateBilling: (billing: IAddressItem) => void;
   //

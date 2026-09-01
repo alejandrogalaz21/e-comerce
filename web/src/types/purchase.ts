@@ -92,10 +92,12 @@ export type IStockConflict = {
   message: string;
 };
 
-export type IPurchaseErrorKind = 'stock' | 'payment' | 'unknown';
+export type IPurchaseErrorKind = 'stock' | 'payment' | 'missing' | 'unknown';
 
 export type IPlacePurchaseError = {
   kind: IPurchaseErrorKind;
   message: string;
   conflict?: IStockConflict;
+  /** The product the API could not find, when the failure points at one line. */
+  missingProductId?: string;
 };
