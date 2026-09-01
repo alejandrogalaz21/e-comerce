@@ -100,8 +100,20 @@ five places that judgement is visible, each with something you can run:
 ### With Docker (full stack)
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
+
+`-d` returns the terminal to you once the stack is up, which is what you want next — the test
+suites run from the same shell. Drop it if you would rather watch the logs stream, but then
+`Ctrl+C` stops the whole stack.
+
+Either way the last lines name the four services, and the one to wait for is:
+
+```
+Container ecommerce-api  Healthy
+```
+
+The web container waits for that itself, so by the time the page loads the API is answering.
 
 | Service | URL |
 |---|---|
@@ -110,15 +122,16 @@ docker compose up --build
 | Swagger | http://localhost:4000/api/v1/docs |
 | PostgreSQL | localhost:5432 (user `postgres`, password `changeme`, db `ecommerce`) |
 
-Wait for `ecommerce-api  Healthy` in the output — the web container waits for it, so when the page
-loads the API is already answering.
-
 ```bash
 docker compose ps          # what is up, and whether it is healthy
 docker compose logs -f api # follow the API log
 docker compose down        # stop everything, keep the data
 docker compose down -v     # stop everything and wipe the database, for a clean run
 ```
+
+**Four services start by default: `db`, `redis`, `api`, `web`.** Two database consoles ship with
+the project but sit behind a Compose profile so they stay out of a normal run — see
+[Inspecting the data stores](#inspecting-the-data-stores-optional).
 
 No `.env` required (everything has defaults); to override values, copy `.env.example` to `.env`.
 
@@ -209,11 +222,22 @@ The ones worth knowing:
 
 ### Inspecting the data stores (optional)
 
-Two web consoles ship with the stack behind the `devtools` profile, so `docker compose up -d`
-still starts only the four application services. Ask for them explicitly:
+Two web consoles ship with the project, behind the `devtools` Compose profile. **A profiled
+service is skipped unless its profile is named**, which is why `docker compose up -d` starts four
+containers and not six — that is deliberate, not a failure. Diagnostics with full read/write
+access to the data should not be part of running the app.
+
+Ask for them explicitly:
 
 ```bash
 docker compose --profile devtools up -d
+```
+
+That brings up the four application services **and** the two consoles. To stop everything
+afterwards, name the profile again, or the consoles are left running:
+
+```bash
+docker compose --profile devtools down
 ```
 
 | Console | URL | Connects to | Credentials |
