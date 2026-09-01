@@ -13,7 +13,7 @@ import { RouterLink } from 'src/routes/components';
 import { fCurrency } from 'src/utils/format-number';
 
 import { Iconify } from 'src/components/iconify';
-import { CategoryIcon } from 'src/components/logo/CategoryIcons';
+import { CategoryIcon } from 'src/components/category-icon';
 
 import { useCheckoutContext } from '../checkout/context';
 

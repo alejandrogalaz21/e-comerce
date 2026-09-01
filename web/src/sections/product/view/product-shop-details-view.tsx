@@ -12,7 +12,7 @@ import { RouterLink } from 'src/routes/components';
 
 import { Iconify } from 'src/components/iconify';
 import { EmptyContent } from 'src/components/empty-content';
-import { CategoryIcon } from 'src/components/logo/CategoryIcons';
+import { CategoryIcon } from 'src/components/category-icon';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { CartIcon } from '../components/cart-icon';

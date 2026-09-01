@@ -1,34 +1,14 @@
-/**
- * CodeChange — Category icons (Neon Glass) + brand logo.
- *
- * Self-contained React SVG components. No deps, no external assets.
- *
- *   import { CategoryIcon, Logo, CATEGORY_KEYS } from './CategoryIcons';
- *
- *   <CategoryIcon category={product.category} size={72} />   // falls back to "unknown"
- *   <Logo size={40} />
- *
- * Each icon renders a 64x64 viewBox: dark glass tile + colored glow + line glyph.
- */
-
 import type { SVGProps, ReactElement, CSSProperties } from 'react';
 
 import React, { useId } from 'react';
 
-/**
- * Stroke and accent-fill props the frame injects into every glyph. `ref` is left
- * out on purpose: the same object is spread onto paths, circles and rects, and a
- * ref typed for one of them cannot be assigned to the others.
- */
 type GlyphProps = Omit<SVGProps<SVGElement>, 'ref'>;
 
 type Glyph = (stroke: GlyphProps, accentFill: GlyphProps) => ReactElement;
 
-export type CategoryIconKey = keyof typeof CATEGORY_COLORS;
+type CategoryIconKey = keyof typeof CATEGORY_COLORS;
 
-/* ------------------------------------------------------------------ palette */
-
-export const CATEGORY_COLORS = {
+const CATEGORY_COLORS = {
   footwear: '#fb923c',
   food_beverage: '#fbbf24',
   electronics: '#60a5fa',
@@ -50,17 +30,15 @@ export const CATEGORY_COLORS = {
   unknown: '#cbd5e1',
 };
 
-export const TILE_BG = '#0d1420';
-
-/* -------------------------------------------------------------------- glyphs
- * Drawn in a 48x48 box, translated to sit centered inside the 64x64 tile.
- * `s` = stroke props, `f` = accent fill props (both injected by the frame).
- */
+const TILE_BG = '#0d1420';
 
 const GLYPHS: Record<CategoryIconKey, Glyph> = {
   footwear: (s, f) => (
     <>
-      <path {...s} d="M6 33h6c1.5 0 2.5-.6 3.8-1.7l6-5.1c1.6-1.4 3.4-2.2 5.6-2.2h9.6c3 0 5.4 1.9 6 4.8l.5 2.2" />
+      <path
+        {...s}
+        d="M6 33h6c1.5 0 2.5-.6 3.8-1.7l6-5.1c1.6-1.4 3.4-2.2 5.6-2.2h9.6c3 0 5.4 1.9 6 4.8l.5 2.2"
+      />
       <path {...s} {...f} d="M6 33v3c0 1.1.9 2 2 2h32c1.1 0 2-.9 2-2v-2H6z" />
       <path {...s} d="M18 26l2 5M25 24l2 5M32 24l1.6 5" />
     </>
@@ -77,7 +55,10 @@ const GLYPHS: Record<CategoryIconKey, Glyph> = {
     <>
       <rect {...s} {...f} x="14" y="14" width="20" height="20" rx="3" />
       <rect {...s} x="20" y="20" width="8" height="8" rx="1.5" />
-      <path {...s} d="M19 8v6M24 8v6M29 8v6M19 34v6M24 34v6M29 34v6M8 19h6M8 24h6M8 29h6M34 19h6M34 24h6M34 29h6" />
+      <path
+        {...s}
+        d="M19 8v6M24 8v6M29 8v6M19 34v6M24 34v6M29 34v6M8 19h6M8 24h6M8 29h6M34 19h6M34 24h6M34 29h6"
+      />
     </>
   ),
   accessories: (s, f) => (
@@ -130,7 +111,11 @@ const GLYPHS: Record<CategoryIconKey, Glyph> = {
   ),
   books: (s, f) => (
     <>
-      <path {...s} {...f} d="M24 14c-3-2.2-8-3.2-14-3.2V35c6 0 11 1 14 3.2 3-2.2 8-3.2 14-3.2V10.8c-6 0-11 1-14 3.2z" />
+      <path
+        {...s}
+        {...f}
+        d="M24 14c-3-2.2-8-3.2-14-3.2V35c6 0 11 1 14 3.2 3-2.2 8-3.2 14-3.2V10.8c-6 0-11 1-14 3.2z"
+      />
       <path {...s} d="M24 14v24.2" />
       <path {...s} d="M15 19h4M15 24h4M29 19h4M29 24h4" />
     </>
@@ -152,7 +137,11 @@ const GLYPHS: Record<CategoryIconKey, Glyph> = {
   ),
   games: (s, f) => (
     <>
-      <path {...s} {...f} d="M17 17h14c5 0 9 3.5 10 9l1 6c.6 3.5-1.6 6-4.6 6-2 0-3.4-1-4.6-2.6L31 33H17l-1.8 2.4C14 37 12.6 38 10.6 38 7.6 38 5.4 35.5 6 32l1-6c1-5.5 5-9 10-9z" />
+      <path
+        {...s}
+        {...f}
+        d="M17 17h14c5 0 9 3.5 10 9l1 6c.6 3.5-1.6 6-4.6 6-2 0-3.4-1-4.6-2.6L31 33H17l-1.8 2.4C14 37 12.6 38 10.6 38 7.6 38 5.4 35.5 6 32l1-6c1-5.5 5-9 10-9z"
+      />
       <path {...s} d="M14 24v6M11 27h6" />
       <circle cx="32" cy="25" r="1.8" fill={s.stroke} />
       <circle cx="36.5" cy="29" r="1.8" fill={s.stroke} />
@@ -173,12 +162,19 @@ const GLYPHS: Record<CategoryIconKey, Glyph> = {
       <rect {...s} {...f} x="8" y="19" width="32" height="21" rx="2.5" />
       <path {...s} d="M6.5 19h35v7h-35z" />
       <path {...s} d="M24 19v21" />
-      <path {...s} d="M24 19c-1-6-5.5-9.5-8.5-6.5S18 19 24 19zM24 19c1-6 5.5-9.5 8.5-6.5S30 19 24 19z" />
+      <path
+        {...s}
+        d="M24 19c-1-6-5.5-9.5-8.5-6.5S18 19 24 19zM24 19c1-6 5.5-9.5 8.5-6.5S30 19 24 19z"
+      />
     </>
   ),
   pets: (s, f) => (
     <>
-      <path {...s} {...f} d="M24 23c5.5 0 10 4.6 10 9.4 0 3.5-2.6 5.6-6 5.6h-8c-3.4 0-6-2.1-6-5.6C14 27.6 18.5 23 24 23z" />
+      <path
+        {...s}
+        {...f}
+        d="M24 23c5.5 0 10 4.6 10 9.4 0 3.5-2.6 5.6-6 5.6h-8c-3.4 0-6-2.1-6-5.6C14 27.6 18.5 23 24 23z"
+      />
       <ellipse {...s} {...f} cx="11.5" cy="20" rx="4" ry="5" />
       <ellipse {...s} {...f} cx="20" cy="13.5" rx="4" ry="5" />
       <ellipse {...s} {...f} cx="28.5" cy="13.5" rx="4" ry="5" />
@@ -187,13 +183,21 @@ const GLYPHS: Record<CategoryIconKey, Glyph> = {
   ),
   health: (s, f) => (
     <>
-      <path {...s} {...f} d="M24 39.5S9 30.5 9 20.5A8.5 8.5 0 0124 15a8.5 8.5 0 0115 5.5c0 10-15 19-15 19z" />
+      <path
+        {...s}
+        {...f}
+        d="M24 39.5S9 30.5 9 20.5A8.5 8.5 0 0124 15a8.5 8.5 0 0115 5.5c0 10-15 19-15 19z"
+      />
       <path {...s} d="M12 24.5h6l2.5-5.5 3.5 10 2.5-4.5h9" />
     </>
   ),
   tools: (s, f) => (
     <>
-      <path {...s} {...f} d="M32.5 8a8.5 8.5 0 00-9.2 13.4L9.5 35.3l4.2 4.2 13.9-13.9A8.5 8.5 0 1032.5 8z" />
+      <path
+        {...s}
+        {...f}
+        d="M32.5 8a8.5 8.5 0 00-9.2 13.4L9.5 35.3l4.2 4.2 13.9-13.9A8.5 8.5 0 1032.5 8z"
+      />
       <circle {...s} cx="33" cy="15" r="3" />
       <path {...s} d="M13 33.5l2 2" />
     </>
@@ -207,16 +211,6 @@ const GLYPHS: Record<CategoryIconKey, Glyph> = {
   ),
 };
 
-export const CATEGORY_KEYS = (Object.keys(GLYPHS) as CategoryIconKey[]).filter(
-  (key) => key !== 'unknown'
-);
-
-/* --------------------------------------------------------------------- frame */
-
-/**
- * Neon-glass shell: dark rounded tile, blurred colored copy of the glyph
- * underneath, crisp glyph on top.
- */
 type NeonIconProps = Omit<SVGProps<SVGSVGElement>, 'title'> & {
   glyph: Glyph;
   color: string;
@@ -259,7 +253,17 @@ function NeonIcon({ glyph, color, size = 64, title, className, style, ...rest }:
           <feGaussianBlur stdDeviation="2.4" />
         </filter>
       </defs>
-      <rect x="1" y="1" width="62" height="62" rx="17" fill={TILE_BG} stroke={color} strokeOpacity="0.35" strokeWidth="1.5" />
+      <rect
+        x="1"
+        y="1"
+        width="62"
+        height="62"
+        rx="17"
+        fill={TILE_BG}
+        stroke={color}
+        strokeOpacity="0.35"
+        strokeWidth="1.5"
+      />
       <g transform="translate(8,8)" filter={`url(#glow-${uid})`} opacity="0.55">
         {glyph(glowStroke, noFill)}
       </g>
@@ -268,10 +272,7 @@ function NeonIcon({ glyph, color, size = 64, title, className, style, ...rest }:
   );
 }
 
-/* ---------------------------------------------------------------- public API */
-
-/** Normalizes a raw CSV/API category value to an icon key. */
-export function categoryKey(category?: string | null): CategoryIconKey {
+function categoryKey(category?: string | null): CategoryIconKey {
   if (!category) return 'unknown';
   const key = String(category)
     .trim()
@@ -282,7 +283,6 @@ export function categoryKey(category?: string | null): CategoryIconKey {
   return GLYPHS[key] ? key : 'unknown';
 }
 
-/** Renders the icon for a product category; unknown values get the fallback. */
 export type CategoryIconProps = Omit<SVGProps<SVGSVGElement>, 'title'> & {
   category?: string | null;
   size?: number;
@@ -291,47 +291,13 @@ export type CategoryIconProps = Omit<SVGProps<SVGSVGElement>, 'title'> & {
 
 export function CategoryIcon({ category, size = 64, title, ...rest }: CategoryIconProps) {
   const key = categoryKey(category);
-  return <NeonIcon glyph={GLYPHS[key]} color={CATEGORY_COLORS[key]} size={size} title={title ?? key} {...rest} />;
-}
-
-/** Brand mark: shopping bag with code chevrons and a spark. */
-type LogoProps = Omit<SVGProps<SVGSVGElement>, 'title'> & {
-  size?: number;
-  color?: string;
-  title?: string;
-};
-
-export function Logo({ size = 48, color = '#34d399', title = 'CodeChange', ...rest }: LogoProps) {
-  const glyph: Glyph = (s, f) => (
-    <>
-      <path {...s} {...f} d="M11.5 18h25l2.2 17.8a4.2 4.2 0 01-4.2 4.7H13.5a4.2 4.2 0 01-4.2-4.7z" />
-      <path {...s} d="M17.5 18v-4a6.5 6.5 0 0113 0v4" />
-      <path {...s} d="M10.4 24.5h27.2" />
-      <path {...s} d="M20.5 28.5L17 32l3.5 3.5" />
-      <path {...s} d="M27.5 28.5L31 32l-3.5 3.5" />
-      <path {...s} d="M25.6 27.6l-3.2 8.8" />
-      <path {...s} {...f} d="M38 8l1.3 3.4L42.7 12.7 39.3 14 38 17.4 36.7 14 33.3 12.7 36.7 11.4z" />
-    </>
-  );
-  return <NeonIcon glyph={glyph} color={color} size={size} title={title} {...rest} />;
-}
-
-/** Logo + wordmark, for the site header. */
-type LogoLockupProps = {
-  size?: number;
-  color?: string;
-  textColor?: string;
-};
-
-export function LogoLockup({ size = 40, color = '#34d399', textColor = '#f1f5f9' }: LogoLockupProps) {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: size * 0.3 }}>
-      <Logo size={size} color={color} />
-      <span style={{ fontSize: size * 0.5, fontWeight: 700, letterSpacing: '-0.02em', color: textColor }}>
-        Code<span style={{ color }}>Change</span>
-      </span>
-    </span>
+    <NeonIcon
+      glyph={GLYPHS[key]}
+      color={CATEGORY_COLORS[key]}
+      size={size}
+      title={title ?? key}
+      {...rest}
+    />
   );
 }
-
-export default CategoryIcon;

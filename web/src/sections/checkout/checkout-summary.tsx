@@ -11,12 +11,11 @@ import Typography from '@mui/material/Typography';
 import { fCurrency } from 'src/utils/format-number';
 
 import { Iconify } from 'src/components/iconify';
-import { CategoryIcon } from 'src/components/logo/CategoryIcons';
+import { CategoryIcon } from 'src/components/category-icon';
 
 type Props = {
   total: number;
   subtotal: number;
-  /** The lines the total is made of. Omitted where they are already on screen. */
   items?: ICheckoutItem[];
   onEdit?: () => void;
 };
