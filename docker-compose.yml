@@ -11,7 +11,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-ecommerce}']
+      # A query, not pg_isready: that only asks whether the server accepts
+      # connections and reports healthy while the database itself is missing,
+      # which lets the API start against a server it cannot use.
+      test:
+        [
+          'CMD-SHELL',
+          'psql -U ${DB_USER:-postgres} -d ${DB_NAME:-ecommerce} -c "SELECT 1" >/dev/null 2>&1',
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -49,11 +56,22 @@ services:
       IMPORT_RATE_LIMIT: ${IMPORT_RATE_LIMIT:-20}
       ORDER_RATE_LIMIT: ${ORDER_RATE_LIMIT:-20}
       THROTTLE_LIMIT: ${THROTTLE_LIMIT:-300}
+      AUTH_RATE_LIMIT: ${AUTH_RATE_LIMIT:-30}
       TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-0}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
       - '4000:8080'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://localhost:8080/api/v1/health'').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     depends_on:
       db:
         condition: service_healthy
@@ -69,7 +87,8 @@ services:
     ports:
       - '3000:80'
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   # Development-only consoles: the devtools profile keeps them out of the default `up`
   adminer:
