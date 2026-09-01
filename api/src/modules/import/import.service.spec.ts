@@ -229,7 +229,6 @@ describe('ImportService', () => {
       )
 
       expect(result.summary.inserted).toBe(0)
-      // The offending name travels with the row, so the report shows what was wrong.
       expect(result.rejected[0]).toEqual({
         line: 2,
         sku: 'XS-001',

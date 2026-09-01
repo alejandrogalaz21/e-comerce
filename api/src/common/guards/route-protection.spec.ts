@@ -43,8 +43,6 @@ const PROTECTED_SURFACE: [string, ControllerClass, string][] = [
   ['GET /status/redis', StatusController, 'redisStatus'],
   ['GET /status/db', StatusController, 'dbStatus'],
   ['GET /auth/me', AuthController, 'getProfile'],
-  // An account is only good for administering the catalog here, so an open
-  // sign-up would hand those rights to anyone who found the endpoint.
   ['POST /auth/sign-up', AuthController, 'signup'],
   ['GET /orders', OrdersController, 'findAll'],
   ['GET /orders/:id', OrdersController, 'findOne']

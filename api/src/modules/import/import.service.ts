@@ -101,7 +101,6 @@ export class ImportService {
       })
       await this.batchRepository.save(batch)
 
-      // Once per batch, not once per row: a 97-row import must not issue 97 invalidations.
       await this.productsService.invalidateCache()
 
       return { batchId: batch.id, ...result }
@@ -348,9 +347,6 @@ export class ImportService {
     return candidates
   }
 
-  // A sku is the business key: repeating it within one file makes the file
-  // ambiguous, and picking a winner by row position would make the result
-  // depend on the ordering rather than on the data.
   private rejectDuplicateSkus(
     candidates: ImportCandidate[],
     rejected: ImportRejectedRow[]

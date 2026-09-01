@@ -46,7 +46,6 @@ describe('security hardening', () => {
   describe('rate limiting', () => {
     const reflector = new Reflector()
 
-    // The package declares these keys but does not export them from its root.
     const LIMIT = 'THROTTLER:LIMIT'
     const TTL = 'THROTTLER:TTL'
 
@@ -56,8 +55,6 @@ describe('security hardening', () => {
     const ttlOf = (target: object, handler: string) =>
       reflector.get(`${TTL}default`, (target as never)[handler])
 
-    // These assert the decorator carries the configured ceiling. That it still
-    // reaches a request is a different claim, proved in rate-limit.spec.ts.
     it('caps the CSV import, the one route that upserts the whole catalog', () => {
       expect(limitOf(ImportController.prototype, 'import')).toBe(
         THROTTLE.import.limit

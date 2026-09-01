@@ -28,7 +28,9 @@ describe('UsersService', () => {
   beforeEach(async () => {
     repository = {
       findOne: jest.fn().mockResolvedValue(userWith()),
-      create: jest.fn().mockImplementation(data => Object.assign(new User(), data)),
+      create: jest
+        .fn()
+        .mockImplementation(data => Object.assign(new User(), data)),
       save: jest.fn().mockImplementation(async user => user)
     }
 
@@ -73,9 +75,9 @@ describe('UsersService', () => {
       const written = repository.save.mock.calls[0][0]
 
       expect(written.password).not.toBe('a-brand-new-password')
-      expect(await bcrypt.compare('a-brand-new-password', written.password)).toBe(
-        true
-      )
+      expect(
+        await bcrypt.compare('a-brand-new-password', written.password)
+      ).toBe(true)
     })
 
     it('does not return the hash it just wrote', async () => {

@@ -7,11 +7,6 @@ import { CacheService } from '@/database/redis/cache.service'
 import { Product } from './entities/product.entity'
 import { ProductsService } from './products.service'
 
-/**
- * The catalog is read far more often than it is written, which is the case the
- * cache exists for. What matters is that a write is never served stale and that
- * a cache failure never reaches the caller.
- */
 describe('ProductsService caching', () => {
   let service: ProductsService
   let store: Map<string, unknown>
@@ -140,7 +135,6 @@ describe('ProductsService caching', () => {
   })
 
   describe('when Redis is down', () => {
-    /** A real CacheService over a failing client: the swallow must hold end to end. */
     const failing = () =>
       new CacheService({
         get: jest.fn().mockRejectedValue(new Error('connection refused')),

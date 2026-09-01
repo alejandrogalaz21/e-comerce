@@ -20,12 +20,6 @@ const SHIPPING = {
   zipCode: '62701',
   country: 'United States'
 }
-/**
- * Locking and deadlock ordering are properties of Postgres, not of the service:
- * a mocked repository would assert that the code calls FOR UPDATE, never that
- * FOR UPDATE does its job. These run against a real database and skip when there
- * is none, so `npm test` still passes without Docker.
- */
 const CONNECTION = {
   host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT || 5432),
@@ -148,13 +142,13 @@ describe('OrdersService against a real database', () => {
           items: [{ productId, quantity: 1 }],
           idempotencyKey: `${SKU_PREFIX}buyer-a`,
           shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+          paymentMethod: PaymentMethod.CARD
         }),
         service.create({
           items: [{ productId, quantity: 1 }],
           idempotencyKey: `${SKU_PREFIX}buyer-b`,
           shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+          paymentMethod: PaymentMethod.CARD
         })
       ])
 
@@ -182,8 +176,8 @@ describe('OrdersService against a real database', () => {
           service.create({
             items: [{ productId, quantity: 1 }],
             idempotencyKey: `${SKU_PREFIX}rush-${index}`,
-          shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+            shippingAddress: SHIPPING,
+            paymentMethod: PaymentMethod.CARD
           })
         )
       )
@@ -213,7 +207,7 @@ describe('OrdersService against a real database', () => {
           ],
           idempotencyKey: `${SKU_PREFIX}forward`,
           shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+          paymentMethod: PaymentMethod.CARD
         }),
         service.create({
           items: [
@@ -222,7 +216,7 @@ describe('OrdersService against a real database', () => {
           ],
           idempotencyKey: `${SKU_PREFIX}reverse`,
           shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+          paymentMethod: PaymentMethod.CARD
         })
       ])
 
@@ -239,7 +233,7 @@ describe('OrdersService against a real database', () => {
     const order = {
       items: [{ productId, quantity: 2 }],
       idempotencyKey: `${SKU_PREFIX}same-key`,
-          shippingAddress: SHIPPING,
+      shippingAddress: SHIPPING,
       paymentMethod: PaymentMethod.CARD
     }
 
@@ -265,8 +259,8 @@ describe('OrdersService against a real database', () => {
       service.create({
         items: [{ productId, quantity: 3 }],
         idempotencyKey: `${SKU_PREFIX}declined`,
-          shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+        shippingAddress: SHIPPING,
+        paymentMethod: PaymentMethod.CARD
       })
     ).rejects.toMatchObject({ status: 402 })
 
@@ -287,7 +281,7 @@ describe('OrdersService against a real database', () => {
     await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${SKU_PREFIX}sold-one`,
-          shippingAddress: SHIPPING,
+      shippingAddress: SHIPPING,
       paymentMethod: PaymentMethod.CARD
     })
 
@@ -296,8 +290,6 @@ describe('OrdersService against a real database', () => {
       new PaginationResponseBuilder<Product>()
     )
 
-    // The RESTRICT foreign key is what refuses this; it must surface as a
-    // conflict rather than escaping as an internal failure.
     await expect(products.remove(productId)).rejects.toMatchObject({
       status: 409,
       response: { error: 'RESOURCE_IN_USE' }
@@ -316,8 +308,8 @@ describe('OrdersService against a real database', () => {
       const { order } = await service.create({
         items: [{ productId, quantity: 1 }],
         idempotencyKey: `${SKU_PREFIX}snapshot`,
-          shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+        shippingAddress: SHIPPING,
+        paymentMethod: PaymentMethod.CARD
       })
 
       await source.query(

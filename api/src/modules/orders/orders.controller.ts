@@ -36,9 +36,6 @@ export class OrdersController {
 
   @Post()
   @Public()
-  // The only public route that writes and charges. The loose global ceiling
-  // would let one address attempt hundreds of purchases a minute, each one
-  // locking catalog rows and calling the payment provider.
   @Throttle({ default: THROTTLE.placeOrder })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
@@ -107,7 +104,10 @@ export class OrdersController {
   @ApiQuery({ name: 'dateFrom', required: false, example: '2026-08-01' })
   @ApiQuery({ name: 'dateTo', required: false, example: '2026-08-31' })
   @ApiResponse({ status: 200, description: 'Paginated orders' })
-  @ApiResponse({ status: 400, description: 'Invalid status or inverted date range' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid status or inverted date range'
+  })
   @ApiResponse({ status: 401, description: 'Missing or invalid access token' })
   findAll(@Query() filters: OrderFiltersDto) {
     return this.ordersService.findAll(filters)

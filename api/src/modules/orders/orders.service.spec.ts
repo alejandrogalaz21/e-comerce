@@ -1,6 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
-import { ConflictException, HttpStatus, NotFoundException } from '@nestjs/common'
+import {
+  ConflictException,
+  HttpStatus,
+  NotFoundException
+} from '@nestjs/common'
 import { DataSource } from 'typeorm'
 
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
@@ -22,7 +26,13 @@ const SHIPPING = {
   zipCode: '62701',
   country: 'United States'
 }
-type Row = { id: string; sku: string; name: string; price: string; stock: number }
+type Row = {
+  id: string
+  sku: string
+  name: string
+  price: string
+  stock: number
+}
 
 const SHOES = 'aaaaaaaa-0000-4000-8000-000000000001'
 const SPEAKER = 'bbbbbbbb-0000-4000-8000-000000000002'
@@ -121,9 +131,16 @@ describe('OrdersService', () => {
     service = module.get<OrdersService>(OrdersService)
   })
 
-  const buy = (items: { productId: string; quantity: number }[], key = 'key-1') =>
-    service.create({ items, idempotencyKey: key, shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD })
+  const buy = (
+    items: { productId: string; quantity: number }[],
+    key = 'key-1'
+  ) =>
+    service.create({
+      items,
+      idempotencyKey: key,
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
+    })
 
   describe('placing an order', () => {
     it('charges the server-calculated total and discounts the stock', async () => {
@@ -166,8 +183,7 @@ describe('OrdersService', () => {
         items: [{ productId: SHOES, quantity: 1 }],
         idempotencyKey: 'key-1',
         shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD,
-        // A client that tries to set the price must not be believed.
+        paymentMethod: PaymentMethod.CARD,
         ...({ total: '0.01', price: '0.01' } as any)
       })
 
@@ -177,7 +193,6 @@ describe('OrdersService', () => {
     })
 
     it('sums in integer cents, so a total that breaks in binary floating point is exact', async () => {
-      // 0.1 + 0.2 !== 0.3 as doubles.
       catalog = [
         row({ id: SHOES, price: '0.10' }),
         row({ id: SPEAKER, sku: 'BS-021', price: '0.20' })
@@ -209,11 +224,6 @@ describe('OrdersService', () => {
     })
   })
 
-  /**
-   * Buying is the fourth place that changes stock, and it was the only one not
-   * telling the cached catalog about it: the shop kept serving the old number
-   * until the entry expired, so the app looked like it never discounted stock.
-   */
   describe('the delivery address', () => {
     const paidOrder = () => {
       mockOrderRepository.findOne.mockResolvedValueOnce(null)
@@ -262,14 +272,15 @@ describe('OrdersService', () => {
       expect(charge.mock.calls[0][0].amountInCents).toBe(withOneAddress)
     })
 
-    /**
-     * The declined attempt is an audit record of what was tried, so it keeps the
-     * address it was going to be delivered to.
-     */
     it('is kept on a declined attempt too', async () => {
-      charge.mockResolvedValue({ status: 'declined', reason: 'card declined by the issuer' })
+      charge.mockResolvedValue({
+        status: 'declined',
+        reason: 'card declined by the issuer'
+      })
 
-      await expect(buy([{ productId: SHOES, quantity: 1 }])).rejects.toBeDefined()
+      await expect(
+        buy([{ productId: SHOES, quantity: 1 }])
+      ).rejects.toBeDefined()
 
       expect(mockOrderRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -295,27 +306,28 @@ describe('OrdersService', () => {
     })
 
     it('is left alone when the charge is declined', async () => {
-      charge.mockResolvedValue({ status: 'declined', reason: 'card declined by the issuer' })
+      charge.mockResolvedValue({
+        status: 'declined',
+        reason: 'card declined by the issuer'
+      })
 
-      await expect(buy([{ productId: SHOES, quantity: 2 }])).rejects.toBeDefined()
+      await expect(
+        buy([{ productId: SHOES, quantity: 2 }])
+      ).rejects.toBeDefined()
 
-      // The transaction rolled back, so no stock changed and there is nothing
-      // stale to clear.
       expect(invalidateCache).not.toHaveBeenCalled()
     })
 
     it('is left alone when a line falls short of stock', async () => {
       catalog = [row({ stock: 1 })]
 
-      await expect(buy([{ productId: SHOES, quantity: 10 }])).rejects.toBeDefined()
+      await expect(
+        buy([{ productId: SHOES, quantity: 10 }])
+      ).rejects.toBeDefined()
 
       expect(invalidateCache).not.toHaveBeenCalled()
     })
 
-    /**
-     * The order is already committed by the time the cache is told. A dead
-     * Redis must cost freshness, never the sale.
-     */
     it('does not fail the order when clearing it blows up', async () => {
       mockOrderRepository.findOne.mockResolvedValueOnce(null)
       mockOrderRepository.findOne.mockResolvedValue({
@@ -324,7 +336,9 @@ describe('OrdersService', () => {
       })
       invalidateCache.mockRejectedValueOnce(new Error('redis is down'))
 
-      await expect(buy([{ productId: SHOES, quantity: 2 }])).resolves.toBeDefined()
+      await expect(
+        buy([{ productId: SHOES, quantity: 2 }])
+      ).resolves.toBeDefined()
     })
   })
 
@@ -332,7 +346,9 @@ describe('OrdersService', () => {
     it('rejects with 409 naming the product and what was left', async () => {
       catalog = [row({ stock: 3 })]
 
-      await expect(buy([{ productId: SHOES, quantity: 10 }])).rejects.toMatchObject({
+      await expect(
+        buy([{ productId: SHOES, quantity: 10 }])
+      ).rejects.toMatchObject({
         response: {
           error: 'INSUFFICIENT_STOCK',
           sku: 'RS-001',
@@ -360,19 +376,24 @@ describe('OrdersService', () => {
     })
 
     it('rejects a product that is not in the catalog', async () => {
-      await expect(
-        buy([{ productId: SPEAKER, quantity: 1 }])
-      ).rejects.toThrow(NotFoundException)
+      await expect(buy([{ productId: SPEAKER, quantity: 1 }])).rejects.toThrow(
+        NotFoundException
+      )
     })
   })
 
   describe('declined payment', () => {
     beforeEach(() => {
-      charge.mockResolvedValue({ status: 'declined', reason: 'card declined by the issuer' })
+      charge.mockResolvedValue({
+        status: 'declined',
+        reason: 'card declined by the issuer'
+      })
     })
 
     it('responds 402 and leaves the stock untouched', async () => {
-      await expect(buy([{ productId: SHOES, quantity: 2 }])).rejects.toMatchObject({
+      await expect(
+        buy([{ productId: SHOES, quantity: 2 }])
+      ).rejects.toMatchObject({
         status: HttpStatus.PAYMENT_REQUIRED,
         response: { error: 'PAYMENT_DECLINED' }
       })
@@ -381,7 +402,9 @@ describe('OrdersService', () => {
     })
 
     it('records the failed attempt for audit, outside the rolled-back transaction', async () => {
-      await expect(buy([{ productId: SHOES, quantity: 2 }])).rejects.toBeDefined()
+      await expect(
+        buy([{ productId: SHOES, quantity: 2 }])
+      ).rejects.toBeDefined()
 
       expect(savedOrders).toEqual([
         expect.objectContaining({
@@ -399,7 +422,9 @@ describe('OrdersService', () => {
         declineReason: 'card declined by the issuer'
       })
 
-      await expect(buy([{ productId: SHOES, quantity: 2 }])).rejects.toMatchObject({
+      await expect(
+        buy([{ productId: SHOES, quantity: 2 }])
+      ).rejects.toMatchObject({
         status: HttpStatus.PAYMENT_REQUIRED
       })
 
@@ -442,15 +467,11 @@ describe('OrdersService', () => {
     it('returns a not found error for an unknown order', async () => {
       mockOrderRepository.findOne.mockResolvedValue(null)
 
-      await expect(service.findOne('missing-id')).rejects.toThrow(NotFoundException)
+      await expect(service.findOne('missing-id')).rejects.toThrow(
+        NotFoundException
+      )
     })
 
-    /**
-     * What each criterion selects is verified against a real database in
-     * orders.filters.spec.ts, because these are Postgres expressions. Here only
-     * the shape holds: newest first, the requested page, and no condition added
-     * when nothing was asked for.
-     */
     it('paginates newest first, with no filter when none is given', async () => {
       const builder = queryBuilderReturning([{ id: 'a' }], 1)
 

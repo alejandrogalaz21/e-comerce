@@ -10,12 +10,6 @@ import { OrderStatus } from './order-status.enum'
 import { PaymentMethod } from './payment-method.enum'
 import { OrdersService } from './orders.service'
 
-/**
- * The filters are Postgres expressions — ILIKE, a cast to text, an interval on
- * the upper bound — so a mocked repository would assert that the code builds a
- * string, never that the string selects the right rows. These run against a real
- * database and skip when there is none, like the concurrency spec.
- */
 const CONNECTION = {
   host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT || 5432),
@@ -134,7 +128,6 @@ describe('Filtering orders against a real database', () => {
     if (dataSource) await dataSource.destroy()
   })
 
-  /** Only the orders this spec created; the database may hold others. */
   const mine = (result: { data: Order[] }): Order[] =>
     result.data.filter(order =>
       order.items.some(item => item.sku.startsWith(PREFIX))
@@ -197,10 +190,6 @@ describe('Filtering orders against a real database', () => {
     expect(mine(found)).toHaveLength(2)
   })
 
-  /**
-   * An order id is a UUID nobody reads out loud. Whoever answers the phone has
-   * the recipient's name or number instead, so both have to find the order.
-   */
   maybe('finds an order by the recipient name or phone', async () => {
     const source = dataSource as DataSource
     const service = serviceFor(source)
@@ -215,7 +204,11 @@ describe('Filtering orders against a real database', () => {
     await service.create({
       items: [{ productId, quantity: 1 }],
       idempotencyKey: `${PREFIX}grace`,
-      shippingAddress: { ...SHIPPING, name: 'Grace Hopper', phone: '+13125550143' },
+      shippingAddress: {
+        ...SHIPPING,
+        name: 'Grace Hopper',
+        phone: '+13125550143'
+      },
       paymentMethod: PaymentMethod.CARD
     })
 
@@ -226,10 +219,6 @@ describe('Filtering orders against a real database', () => {
     expect(mine(byPhone).map(order => order.shipName)).toEqual(['Ada Lovelace'])
   })
 
-  /**
-   * The delivery details are what a person actually remembers about an order:
-   * an email they were written from, or the city it goes to.
-   */
   maybe('finds an order by its contact email or its city', async () => {
     const source = dataSource as DataSource
     const service = serviceFor(source)
@@ -263,7 +252,11 @@ describe('Filtering orders against a real database', () => {
       limit: 20,
       q: 'example.org'
     })
-    const byCity = await service.findAll({ page: 1, limit: 20, q: 'hermosillo' })
+    const byCity = await service.findAll({
+      page: 1,
+      limit: 20,
+      q: 'hermosillo'
+    })
     const byNothing = await service.findAll({
       page: 1,
       limit: 20,
@@ -280,11 +273,6 @@ describe('Filtering orders against a real database', () => {
     expect(mine(byNothing)).toHaveLength(0)
   })
 
-  /**
-   * The lines store the SKU and name as sold. Searching the catalog instead
-   * would make renaming a product lose the orders that bought it, which is the
-   * opposite of what a snapshot is for.
-   */
   maybe('keeps finding an order after the product is renamed', async () => {
     const source = dataSource as DataSource
     const service = serviceFor(source)
@@ -326,7 +314,7 @@ describe('Filtering orders against a real database', () => {
         items: [{ productId, quantity: 1 }],
         idempotencyKey: `${PREFIX}failed`,
         shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
+        paymentMethod: PaymentMethod.CARD
       })
     ).rejects.toBeDefined()
 
@@ -375,10 +363,6 @@ describe('Filtering orders against a real database', () => {
     expect(mine(miss)).toHaveLength(0)
   })
 
-  /**
-   * `<= dateTo` would cut the range at midnight and drop everything bought that
-   * day, which is exactly what a reviewer would try first.
-   */
   maybe('includes the whole of the dateTo day', async () => {
     const source = dataSource as DataSource
     const service = serviceFor(source)
@@ -418,45 +402,50 @@ describe('Filtering orders against a real database', () => {
     }
   )
 
-  maybe('reports a total that follows the filter, not the whole table', async () => {
-    const source = dataSource as DataSource
-    const service = serviceFor(source)
-    const productId = await seedProduct(source, 'TOTAL', 'Total Product')
+  maybe(
+    'reports a total that follows the filter, not the whole table',
+    async () => {
+      const source = dataSource as DataSource
+      const service = serviceFor(source)
+      const productId = await seedProduct(source, 'TOTAL', 'Total Product')
 
-    await service.create({
-      items: [{ productId, quantity: 1 }],
-      idempotencyKey: `${PREFIX}total-1`,
-      shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
-    })
-    await service.create({
-      items: [{ productId, quantity: 1 }],
-      idempotencyKey: `${PREFIX}total-2`,
-      shippingAddress: SHIPPING,
-      paymentMethod: PaymentMethod.CARD
-    })
+      await service.create({
+        items: [{ productId, quantity: 1 }],
+        idempotencyKey: `${PREFIX}total-1`,
+        shippingAddress: SHIPPING,
+        paymentMethod: PaymentMethod.CARD
+      })
+      await service.create({
+        items: [{ productId, quantity: 1 }],
+        idempotencyKey: `${PREFIX}total-2`,
+        shippingAddress: SHIPPING,
+        paymentMethod: PaymentMethod.CARD
+      })
 
-    const found = await service.findAll({
-      page: 1,
-      limit: 20,
-      q: `${PREFIX}TOTAL`
-    })
+      const found = await service.findAll({
+        page: 1,
+        limit: 20,
+        q: `${PREFIX}TOTAL`
+      })
 
-    // The join to the lines must not multiply the order by them.
-    expect(found.pagination.total).toBe(2)
-    expect(found.data).toHaveLength(2)
-  })
+      expect(found.pagination.total).toBe(2)
+      expect(found.data).toHaveLength(2)
+    }
+  )
 
-  maybe('a search that matches nothing returns nothing, not everything', async () => {
-    const service = serviceFor(dataSource as DataSource)
+  maybe(
+    'a search that matches nothing returns nothing, not everything',
+    async () => {
+      const service = serviceFor(dataSource as DataSource)
 
-    const found = await service.findAll({
-      page: 1,
-      limit: 20,
-      q: `${PREFIX}NO-SUCH-THING`
-    })
+      const found = await service.findAll({
+        page: 1,
+        limit: 20,
+        q: `${PREFIX}NO-SUCH-THING`
+      })
 
-    expect(found.data).toHaveLength(0)
-    expect(found.pagination.total).toBe(0)
-  })
+      expect(found.data).toHaveLength(0)
+      expect(found.pagination.total).toBe(0)
+    }
+  )
 })

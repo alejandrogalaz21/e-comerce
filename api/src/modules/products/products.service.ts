@@ -29,19 +29,15 @@ export class ProductsService {
     updatedAt: 'product.updatedAt'
   }
 
-  /** Everything the catalog caches lives under this prefix, so one write clears it all. */
   static readonly CACHE_PREFIX = 'products'
 
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private readonly paginationBuilder: PaginationResponseBuilder<Product>,
-    // Optional so the service still works — uncached — wherever Redis is not
-    // wired, which is every unit test and any deployment without it.
     @Optional() private readonly cache?: CacheService
   ) {}
 
-  /** Public so the import module can clear the catalog once per batch. */
   async invalidateCache(): Promise<void> {
     await this.cache?.invalidatePrefix(ProductsService.CACHE_PREFIX)
   }
@@ -96,8 +92,6 @@ export class ProductsService {
 
     const terms = filters.q?.map(value => value.trim()).filter(Boolean)
     if (terms?.length) {
-      // Several terms are a union: the admin asks for "these products", not for
-      // rows matching all of them at once.
       const clauses = terms.map(
         (_, index) =>
           `(product.name ILIKE :term${index} OR product.sku ILIKE :term${index} OR product.description ILIKE :term${index} OR product.category ILIKE :term${index})`
@@ -206,8 +200,6 @@ export class ProductsService {
       await this.productRepository.remove(product)
       await this.invalidateCache()
     } catch (error) {
-      // A product that appears in an order is protected by a RESTRICT foreign
-      // key. That refusal is a conflict, not an internal failure.
       translateDatabaseError(error, {
         resource: 'Product',
         field: 'sku',

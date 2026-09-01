@@ -36,8 +36,6 @@ export class ImportController {
   constructor(private readonly importService: ImportService) {}
 
   @Post()
-  // A bulk upsert of the whole catalog is the most expensive operation the API
-  // exposes, so it does not ride on the loose global ceiling.
   @Throttle({ default: THROTTLE.import })
   @UseInterceptors(
     FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } })

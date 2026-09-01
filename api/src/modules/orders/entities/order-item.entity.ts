@@ -30,8 +30,6 @@ export class OrderItem {
   @Column('uuid', { name: 'product_id' })
   productId: string
 
-  // RESTRICT: an order is a historical record. Deleting a product that was
-  // sold must fail rather than erase the line that proves the sale.
   @ManyToOne(() => Product, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'product_id' })
   product: Product

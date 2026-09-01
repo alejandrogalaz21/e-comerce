@@ -27,10 +27,6 @@ import { OrderStatus } from './order-status.enum'
 
 const UNIQUE_VIOLATION = '23505'
 
-/**
- * Carries the snapshot out of the rolled-back transaction so the declined
- * attempt can still be recorded once the rollback has happened.
- */
 class PaymentDeclinedError extends Error {
   constructor(
     readonly reason: string,
@@ -57,7 +53,9 @@ export class OrdersService {
     private readonly productsService: ProductsService
   ) {}
 
-  async create(dto: CreateOrderDto): Promise<{ order: Order; replayed: boolean }> {
+  async create(
+    dto: CreateOrderDto
+  ): Promise<{ order: Order; replayed: boolean }> {
     const existing = await this.findByIdempotencyKey(dto.idempotencyKey)
     if (existing) return this.replay(existing)
 
@@ -65,7 +63,9 @@ export class OrdersService {
 
     try {
       const order = await this.dataSource.transaction(async manager => {
-        const products = await this.lockProducts(manager, [...quantities.keys()])
+        const products = await this.lockProducts(manager, [
+          ...quantities.keys()
+        ])
 
         this.assertStockAvailable(products, quantities)
 
@@ -107,9 +107,6 @@ export class OrdersService {
         return saved
       })
 
-      // After the commit, never inside it: a rolled-back attempt changed no
-      // stock, so clearing the catalog for it would be work for nothing. A
-      // replay does not reach here either, for the same reason.
       await this.clearCatalogCache()
 
       return { order: await this.findOne(order.id), replayed: false }
@@ -123,8 +120,6 @@ export class OrdersService {
         throw declined(error.reason)
       }
 
-      // The insert races with a concurrent replay of the same key: the unique
-      // constraint is what decides, not a prior read.
       if (isUniqueViolation(error)) {
         const replayed = await this.findByIdempotencyKey(dto.idempotencyKey)
         if (replayed) return this.replay(replayed)
@@ -133,11 +128,6 @@ export class OrdersService {
     }
   }
 
-  /**
-   * The sale is already committed when this runs, so a cache that cannot be
-   * reached costs freshness and nothing else. Letting it throw here would undo
-   * a purchase that succeeded because Redis is down.
-   */
   private async clearCatalogCache(): Promise<void> {
     try {
       await this.productsService.invalidateCache()
@@ -148,10 +138,6 @@ export class OrdersService {
     }
   }
 
-  /**
-   * One key, one outcome. Replaying the key of a declined attempt declines again
-   * instead of charging a second time; retrying means a new attempt with a new key.
-   */
   private replay(order: Order): { order: Order; replayed: boolean } {
     if (order.status === OrderStatus.FAILED) {
       throw declined(order.declineReason ?? 'the charge was declined')
@@ -160,11 +146,6 @@ export class OrdersService {
     return { order, replayed: true }
   }
 
-  /**
-   * Written in its own transaction: the one holding the order was rolled back, so
-   * the audit record of the declined attempt would have gone with it. Stock is
-   * deliberately untouched.
-   */
   private async recordDeclinedAttempt(
     idempotencyKey: string,
     failure: PaymentDeclinedError,
@@ -182,7 +163,6 @@ export class OrdersService {
     try {
       await this.orderRepository.save(order)
     } catch (error) {
-      // A concurrent attempt already recorded this key; the audit trail exists.
       if (!isUniqueViolation(error)) throw error
     }
   }
@@ -203,10 +183,6 @@ export class OrdersService {
     if (filters.q) {
       const term = filters.q.trim()
 
-      // An order is looked up by whatever the person at the counter has at hand:
-      // its id, where it goes, how to reach whoever receives it, or what it
-      // contains. EXISTS rather than a join: joining the lines would multiply
-      // the order by them and break the count that drives pagination.
       query.andWhere(
         `(o.id::text ILIKE :prefix
           OR o.ship_name ILIKE :contains
@@ -235,7 +211,9 @@ export class OrdersService {
     }
 
     if (filters.dateTo) {
-      query.andWhere('o.createdAt <= :dateTo', { dateTo: endOfRange(filters.dateTo) })
+      query.andWhere('o.createdAt <= :dateTo', {
+        dateTo: endOfRange(filters.dateTo)
+      })
     }
 
     const [data, total] = await query.getManyAndCount()
@@ -261,10 +239,6 @@ export class OrdersService {
     })
   }
 
-  /**
-   * The same product listed twice in one request is one lock and one stock check,
-   * otherwise each line would validate against the full stock on its own.
-   */
   private mergeQuantitiesByProduct(dto: CreateOrderDto): Map<string, number> {
     const quantities = new Map<string, number>()
 
@@ -278,11 +252,6 @@ export class OrdersService {
     return quantities
   }
 
-  /**
-   * Ordering by id is what keeps two concurrent multi-line orders from
-   * deadlocking: without it, locking the same rows in opposite sequence
-   * leaves each transaction holding what the other needs.
-   */
   private async lockProducts(
     manager: EntityManager,
     productIds: string[]
@@ -356,11 +325,6 @@ export class OrdersService {
   }
 }
 
-/**
- * Postgres numeric arrives as a string. Converting it to a number to add it up
- * is exactly where binary floating point corrupts a total, so amounts are summed
- * as integer cents and formatted once at the end.
- */
 function toCents(amount: string): number {
   const [whole, fraction = ''] = amount.split('.')
   const cents = `${fraction}00`.slice(0, 2)
@@ -372,11 +336,6 @@ function fromCents(cents: number): string {
   return (cents / 100).toFixed(2)
 }
 
-/**
- * The wire groups the address in one object; the table keeps it in columns so
- * Postgres can enforce lengths. `addressType` and `primary` are not carried
- * over: they belong to an address book this system does not have.
- */
 function toShippingColumns(address: ShippingAddressDto) {
   return {
     shipName: address.name,
@@ -392,18 +351,10 @@ function toShippingColumns(address: ShippingAddressDto) {
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 
-/**
- * A date-only bound covers that whole UTC day; an instant already carries the
- * caller's own day boundary, so it travels to the query untouched.
- */
 function endOfRange(dateTo: string): string {
   return DATE_ONLY.test(dateTo) ? `${dateTo}T23:59:59.999Z` : dateTo
 }
 
-/**
- * An inverted range is a client mistake, and answering it with an empty list
- * would be indistinguishable from "no orders in that range".
- */
 function assertDateRange(filters: OrderFiltersDto): void {
   const { dateFrom, dateTo } = filters
 

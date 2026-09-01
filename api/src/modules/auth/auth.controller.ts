@@ -6,7 +6,12 @@ import {
   Get
 } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags
+} from '@nestjs/swagger'
 import { AuthService } from './auth.service'
 import { UsersService } from '../users/users.service'
 import { CreateUserDto } from '../users/dto/create-user.dto'
@@ -17,9 +22,6 @@ import {
   CurrentUser
 } from '@/common/decorators/current-user.decorator'
 
-// Loose enough for a person and for the end-to-end suite, useless for a script:
-// the global ceiling is 300/min because the status page polls, which for a
-// credential endpoint is the same as having no limit at all.
 const SIGN_IN_RATE_LIMIT = process.env.AUTH_RATE_LIMIT
   ? parseInt(process.env.AUTH_RATE_LIMIT, 10)
   : 30
@@ -32,11 +34,6 @@ export class AuthController {
     private readonly usersService: UsersService
   ) {}
 
-  /**
-   * Deliberately not public. Buying needs no account, and the only thing an
-   * account grants here is catalog administration, so an open sign-up would let
-   * anyone hand themselves those rights.
-   */
   @Post('sign-up')
   @ApiBearerAuth('jwt')
   @ApiOperation({ summary: 'Create an account (requires an existing session)' })

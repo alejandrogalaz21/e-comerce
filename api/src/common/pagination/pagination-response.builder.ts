@@ -4,9 +4,6 @@ import {
   PaginationResponse
 } from './pagination-response.interface'
 
-/**
- * Servicio que construye una respuesta paginada estandarizada.
- */
 @Injectable()
 export class PaginationResponseBuilder<T> {
   build(

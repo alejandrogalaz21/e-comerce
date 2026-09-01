@@ -4,9 +4,6 @@ export class OrderShippingAddress1788220800000 implements MigrationInterface {
   name = 'OrderShippingAddress1788220800000'
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Nullable on purpose: orders placed before this migration have no address
-    // and none can be invented for them. The DTO is what makes it mandatory
-    // from now on — strict on write, tolerant on read.
     await queryRunner.query(`
       ALTER TABLE "orders"
         ADD COLUMN IF NOT EXISTS "ship_name" varchar(255),
@@ -18,8 +15,6 @@ export class OrderShippingAddress1788220800000 implements MigrationInterface {
         ADD COLUMN IF NOT EXISTS "ship_country" varchar(100)
     `)
 
-    // Searching orders by what they contain reads the sold lines, never the
-    // catalog, so these are the columns the filter hits.
     await queryRunner.query(
       `CREATE INDEX IF NOT EXISTS "IDX_order_items_sku" ON "order_items" ("sku")`
     )

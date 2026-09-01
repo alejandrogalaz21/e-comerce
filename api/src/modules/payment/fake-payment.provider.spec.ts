@@ -65,7 +65,9 @@ describe('FakePaymentProvider', () => {
     const results = await Promise.all(
       Array.from({ length: 1000 }, () => sweeping.charge(request))
     )
-    const declined = results.filter(result => result.status === 'declined').length
+    const declined = results.filter(
+      result => result.status === 'declined'
+    ).length
 
     expect(declined).toBe(Math.round(DECLINE_RATE * 1000))
   })

@@ -1,4 +1,3 @@
-// src/database/postgres/pg-health.service.ts
 import { Injectable } from '@nestjs/common'
 import { DataSource } from 'typeorm'
 

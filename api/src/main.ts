@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core'
-import { ValidationPipe } from '@nestjs/common'
+import { Logger, ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import helmet from 'helmet'
 import { AllExceptionsFilter } from '@/common/filters/http-exception.filter'
@@ -18,16 +18,9 @@ async function main() {
 
   app.setGlobalPrefix(prefix)
 
-  // Rate limiting counts by client IP. Behind a reverse proxy every request
-  // carries the proxy's address, so without this one counter would be shared by
-  // the whole internet. The hop count must match the real deployment: trusting
-  // the entire chain would let a client forge X-Forwarded-For and mint itself a
-  // fresh counter on every request.
   const trustProxyHops = config.get<number>('app.trustProxyHops') ?? 0
   if (trustProxyHops > 0) app.set('trust proxy', trustProxyHops)
 
-  // Swagger serves its own inline scripts and styles, so the default CSP would
-  // break the docs page. Everything else stays on.
   app.use(helmet({ contentSecurityPolicy: false }))
 
   app.useGlobalPipes(
@@ -73,8 +66,10 @@ async function main() {
   const port = process.env.PORT || 8080
   await app.listen(port)
 
-  console.log(`Nest API : ${appName}`)
-  console.log(`App started at: ${process.env.APP_STARTED_AT}`)
-  console.log(`api it's runnung on: http://localhost:${port}/${prefix}`)
+  const logger = new Logger('Bootstrap')
+  logger.log(
+    `${appName} v${apiVersion} listening on http://localhost:${port}/${prefix}`
+  )
+  logger.log(`API docs at http://localhost:${port}/${prefix}/docs`)
 }
 main()

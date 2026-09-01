@@ -11,9 +11,7 @@ export const DECLINE_RATE = 0.1
 
 @Injectable()
 export class FakePaymentProvider implements PaymentProvider {
-  constructor(
-    @Inject(RANDOM_SOURCE) private readonly random: RandomSource
-  ) {}
+  constructor(@Inject(RANDOM_SOURCE) private readonly random: RandomSource) {}
 
   async charge(request: ChargeRequest): Promise<ChargeResult> {
     if (this.random.next() < DECLINE_RATE) {

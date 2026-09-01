@@ -17,8 +17,6 @@ import { OrdersService } from './orders.service'
     TypeOrmModule.forFeature([Order, OrderItem]),
     CommonModule,
     PaymentModule,
-    // Buying changes stock, so it invalidates the cached catalog for the same
-    // reason editing a product does.
     ProductsModule
   ],
   exports: [OrdersService]
