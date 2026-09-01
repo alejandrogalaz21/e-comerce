@@ -168,26 +168,47 @@ lo que realmente sucedió con el stock y el cobro.
 
 ### Requirement: La compra registra dónde se entrega
 
-Comprar SHALL exigir una dirección de entrega, y el sistema MUST rechazar una compra que no la
-traiga en lugar de registrar una orden que nadie puede entregar.
+Comprar SHALL exigir una dirección de entrega y un correo electrónico de contacto, y el sistema
+MUST rechazar una compra que no los traiga en lugar de registrar una orden que nadie puede entregar
+ni sobre la que nadie puede escribir.
 
-La dirección SHALL quedar guardada como parte de la orden, con los mismos valores que el comprador
-proporcionó. Un cambio posterior en cualquier otro sitio MUST NOT alterarla: como el precio de cada
-línea, es un dato congelado en el momento de la compra.
+El correo SHALL validarse como tal antes de aceptar la compra: un texto que no es una dirección de
+correo MUST rechazarse, porque un contacto inválido es indistinguible de no tener contacto en el
+momento en que hace falta usarlo.
 
-Guardar la dirección MUST NOT alterar el importe. El total se sigue derivando exclusivamente de las
-líneas compradas.
+La dirección y el correo SHALL quedar guardados como parte de la orden, con los mismos valores que
+el comprador proporcionó. Un cambio posterior en cualquier otro sitio MUST NOT alterarlos: como el
+precio de cada línea, son datos congelados en el momento de la compra.
+
+Guardar la dirección y el correo MUST NOT alterar el importe. El total se sigue derivando
+exclusivamente de las líneas compradas.
 
 #### Scenario: Comprar sin dirección
 
 - **WHEN** se intenta comprar sin dirección de entrega
 - **THEN** la compra se rechaza indicando qué falta, y no se crea ninguna orden ni se descuenta stock
 
+#### Scenario: Comprar sin correo de contacto
+
+- **WHEN** se intenta comprar sin correo electrónico
+- **THEN** la compra se rechaza nombrando el dato que falta, y no se crea ninguna orden ni se descuenta stock
+
+#### Scenario: Un correo que no es un correo
+
+- **WHEN** se compra aportando un texto que no es una dirección de correo válida
+- **THEN** la compra se rechaza señalando el correo, y no se crea ninguna orden
+
 #### Scenario: La dirección se conserva tal cual
 
 - **GIVEN** una compra confirmada con cierta dirección
 - **WHEN** se consulta esa orden más tarde
 - **THEN** la dirección es exactamente la que se dio al comprar
+
+#### Scenario: El correo se conserva tal cual
+
+- **GIVEN** una compra confirmada con cierto correo de contacto
+- **WHEN** se consulta esa orden más tarde
+- **THEN** el correo es exactamente el que se dio al comprar
 
 #### Scenario: La dirección no cambia el total
 
@@ -220,3 +241,29 @@ administrar el catálogo: para quien consulta, el origen del cambio es indiferen
 - **WHEN** una compra de ese producto se rechaza y luego se vuelve a consultar el catálogo
 - **THEN** el stock mostrado es el mismo de antes, porque nunca se descontó
 
+### Requirement: Una línea que la compra rechazaría se identifica antes de confirmar
+
+La aplicación SHALL identificar qué línea provoca un rechazo antes de que el comprador confirme,
+cuando el sistema vaya a rechazar la compra por ella: porque el producto ya no existe en el
+catálogo, o porque no queda stock suficiente.
+
+Un fallo de compra SHALL nombrar el producto que lo causó. La aplicación MUST NOT presentar un
+rechazo atribuible a una línea concreta como un fallo genérico del pedido: obliga a adivinar qué
+quitar.
+
+Esta regla no sustituye a la verificación del servidor. El stock puede agotarse entre la
+comprobación y la confirmación, y ese caso SHALL seguir resolviéndose con el rechazo del sistema.
+
+#### Scenario: Un producto del carrito ya no está en el catálogo
+
+- **GIVEN** un carrito con un producto que después se retira del catálogo
+- **WHEN** el visitante abre el carrito o el proceso de compra
+- **THEN** esa línea se marca como no disponible y se le ofrece quitarla
+- **AND** no se le deja llegar a confirmar para descubrirlo con un error que no la nombra
+
+#### Scenario: El stock se agota entre la comprobación y la confirmación
+
+- **GIVEN** un carrito revisado con stock suficiente
+- **WHEN** otra compra agota ese stock justo antes de confirmar
+- **THEN** la compra se rechaza indicando el producto, las unidades pedidas y las disponibles
+- **AND** no se registra ninguna orden ni se descuenta stock
