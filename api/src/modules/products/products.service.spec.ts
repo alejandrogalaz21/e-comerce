@@ -4,6 +4,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common'
 
 import { ProductsService } from './products.service'
 import { Product } from './entities/product.entity'
+import { ProductHistory } from './entities/product-history.entity'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 import { CreateProductDto } from './dto/create-product.dto'
 
@@ -15,6 +16,7 @@ describe('ProductsService', () => {
     addOrderBy: jest.fn().mockReturnThis(),
     skip: jest.fn().mockReturnThis(),
     take: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     select: jest.fn().mockReturnThis(),
     addSelect: jest.fn().mockReturnThis(),
@@ -30,6 +32,10 @@ describe('ProductsService', () => {
     findOneBy: jest.fn(),
     merge: jest.fn(),
     remove: jest.fn()
+  }
+
+  const mockHistoryRepository = {
+    findAndCount: jest.fn().mockResolvedValue([[], 0])
   }
 
   const createDto: CreateProductDto = {
@@ -51,9 +57,29 @@ describe('ProductsService', () => {
     price: '89.99',
     stock: 150,
     weightKg: '0.35',
+    discontinuedAt: null,
     createdAt: new Date('2026-08-26T10:00:00.000Z'),
     updatedAt: new Date('2026-08-26T10:00:00.000Z')
   }
+
+  // Finds an andWhere call by what its SQL says, not by where it sits. Indexing
+  // by position broke the moment a filter was added ahead of the search.
+  const whereCall = (fragment: string): [string, Record<string, string>] => {
+    const call = mockQueryBuilder.andWhere.mock.calls.find(
+      ([sql]) => typeof sql === 'string' && sql.includes(fragment)
+    )
+
+    if (!call) throw new Error(`no andWhere call contains "${fragment}"`)
+
+    return call as [string, Record<string, string>]
+  }
+
+  const searchCall = () => whereCall(':term0')
+
+  const filterCalls = () =>
+    mockQueryBuilder.andWhere.mock.calls.filter(
+      ([sql]) => !String(sql).includes('discontinued_at')
+    )
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -62,7 +88,11 @@ describe('ProductsService', () => {
       providers: [
         ProductsService,
         PaginationResponseBuilder,
-        { provide: getRepositoryToken(Product), useValue: mockRepository }
+        { provide: getRepositoryToken(Product), useValue: mockRepository },
+        {
+          provide: getRepositoryToken(ProductHistory),
+          useValue: mockHistoryRepository
+        }
       ]
     }).compile()
 
@@ -146,7 +176,7 @@ describe('ProductsService', () => {
     it('applies no filters when q and category are absent', async () => {
       await service.findAll({ page: 1, limit: 10 })
 
-      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled()
+      expect(filterCalls()).toHaveLength(0)
     })
 
     it('matches q across name, sku, description and category as a bound parameter', async () => {
@@ -166,7 +196,7 @@ describe('ProductsService', () => {
         term0: `%${payload}%`
       })
 
-      const [sql] = mockQueryBuilder.andWhere.mock.calls[0]
+      const [sql] = searchCall()
       expect(sql).not.toContain('DROP TABLE')
       expect(sql).toContain(':term0')
       expect(result.data).toEqual([productEntity])
@@ -183,7 +213,7 @@ describe('ProductsService', () => {
     it('unions several search terms so any of them matches', async () => {
       await service.findAll({ q: ['PST-017', 'PRJ-001'] })
 
-      const [sql, parameters] = mockQueryBuilder.andWhere.mock.calls[0]
+      const [sql, parameters] = searchCall()
 
       expect(sql).toContain(':term0')
       expect(sql).toContain(':term1')
@@ -197,19 +227,19 @@ describe('ProductsService', () => {
     it('keeps several terms as a single conjunctive clause', async () => {
       await service.findAll({ q: ['a', 'b', 'c'], category: ['Electronics'] })
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(2)
+      expect(filterCalls()).toHaveLength(2)
     })
 
     it('ignores blank terms', async () => {
       await service.findAll({ q: ['  ', ''] })
 
-      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled()
+      expect(filterCalls()).toHaveLength(0)
     })
 
     it('escapes every term, not just the first', async () => {
       await service.findAll({ q: ['safe', '100%_off'] })
 
-      const [, parameters] = mockQueryBuilder.andWhere.mock.calls[0]
+      const [, parameters] = searchCall()
 
       expect(parameters.term1).toBe('%100\\%\\_off%')
     })
@@ -235,7 +265,7 @@ describe('ProductsService', () => {
     it('ignores an empty category list', async () => {
       await service.findAll({ category: [] })
 
-      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled()
+      expect(filterCalls()).toHaveLength(0)
     })
 
     it('filters by minimum price', async () => {
@@ -259,7 +289,7 @@ describe('ProductsService', () => {
     it('applies both price bounds when a range is given', async () => {
       await service.findAll({ minPrice: 10, maxPrice: 30 })
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(2)
+      expect(filterCalls()).toHaveLength(2)
     })
 
     it('keeps a zero minimum price as an active filter', async () => {
@@ -290,7 +320,7 @@ describe('ProductsService', () => {
     it('does not filter by availability when inStock is absent', async () => {
       await service.findAll({ q: ['shoes'] })
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(1)
+      expect(filterCalls()).toHaveLength(1)
     })
 
     it('combines every filter conjunctively', async () => {
@@ -302,7 +332,7 @@ describe('ProductsService', () => {
         inStock: true
       })
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(5)
+      expect(filterCalls()).toHaveLength(5)
     })
 
     it('sorts by a whitelisted field in the requested direction', async () => {
@@ -345,6 +375,111 @@ describe('ProductsService', () => {
         'product.id',
         'ASC'
       )
+    })
+  })
+
+  describe('catalog status', () => {
+    it('hides discontinued products unless asked otherwise', async () => {
+      await service.findAll({})
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'product.discontinued_at IS NULL'
+      )
+    })
+
+    it('shows only discontinued products when asked for them', async () => {
+      await service.findAll({ status: 'discontinued' })
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'product.discontinued_at IS NOT NULL'
+      )
+    })
+
+    it('applies no status condition when asked for all', async () => {
+      await service.findAll({ status: 'all' })
+
+      const statusCalls = mockQueryBuilder.andWhere.mock.calls.filter(([sql]) =>
+        String(sql).includes('discontinued_at')
+      )
+
+      expect(statusCalls).toHaveLength(0)
+    })
+
+    it('answers 404 for a discontinued product, so the shop cannot reach it', async () => {
+      mockRepository.findOneBy.mockResolvedValue({
+        ...productEntity,
+        discontinuedAt: new Date('2026-09-01T10:00:00.000Z')
+      })
+
+      await expect(service.findOne(productEntity.id)).rejects.toBeInstanceOf(
+        NotFoundException
+      )
+    })
+
+    it('counts only products on sale among the categories', async () => {
+      mockQueryBuilder.getRawMany.mockResolvedValue([])
+
+      await service.findCategories()
+
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'product.discontinued_at IS NULL'
+      )
+    })
+  })
+
+  describe('discontinue and restore', () => {
+    it('stamps the moment a product was taken off the catalog', async () => {
+      mockRepository.findOneBy.mockResolvedValue({ ...productEntity })
+      mockRepository.save.mockImplementation(async (p: Product) => p)
+
+      const retired = await service.discontinue(productEntity.id)
+
+      expect(retired.discontinuedAt).toBeInstanceOf(Date)
+    })
+
+    it('keeps the original date when discontinued twice', async () => {
+      const first = new Date('2026-09-01T10:00:00.000Z')
+      mockRepository.findOneBy.mockResolvedValue({
+        ...productEntity,
+        discontinuedAt: first
+      })
+
+      const again = await service.discontinue(productEntity.id)
+
+      expect(again.discontinuedAt).toBe(first)
+      expect(mockRepository.save).not.toHaveBeenCalled()
+    })
+
+    it('puts a discontinued product back on sale', async () => {
+      mockRepository.findOneBy.mockResolvedValue({
+        ...productEntity,
+        discontinuedAt: new Date('2026-09-01T10:00:00.000Z')
+      })
+      mockRepository.save.mockImplementation(async (p: Product) => p)
+
+      const back = await service.restore(productEntity.id)
+
+      expect(back.discontinuedAt).toBeNull()
+    })
+
+    it('does nothing when restoring a product already on sale', async () => {
+      mockRepository.findOneBy.mockResolvedValue({ ...productEntity })
+
+      await service.restore(productEntity.id)
+
+      expect(mockRepository.save).not.toHaveBeenCalled()
+    })
+
+    it('reaches a discontinued product to delete it', async () => {
+      const retired = {
+        ...productEntity,
+        discontinuedAt: new Date('2026-09-01T10:00:00.000Z')
+      }
+      mockRepository.findOneBy.mockResolvedValue(retired)
+
+      await service.remove(productEntity.id)
+
+      expect(mockRepository.remove).toHaveBeenCalledWith(retired)
     })
   })
 

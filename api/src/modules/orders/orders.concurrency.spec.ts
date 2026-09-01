@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 import { ProductsService } from '@/modules/products/products.service'
 import { Product } from '@/modules/products/entities/product.entity'
+import { ProductHistory } from '@/modules/products/entities/product-history.entity'
 import { ChargeResult } from '@/modules/payment/payment.interface'
 
 import { Order } from './entities/order.entity'
@@ -30,6 +31,15 @@ const CONNECTION = {
 
 const SKU_PREFIX = 'CONCURRENCY-TEST-'
 
+function productsServiceFor(source: DataSource): ProductsService {
+  return new ProductsService(
+    source.getRepository(Product),
+    source.getRepository(ProductHistory),
+    new PaginationResponseBuilder<Product>(),
+    new PaginationResponseBuilder<ProductHistory>()
+  )
+}
+
 let dataSource: DataSource | null = null
 
 const approving = {
@@ -43,7 +53,7 @@ async function connect(): Promise<DataSource | null> {
   const candidate = new DataSource({
     type: 'postgres',
     ...CONNECTION,
-    entities: [Product, Order, OrderItem],
+    entities: [Product, ProductHistory, Order, OrderItem],
     migrations: ['src/database/migrations/*.ts'],
     synchronize: false,
     logging: false
@@ -322,10 +332,7 @@ describe('OrdersService against a real database', () => {
       paymentMethod: PaymentMethod.CARD
     })
 
-    const products = new ProductsService(
-      source.getRepository(Product),
-      new PaginationResponseBuilder<Product>()
-    )
+    const products = productsServiceFor(source)
 
     await expect(products.remove(productId)).rejects.toMatchObject({
       status: 409,
@@ -333,6 +340,42 @@ describe('OrdersService against a real database', () => {
     })
 
     expect(await stockOf(source, productId)).toBe(4)
+  })
+
+  maybe('discontinues a sold product that cannot be deleted', async () => {
+    const source = dataSource!
+    const productId = await seedProduct(source, 'RETIRED', 5)
+    const service = serviceFor(source)
+
+    await service.create({
+      items: [{ productId, quantity: 1 }],
+      idempotencyKey: `${SKU_PREFIX}sold-then-retired`,
+      shippingAddress: SHIPPING,
+      paymentMethod: PaymentMethod.CARD
+    })
+
+    const products = productsServiceFor(source)
+
+    await expect(products.remove(productId)).rejects.toMatchObject({
+      status: 409
+    })
+
+    const retired = await products.discontinue(productId)
+    expect(retired.discontinuedAt).toBeInstanceOf(Date)
+
+    await expect(products.findOne(productId)).rejects.toMatchObject({
+      status: 404
+    })
+
+    const [line] = await source.query(
+      `SELECT "unit_price_snapshot" FROM "order_items" WHERE "product_id" = $1`,
+      [productId]
+    )
+    expect(line.unit_price_snapshot).toBe('10.00')
+
+    const back = await products.restore(productId)
+    expect(back.discontinuedAt).toBeNull()
+    await expect(products.findOne(productId)).resolves.toBeDefined()
   })
 
   maybe(

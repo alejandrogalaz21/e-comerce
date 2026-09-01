@@ -17,7 +17,8 @@ import {
 import { ProductCategoryDto } from '../dto/product-category.dto'
 import {
   PRODUCT_SORT_DIRECTIONS,
-  PRODUCT_SORT_FIELDS
+  PRODUCT_SORT_FIELDS,
+  PRODUCT_STATUSES
 } from '../dto/product-filters.dto'
 import { Product } from '../entities/product.entity'
 
@@ -74,6 +75,14 @@ export const ApiListProducts = () =>
       example: 'true',
       description:
         'true returns only products with stock, false returns only sold out products. Omit to include both'
+    }),
+    ApiQuery({
+      name: 'status',
+      required: false,
+      enum: [...PRODUCT_STATUSES],
+      example: 'active',
+      description:
+        'Catalog status. Defaults to active, so a caller that omits it never sees discontinued products'
     }),
     ApiQuery({
       name: 'sortBy',
@@ -140,4 +149,55 @@ export const ApiDeleteProduct = () =>
       description:
         'The product appears in an order and cannot be removed: RESOURCE_IN_USE'
     })
+  )
+
+export const ApiDiscontinueProduct = () =>
+  applyDecorators(
+    ApiBearerAuth('jwt'),
+    ApiOperation({
+      summary: 'Take a product off the catalog',
+      description:
+        'The product stops being sold and disappears from every public surface, while the orders that contain it keep pointing at it. Idempotent: retiring an already retired product keeps the original date.'
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Product discontinued',
+      type: Product
+    }),
+    ApiInvalidUuidResponse(),
+    ApiUnauthorizedResponse(),
+    ApiResponse({ status: 404, description: 'Product not found' })
+  )
+
+export const ApiRestoreProduct = () =>
+  applyDecorators(
+    ApiBearerAuth('jwt'),
+    ApiOperation({
+      summary: 'Put a discontinued product back on the catalog',
+      description:
+        'Idempotent: restoring a product that is already on sale succeeds and changes nothing.'
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Product restored',
+      type: Product
+    }),
+    ApiInvalidUuidResponse(),
+    ApiUnauthorizedResponse(),
+    ApiResponse({ status: 404, description: 'Product not found' })
+  )
+
+export const ApiListProductHistory = () =>
+  applyDecorators(
+    ApiBearerAuth('jwt'),
+    ApiOperation({
+      summary: 'Read the change history of a product',
+      description:
+        'Every insert, update and delete, written by a database trigger rather than the service, so a change made through the CSV import or through direct SQL is recorded the same way. Newest first.'
+    }),
+    ApiPaginationQuery(20),
+    ApiPaginatedResponse('ProductHistory'),
+    ApiInvalidUuidResponse(),
+    ApiUnauthorizedResponse(),
+    ApiResponse({ status: 404, description: 'Product not found' })
   )

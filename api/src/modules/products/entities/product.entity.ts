@@ -82,6 +82,16 @@ export class Product {
   })
   weightKg: string | null
 
+  @ApiProperty({
+    example: null,
+    description:
+      'When the product was taken off the catalog. Null means it is on sale. A timestamp answers since when, which a boolean would not',
+    nullable: true,
+    required: false
+  })
+  @Column('timestamptz', { name: 'discontinued_at', nullable: true })
+  discontinuedAt: Date | null
+
   @ApiProperty({ example: '2026-08-26T10:00:00.000Z' })
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date

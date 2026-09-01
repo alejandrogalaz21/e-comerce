@@ -45,7 +45,10 @@ const PROTECTED_SURFACE: [string, ControllerClass, string][] = [
   ['GET /auth/me', AuthController, 'getProfile'],
   ['POST /auth/sign-up', AuthController, 'signup'],
   ['GET /orders', OrdersController, 'findAll'],
-  ['GET /orders/:id', OrdersController, 'findOne']
+  ['GET /orders/:id', OrdersController, 'findOne'],
+  ['PATCH /products/:id/discontinue', ProductsController, 'discontinue'],
+  ['PATCH /products/:id/restore', ProductsController, 'restore'],
+  ['GET /products/:id/history', ProductsController, 'findHistory']
 ]
 
 describe('public/protected boundary', () => {

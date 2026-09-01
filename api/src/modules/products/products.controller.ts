@@ -15,12 +15,17 @@ import { ApiTags } from '@nestjs/swagger'
 
 import { Public } from '@/common/decorators/public.decorator'
 
+import { PaginationDTO } from '@/common/dto/pagination.dto'
+
 import {
   ApiCreateProduct,
   ApiDeleteProduct,
+  ApiDiscontinueProduct,
   ApiGetProduct,
   ApiListProductCategories,
+  ApiListProductHistory,
   ApiListProducts,
+  ApiRestoreProduct,
   ApiUpdateProduct
 } from './docs/products.api-docs'
 import { CreateProductDto } from './dto/create-product.dto'
@@ -51,6 +56,27 @@ export class ProductsController {
   @ApiListProductCategories()
   findCategories() {
     return this.productsService.findCategories()
+  }
+
+  @Get(':id/history')
+  @ApiListProductHistory()
+  findHistory(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() filters: PaginationDTO
+  ) {
+    return this.productsService.findHistory(id, filters)
+  }
+
+  @Patch(':id/discontinue')
+  @ApiDiscontinueProduct()
+  discontinue(@Param('id', ParseUUIDPipe) id: string) {
+    return this.productsService.discontinue(id)
+  }
+
+  @Patch(':id/restore')
+  @ApiRestoreProduct()
+  restore(@Param('id', ParseUUIDPipe) id: string) {
+    return this.productsService.restore(id)
   }
 
   @Get(':id')

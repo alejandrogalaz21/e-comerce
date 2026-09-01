@@ -7,10 +7,12 @@ import { UpdateProductDto } from './dto/update-product.dto'
 import {
   DEFAULT_PRODUCT_SORT_DIRECTION,
   DEFAULT_PRODUCT_SORT_FIELD,
+  DEFAULT_PRODUCT_STATUS,
   ProductFiltersDto,
   ProductSortField
 } from './dto/product-filters.dto'
 import { ProductCategoryDto } from './dto/product-category.dto'
+import { PaginationDTO } from '@/common/dto/pagination.dto'
 import { PaginationHelper } from '@/common/pagination/pagination.helper'
 import { PaginationResponseBuilder } from '@/common/pagination/pagination-response.builder'
 import { escapeLikeWildcards } from '@/common/transformers/sanitize.transformer'
@@ -18,6 +20,7 @@ import { translateDatabaseError } from '@/common/filters/database-error.translat
 import { CacheService } from '@/database/redis/cache.service'
 
 import { Product } from './entities/product.entity'
+import { ProductHistory } from './entities/product-history.entity'
 
 @Injectable()
 export class ProductsService {
@@ -34,7 +37,10 @@ export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @InjectRepository(ProductHistory)
+    private readonly historyRepository: Repository<ProductHistory>,
     private readonly paginationBuilder: PaginationResponseBuilder<Product>,
+    private readonly historyPaginationBuilder: PaginationResponseBuilder<ProductHistory>,
     @Optional() private readonly cache?: CacheService
   ) {}
 
@@ -89,6 +95,13 @@ export class ProductsService {
       .addOrderBy('product.id', 'ASC')
       .skip(offset)
       .take(limit)
+
+    const status = filters.status ?? DEFAULT_PRODUCT_STATUS
+    if (status === 'active') {
+      query.andWhere('product.discontinued_at IS NULL')
+    } else if (status === 'discontinued') {
+      query.andWhere('product.discontinued_at IS NOT NULL')
+    }
 
     const terms = filters.q?.map(value => value.trim()).filter(Boolean)
     if (terms?.length) {
@@ -149,6 +162,7 @@ export class ProductsService {
       .createQueryBuilder('product')
       .select('product.category', 'category')
       .addSelect('COUNT(*)', 'count')
+      .where('product.discontinued_at IS NULL')
       .groupBy('product.category')
       .orderBy('product.category', 'ASC')
       .getRawMany<{ category: string; count: string }>()
@@ -166,10 +180,59 @@ export class ProductsService {
   async findOne(id: string): Promise<Product> {
     const product = await this.productRepository.findOneBy({ id })
 
+    if (!product || product.discontinuedAt)
+      throw new NotFoundException(`Product with id '${id}' not found`)
+
+    return product
+  }
+
+  private async findOneWhateverItsStatus(id: string): Promise<Product> {
+    const product = await this.productRepository.findOneBy({ id })
+
     if (!product)
       throw new NotFoundException(`Product with id '${id}' not found`)
 
     return product
+  }
+
+  async discontinue(id: string): Promise<Product> {
+    const product = await this.findOneWhateverItsStatus(id)
+
+    if (product.discontinuedAt) return product
+
+    product.discontinuedAt = new Date()
+    const saved = await this.productRepository.save(product)
+    await this.invalidateCache()
+
+    return saved
+  }
+
+  async restore(id: string): Promise<Product> {
+    const product = await this.findOneWhateverItsStatus(id)
+
+    if (!product.discontinuedAt) return product
+
+    product.discontinuedAt = null
+    const saved = await this.productRepository.save(product)
+    await this.invalidateCache()
+
+    return saved
+  }
+
+  async findHistory(id: string, filters: PaginationDTO = {}) {
+    const { page, limit, offset } = PaginationHelper.parse(filters)
+
+    const [entries, total] = await this.historyRepository.findAndCount({
+      where: { productId: id },
+      order: { changedAt: 'DESC' },
+      skip: offset,
+      take: limit
+    })
+
+    if (total === 0 && !(await this.productRepository.existsBy({ id })))
+      throw new NotFoundException(`Product with id '${id}' not found`)
+
+    return this.historyPaginationBuilder.build(entries, total, page, limit)
   }
 
   async update(
@@ -194,7 +257,7 @@ export class ProductsService {
   }
 
   async remove(id: string): Promise<void> {
-    const product = await this.findOne(id)
+    const product = await this.findOneWhateverItsStatus(id)
 
     try {
       await this.productRepository.remove(product)

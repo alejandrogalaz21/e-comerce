@@ -268,6 +268,8 @@ export class ImportService {
         } else if (this.isIdentical(existing, dto)) {
           summary.unchanged++
         } else {
+          const reactivated = Boolean(existing.discontinuedAt)
+
           await this.productRepository.save(
             this.applyDtoToEntity(existing, dto)
           )
@@ -276,7 +278,9 @@ export class ImportService {
             line,
             sku: dto.sku,
             name: dto.name,
-            message: 'sku already exists with different data — updated'
+            message: reactivated
+              ? 'sku existed but was discontinued — updated and put back on sale'
+              : 'sku already exists with different data — updated'
           })
         }
       } catch (error) {
@@ -409,6 +413,8 @@ export class ImportService {
   }
 
   private isIdentical(existing: Product, dto: CreateProductDto): boolean {
+    if (existing.discontinuedAt) return false
+
     return (
       existing.name === dto.name &&
       (existing.description ?? null) === (dto.description ?? null) &&
@@ -429,6 +435,7 @@ export class ImportService {
   }
 
   private applyDtoToEntity(existing: Product, dto: CreateProductDto): Product {
+    existing.discontinuedAt = null
     existing.name = dto.name
     existing.description = dto.description ?? null
     existing.category = dto.category
