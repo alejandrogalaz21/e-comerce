@@ -176,6 +176,11 @@ El correo SHALL validarse como tal antes de aceptar la compra: un texto que no e
 correo MUST rechazarse, porque un contacto inválido es indistinguible de no tener contacto en el
 momento en que hace falta usarlo.
 
+El teléfono de entrega SHALL aceptarse tal como lo entrega un autocompletado del navegador, que
+guarda los dígitos sin su prefijo internacional. Un número completo y válido MUST NOT rechazarse por
+la forma en que fue escrito, y el país que le corresponde SHALL deducirse del propio número. La
+corrección MUST NOT alterar un número que ya es válido en el país seleccionado.
+
 La dirección y el correo SHALL quedar guardados como parte de la orden, con los mismos valores que
 el comprador proporcionó. Un cambio posterior en cualquier otro sitio MUST NOT alterarlos: como el
 precio de cada línea, son datos congelados en el momento de la compra.
@@ -197,6 +202,18 @@ exclusivamente de las líneas compradas.
 
 - **WHEN** se compra aportando un texto que no es una dirección de correo válida
 - **THEN** la compra se rechaza señalando el correo, y no se crea ninguna orden
+
+#### Scenario: Un teléfono que llega del autocompletado
+
+- **GIVEN** un teléfono guardado por el navegador como dígitos, sin su prefijo internacional
+- **WHEN** el comprador lo autocompleta en el formulario de entrega
+- **THEN** se acepta como el número internacional que es, y se muestra a qué país pertenece
+
+#### Scenario: Un número nacional del país ya elegido
+
+- **GIVEN** un país seleccionado en el formulario
+- **WHEN** el comprador escribe un número nacional válido de ese país
+- **THEN** se conserva como ese número, y no se reinterpreta como el de otro país
 
 #### Scenario: La dirección se conserva tal cual
 
@@ -267,3 +284,31 @@ comprobación y la confirmación, y ese caso SHALL seguir resolviéndose con el 
 - **WHEN** otra compra agota ese stock justo antes de confirmar
 - **THEN** la compra se rechaza indicando el producto, las unidades pedidas y las disponibles
 - **AND** no se registra ninguna orden ni se descuenta stock
+
+### Requirement: La compra registra cómo se paga
+
+Comprar SHALL exigir el método de pago, y la orden SHALL guardarlo junto al resto de lo que
+registró de esa compra.
+
+El sistema MUST NOT ofrecer un método que no sepa modelar. En particular, un pago que ocurre fuera
+del sistema —al entregar el pedido— MUST NOT cobrarse por el proveedor simulado ni registrarse como
+pagado: eso afirma un dinero que nadie entregó. Ofrecerlo requiere antes un estado para una orden
+hecha y todavía no pagada, y una forma de sacarla de ahí.
+
+Un método que el sistema no reconozca SHALL rechazarse nombrando los válidos, en lugar de aceptarse
+y quedar registrado como algo que no ocurrió.
+
+#### Scenario: Comprar diciendo cómo se paga
+
+- **WHEN** se compra indicando uno de los métodos que el sistema acepta
+- **THEN** la compra se registra con ese método
+
+#### Scenario: Comprar sin decir cómo se paga
+
+- **WHEN** se intenta comprar sin método de pago
+- **THEN** la compra se rechaza nombrando el dato que falta
+
+#### Scenario: Un método que el sistema no ofrece
+
+- **WHEN** se intenta comprar con un método que el sistema no reconoce
+- **THEN** la compra se rechaza indicando cuáles son válidos, y no se registra ninguna orden
