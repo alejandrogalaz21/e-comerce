@@ -130,7 +130,7 @@ Two documents make this navigable rather than a wall of names:
 
 | Document | What it gives you |
 |---|---|
-| [docs/testing/MATRIX.md](docs/testing/MATRIX.md) | **99 use cases**, each with its purpose, steps, expected result and the test that guards it |
+| [docs/testing/MATRIX.md](docs/testing/MATRIX.md) | **109 use cases**, each with its purpose, steps, expected result and the test that guards it |
 | [docs/testing/STRATEGY.md](docs/testing/STRATEGY.md) | What is tested at which level, and — more usefully — what is deliberately **not**, with the reasoning |
 
 The manual cases are written in Spanish, like the rest of `docs/`. [TC-06](docs/testing/TC-06-concurrency-and-races.md)

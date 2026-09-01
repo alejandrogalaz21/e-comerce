@@ -220,6 +220,25 @@ Ejecución manual: [TC-08](TC-08-status-and-degradation.md)
 
 ---
 
+## P-10 · Búsqueda de páginas del dashboard
+
+Todo automático: el buscador no toca el API ni la base, así que no hay nada que mirar a mano.
+
+| ID | Propósito | Pasos | Esperado | Cubierto por |
+|---|---|---|---|---|
+| P-10.1 | El atajo abre el buscador, también fuera de macOS | En cualquier página del dashboard, `Ctrl+K` | Se abre el diálogo con el campo enfocado. El componente original solo miraba `metaKey`, así que en Windows no abría | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.2 | El control del header es descubrible y anuncia el atajo | Mira el header y pulsa el control | Muestra `Ctrl K` (o `⌘K` en macOS) y abre el mismo diálogo | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.3 | La lista sale del nav real, no de una lista fija | Abre el buscador y escribe `import` | Aparecen `Import CSV` e `Import history`, que son entradas vivas del nav | ✅ `searchbar/utils.test.ts` + e2e |
+| P-10.4 | Se encuentra una página por su ruta, no solo por su título | Escribe `dashboard/status` | Aparece la página Status | ✅ `searchbar/utils.test.ts` + e2e |
+| P-10.5 | La coincidencia se resalta dentro del resultado | Escribe `stat` | El fragmento `stat` sale resaltado, y el texto completo se conserva sin caracteres añadidos | ✅ `searchbar/utils.test.ts` + e2e |
+| P-10.6 | Sin coincidencias lo dice, en vez de una lista vacía | Escribe algo que no existe | Mensaje de "no encontrado" con lo buscado | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.7 | Elegir un resultado navega y cierra | Escribe `import csv` y elige el resultado | La URL pasa a `/dashboard/product/import` y el diálogo se cierra | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.8 | `Esc` cierra sin navegar y sin dejar residuo | Abre, escribe, `Esc`, vuelve a abrir | La URL no cambia y el campo aparece vacío | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.9 | **El atajo no secuestra la escritura** | Con el foco en el filtro de la tabla, escribe `k` | La letra se escribe en el campo y el diálogo no se abre | ✅ e2e `dashboard-page-search.spec.ts` |
+| P-10.10 | El buscador es del dashboard, no de la tienda | Abre `/` | El control no existe en la tienda pública | ✅ e2e `dashboard-page-search.spec.ts` |
+
+---
+
 ## Resumen de cobertura
 
 | Proceso | Casos | Automatizados | Solo manual |
@@ -233,7 +252,8 @@ Ejecución manual: [TC-08](TC-08-status-and-degradation.md)
 | P-07 Contrato de errores | 8 | 8 | 0 |
 | P-08 Endurecimiento de seguridad | 6 | 4 | 2 |
 | P-09 Status y observabilidad | 8 | 1 | 7 |
-| **Total** | **99** | **82** | **17** |
+| P-10 Búsqueda de páginas | 10 | 10 | 0 |
+| **Total** | **109** | **92** | **17** |
 
 ## Lo que sigue siendo solo manual
 
